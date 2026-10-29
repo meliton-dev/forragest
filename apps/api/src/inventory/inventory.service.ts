@@ -1,0 +1,153 @@
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { MovementType, Prisma } from '@prisma/client';
+import { PrismaService } from '../prisma.service';
+
+type Tx = Prisma.TransactionClient;
+
+export interface EntryInput {
+  productId: number;
+  quantity: number;
+  unitCost: number;
+  type?: MovementType;
+  expiresAt?: Date;
+  reason?: string;
+  refType?: string;
+  refId?: number;
+  userId?: number;
+}
+
+export interface ExitInput {
+  productId: number;
+  quantity: number;
+  type: MovementType;
+  reason?: string;
+  refType?: string;
+  refId?: number;
+  userId?: number;
+}
+
+/** Único punto por el que cambia el stock: crea lotes (entradas) y consume PEPS (salidas). */
+@Injectable()
+export class InventoryService {
+  constructor(private prisma: PrismaService) {}
+
+  async addEntry(input: EntryInput, tx?: Tx) {
+    if (input.quantity <= 0) throw new BadRequestException('La cantidad debe ser mayor a 0');
+    const run = async (t: Tx) => {
+      const lot = await t.stockLot.create({
+        data: { productId: input.productId, quantity: input.quantity, unitCost: input.unitCost, expiresAt: input.expiresAt },
+      });
+      await t.inventoryMovement.create({
+        data: {
+          productId: input.productId, lotId: lot.id, type: input.type ?? 'ENTRADA_COMPRA', quantity: input.quantity,
+          reason: input.reason, refType: input.refType, refId: input.refId, userId: input.userId,
+        },
+      });
+      return lot;
+    };
+    return tx ? run(tx) : this.prisma.$transaction(run);
+  }
+
+  /** Descuenta PEPS (lote más antiguo primero). Falla si no hay existencia suficiente. */
+  async removeStock(input: ExitInput, tx?: Tx) {
+    if (input.quantity <= 0) throw new BadRequestException('La cantidad debe ser mayor a 0');
+    const run = async (t: Tx) => {
+      const lots = await t.stockLot.findMany({
+        where: { productId: input.productId, quantity: { gt: 0 } },
+        orderBy: [{ receivedAt: 'asc' }, { id: 'asc' }],
+      });
+      let pending = input.quantity;
+      const consumed: { lotId: number; quantity: number; unitCost: number }[] = [];
+      for (const lot of lots) {
+        if (pending <= 0) break;
+        const take = Math.min(Number(lot.quantity), pending);
+        await t.stockLot.update({ where: { id: lot.id }, data: { quantity: { decrement: take } } });
+        await t.inventoryMovement.create({
+          data: {
+            productId: input.productId, lotId: lot.id, type: input.type, quantity: -take,
+            reason: input.reason, refType: input.refType, refId: input.refId, userId: input.userId,
+          },
+        });
+        consumed.push({ lotId: lot.id, quantity: take, unitCost: Number(lot.unitCost) });
+        pending = Math.round((pending - take) * 1000) / 1000;
+      }
+      if (pending > 0) throw new BadRequestException(`Existencia insuficiente (faltan ${pending})`);
+      return consumed;
+    };
+    return tx ? run(tx) : this.prisma.$transaction(run);
+  }
+
+  async stockOf(productId: number, tx: Tx | PrismaService = this.prisma): Promise<number> {
+    const r = await tx.stockLot.aggregate({ where: { productId }, _sum: { quantity: true } });
+    return Number(r._sum.quantity ?? 0);
+  }
+
+  /** Ajuste manual (+/-) autorizado, siempre con motivo (INV-004, INV-007). */
+  async adjust(productId: number, delta: number, reason: string, userId: number) {
+    const product = await this.prisma.product.findUnique({ where: { id: productId } });
+    if (!product) throw new NotFoundException('Producto no encontrado');
+    if (delta === 0) throw new BadRequestException('El ajuste no puede ser 0');
+    if (delta > 0) {
+      await this.addEntry({ productId, quantity: delta, unitCost: Number(product.purchasePrice), type: 'ENTRADA_AJUSTE', reason, userId });
+    } else {
+      await this.removeStock({ productId, quantity: -delta, type: 'SALIDA_AJUSTE', reason, userId });
+    }
+    return { productId, stock: await this.stockOf(productId) };
+  }
+
+  /** INV-005: inventario actual, opcionalmente filtrado por línea. */
+  async current(lineCode?: string) {
+    const products = await this.prisma.product.findMany({
+      where: { active: true, ...(lineCode ? { line: { code: lineCode.toUpperCase() } } : {}) },
+      include: { line: true },
+      orderBy: { name: 'asc' },
+    });
+    const sums = await this.prisma.stockLot.groupBy({ by: ['productId'], _sum: { quantity: true } });
+    const map = new Map(sums.map((s) => [s.productId, Number(s._sum.quantity ?? 0)]));
+    return products.map((p) => {
+      const stock = map.get(p.id) ?? 0;
+      return { id: p.id, code: p.code, name: p.name, line: p.line.code, unit: p.unit, stock, minStock: Number(p.minStock), low: stock <= Number(p.minStock) };
+    });
+  }
+
+  /** INV-003: productos en o bajo el mínimo configurado. */
+  async alerts() {
+    return (await this.current()).filter((p) => p.low && p.minStock > 0);
+  }
+
+  /** INV-007: historial de movimientos. */
+  movements(filter: { productId?: number; from?: Date; to?: Date }) {
+    return this.prisma.inventoryMovement.findMany({
+      where: {
+        productId: filter.productId,
+        createdAt: { gte: filter.from, lte: filter.to },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+    });
+  }
+
+  /** INV-008: rotación = salidas por venta del período / existencia actual, por producto y por línea. */
+  async rotation(from: Date, to: Date) {
+    const sold = await this.prisma.inventoryMovement.groupBy({
+      by: ['productId'],
+      where: { type: 'SALIDA_VENTA', createdAt: { gte: from, lte: to } },
+      _sum: { quantity: true },
+    });
+    const soldMap = new Map(sold.map((s) => [s.productId, -Number(s._sum.quantity ?? 0)]));
+    const rows = (await this.current()).map((p) => {
+      const out = soldMap.get(p.id) ?? 0;
+      return { code: p.code, name: p.name, line: p.line, sold: out, stock: p.stock, rotation: p.stock > 0 ? +(out / p.stock).toFixed(2) : null };
+    });
+    const byLine: Record<string, { sold: number; stock: number }> = {};
+    for (const r of rows) {
+      byLine[r.line] ??= { sold: 0, stock: 0 };
+      byLine[r.line].sold += r.sold;
+      byLine[r.line].stock += r.stock;
+    }
+    return {
+      byProduct: rows,
+      byLine: Object.entries(byLine).map(([line, v]) => ({ line, ...v, rotation: v.stock > 0 ? +(v.sold / v.stock).toFixed(2) : null })),
+    };
+  }
+}

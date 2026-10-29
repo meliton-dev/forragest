@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMINISTRADOR
+  CAJERO
+  ALMACENISTA
+  CHOFER
+  GERENTE_COMPRAS
+  SUPERVISOR_RUTAS
+}
+
+// Línea como tabla (no enum) para agregar líneas sin rediseño.
+model ProductLine {
+  id       Int       @id @default(autoincrement())
+  code     String    @unique
+  name     String
+  products Product[]
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  username     String     @unique
+  passwordHash String
+  fullName     String
+  role         Role
+  active       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  audits       AuditLog[]
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, createdAt])
+}
+
+// ---------- Fase 2: Inventario ----------
+
+enum MovementType {
+  ENTRADA_COMPRA
+  ENTRADA_AJUSTE
+  SALIDA_AJUSTE
+  SALIDA_VENTA
+  SALIDA_MERMA
+  CONTEO
+}
+
+model Product {
+  id            Int         @id @default(autoincrement())
+  code          String      @unique
+  name          String
+  description   String?
+  lineId        Int
+  line          ProductLine @relation(fields: [lineId], references: [id])
+  unit          String // unidad base: kg, pza, ...
+  purchasePrice Decimal     @db.Decimal(12, 2)
+  salePrice     Decimal     @db.Decimal(12, 2)
+  minStock      Decimal     @default(0) @db.Decimal(14, 3)
+  active        Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+
+  presentations Presentation[]
+  lots          StockLot[]
+  movements     InventoryMovement[]
+  countItems    InventoryCountItem[]
+
+  @@index([lineId])
+}
+
+// INV-002: sacos de 20 kg, 40 kg, granel...
+model Presentation {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  name      String
+  factor    Decimal  @db.Decimal(12, 3) // unidades base por presentación
+  salePrice Decimal? @db.Decimal(12, 2)
+
+  @@unique([productId, name])
+}
+
+// Lotes para valuación PEPS: las salidas consumen primero el lote más antiguo.
+model StockLot {
+  id         Int                 @id @default(autoincrement())
+  productId  Int
+  product    Product             @relation(fields: [productId], references: [id])
+  quantity   Decimal             @db.Decimal(14, 3) // existencia restante
+  unitCost   Decimal             @db.Decimal(12, 2)
+  receivedAt DateTime            @default(now())
+  expiresAt  DateTime?
+  movements  InventoryMovement[]
+
+  @@index([productId, receivedAt])
+}
+
+model InventoryMovement {
+  id        Int          @id @default(autoincrement())
+  productId Int
+  product   Product      @relation(fields: [productId], references: [id])
+  lotId     Int?
+  lot       StockLot?    @relation(fields: [lotId], references: [id])
+  type      MovementType
+  quantity  Decimal      @db.Decimal(14, 3) // con signo: + entrada, - salida
+  reason    String?
+  refType   String? // p. ej. "OrdenCompra", "Venta"
+  refId     Int?
+  userId    Int?
+  createdAt DateTime     @default(now())
+
+  @@index([productId, createdAt])
+}
+
+// INV-006: conteo cíclico
+model InventoryCount {
+  id        Int                  @id @default(autoincrement())
+  lineId    Int?
+  status    String               @default("ABIERTO") // ABIERTO | CERRADO
+  createdBy Int
+  createdAt DateTime             @default(now())
+  closedAt  DateTime?
+  items     InventoryCountItem[]
+}
+
+model InventoryCountItem {
+  id         Int            @id @default(autoincrement())
+  countId    Int
+  count      InventoryCount @relation(fields: [countId], references: [id])
+  productId  Int
+  product    Product        @relation(fields: [productId], references: [id])
+  systemQty  Decimal        @db.Decimal(14, 3)
+  countedQty Decimal?       @db.Decimal(14, 3)
+
+  @@unique([countId, productId])
+}
