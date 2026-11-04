@@ -70,6 +70,8 @@ async function pull() {
       request<{ items: { id: number; customer: string; amount: number; method: Method; receivedAt: string }[] }>('GET', `/driver/routes/${route.id}/payments`),
       request<{ id: number; type: IncidentType; description: string; createdAt: string }[]>('GET', `/driver/routes/${route.id}/incidents`),
     ]);
+    // si el repartidor registró algo mientras se descargaba, lo local manda: reemplazarlo borraría su avance
+    if (pendingCount() > 0) return void patch({ online: true, loading: false }, false);
     patch({
       route, noRoute: false, online: true, loading: false, lastSync: new Date().toISOString(),
       payments: pay.items.map((p) => ({ id: 's' + p.id, customer: p.customer, amount: p.amount, method: p.method, receivedAt: p.receivedAt, synced: true })),

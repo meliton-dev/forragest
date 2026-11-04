@@ -195,6 +195,7 @@ if (!CHROME) {
       await shot('Entrega 1 registrada con conexión');
       check('Escritura de extremo a extremo', 'Una entrega hecha en la app aparece en la base del servidor', t1 !== null, t1 !== null ? `llegó al servidor ${(t1 / 1000).toFixed(1)} s después de confirmar (incluye los 8 s de margen para deshacer)` : 'no llegó en 40 s');
 
+      await sleep(6000); // una persona no pierde la señal en el mismo instante en que llega la respuesta: se deja asentar el envío
       await ctx.setOffline(true);
       await deliver();
       await sleep(10000);
