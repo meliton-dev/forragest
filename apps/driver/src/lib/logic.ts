@@ -1,0 +1,92 @@
+import { ApiError, NetworkError } from './errors';
+import type { LocalPayment, Op, Route, Summary } from './types';
+
+/** Resumen de la ruta calculado en el teléfono (funciona sin conexión). */
+export function summarize(route: Route, payments: LocalPayment[]): Summary {
+  const count = (s: string) => route.stops.filter((x) => x.status === s).length;
+  const byMethod: Summary['byMethod'] = {};
+  let collected = 0;
+  for (const p of payments) {
+    byMethod[p.method] = (byMethod[p.method] ?? 0) + p.amount;
+    collected += p.amount;
+  }
+  const left = new Map<number, Summary['leftover'][number]>();
+  for (const s of route.stops) {
+    if (s.status === 'ENTREGADA') continue;
+    for (const i of s.items) {
+      const cur = left.get(i.productId) ?? { code: i.code, name: i.name, presentation: i.presentation, quantity: 0 };
+      cur.quantity += i.quantity;
+      left.set(i.productId, cur);
+    }
+  }
+  return {
+    total: route.stops.length,
+    delivered: count('ENTREGADA'),
+    failed: count('NO_ENTREGADA'),
+    pending: count('PENDIENTE'),
+    collected,
+    cash: byMethod.EFECTIVO ?? 0,
+    byMethod,
+    pendingToCollect: route.stops.filter((s) => s.status === 'PENDIENTE' && s.paymentTerms === 'Contado').reduce((a, s) => a + s.total, 0),
+    leftover: [...left.values()],
+  };
+}
+
+export interface QueueResult {
+  queue: Op[];
+  sent: number;
+  /** se cortó por falta de conexión o error del servidor: reintentar más tarde */
+  stopped: boolean;
+  offline: boolean;
+  unauthorized: boolean;
+}
+
+/**
+ * Envía las operaciones en orden. Un rechazo definitivo del servidor (400/403/404…) marca la operación
+ * como fallida y sigue con las demás; sin conexión o error 5xx detiene el envío sin perder nada.
+ */
+export async function processQueue(queue: Op[], send: (op: Op) => Promise<unknown>): Promise<QueueResult> {
+  const out: Op[] = [];
+  let sent = 0;
+  let stopped = false;
+  let offline = false;
+  let unauthorized = false;
+  for (let i = 0; i < queue.length; i++) {
+    const op = queue[i];
+    if (stopped) {
+      out.push(op);
+      continue;
+    }
+    if (op.failed) {
+      out.push(op);
+      continue;
+    }
+    try {
+      await send(op);
+      sent++;
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) {
+        unauthorized = true;
+        stopped = true;
+        out.push(op);
+      } else if (e instanceof ApiError && e.status < 500) {
+        out.push({ ...op, failed: true, error: e.message });
+      } else {
+        stopped = true;
+        offline = e instanceof NetworkError;
+        out.push(op);
+      }
+    }
+  }
+  return { queue: out, sent, stopped, offline, unauthorized };
+}
+
+/** Identificador único; crypto.randomUUID solo existe en HTTPS, por eso el respaldo. */
+export function uid(): string {
+  const c = globalThis.crypto as Crypto | undefined;
+  if (c?.randomUUID) return c.randomUUID();
+  const b = new Uint8Array(16);
+  if (c?.getRandomValues) c.getRandomValues(b);
+  else for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256);
+  return [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+}

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "StopItem" ADD COLUMN     "factor" DECIMAL(12,3) NOT NULL DEFAULT 1;

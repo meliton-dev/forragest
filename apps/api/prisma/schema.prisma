@@ -33,6 +33,7 @@ model User {
   active       Boolean    @default(true)
   createdAt    DateTime   @default(now())
   audits       AuditLog[]
+  routes       Route[]
 }
 
 model AuditLog {
@@ -56,6 +57,8 @@ enum MovementType {
   SALIDA_VENTA
   SALIDA_MERMA
   CONTEO
+  SALIDA_RUTA
+  ENTRADA_RUTA
 }
 
 model Product {
@@ -76,6 +79,7 @@ model Product {
   lots          StockLot[]
   movements     InventoryMovement[]
   countItems    InventoryCountItem[]
+  stopItems     StopItem[]
 
   @@index([lineId])
 }
@@ -144,4 +148,135 @@ model InventoryCountItem {
   countedQty Decimal?       @db.Decimal(14, 3)
 
   @@unique([countId, productId])
+}
+
+// ---------- Rutas y repartidores (app móvil) ----------
+
+enum RouteStatus {
+  PROGRAMADA
+  EN_CURSO
+  FINALIZADA
+}
+
+enum StopStatus {
+  PENDIENTE
+  ENTREGADA
+  NO_ENTREGADA
+}
+
+enum PaymentMethod {
+  EFECTIVO
+  TRANSFERENCIA
+  TARJETA
+}
+
+enum IncidentType {
+  CLIENTE_AUSENTE
+  PRODUCTO_DANADO
+  RETRASO
+  OTRO
+}
+
+model Customer {
+  id          Int         @id @default(autoincrement())
+  name        String
+  rfc         String?
+  address     String
+  phone       String?
+  contact     String?
+  creditLimit Decimal     @default(0) @db.Decimal(12, 2)
+  creditDays  Int         @default(0)
+  stops       RouteStop[]
+  payments    Payment[]
+}
+
+model Vehicle {
+  id     Int     @id @default(autoincrement())
+  plate  String  @unique
+  name   String
+  routes Route[]
+}
+
+model Route {
+  id         Int         @id @default(autoincrement())
+  name       String
+  date       DateTime    @db.Date
+  driverId   Int
+  driver     User        @relation(fields: [driverId], references: [id])
+  vehicleId  Int
+  vehicle    Vehicle     @relation(fields: [vehicleId], references: [id])
+  status     RouteStatus @default(PROGRAMADA)
+  departedAt DateTime?
+  returnedAt DateTime?
+  stops      RouteStop[]
+  payments   Payment[]
+  incidents  Incident[]
+
+  @@index([driverId, date])
+}
+
+model RouteStop {
+  id           Int        @id @default(autoincrement())
+  routeId      Int
+  route        Route      @relation(fields: [routeId], references: [id])
+  customerId   Int
+  customer     Customer   @relation(fields: [customerId], references: [id])
+  sequence     Int
+  status       StopStatus @default(PENDIENTE)
+  eta          String?
+  instructions String?
+  paymentTerms String     @default("Contado")
+  deliveredAt  DateTime?
+  failReason   String?
+  failNotes    String?
+  signature    String?    @db.Text
+  photo        String?    @db.Text
+  items        StopItem[]
+  payments     Payment[]
+  incidents    Incident[]
+
+  @@index([routeId, sequence])
+}
+
+model StopItem {
+  id           Int       @id @default(autoincrement())
+  stopId       Int
+  stop         RouteStop @relation(fields: [stopId], references: [id])
+  productId    Int
+  product      Product   @relation(fields: [productId], references: [id])
+  presentation String
+  factor       Decimal   @default(1) @db.Decimal(12, 3)
+  quantity     Decimal   @db.Decimal(14, 3)
+  unitPrice    Decimal   @db.Decimal(12, 2)
+  deliveredQty Decimal   @default(0) @db.Decimal(14, 3)
+}
+
+// Cobros en ruta; clientOpId hace idempotente el reenvío desde la cola sin conexión.
+model Payment {
+  id         Int           @id @default(autoincrement())
+  routeId    Int
+  route      Route         @relation(fields: [routeId], references: [id])
+  stopId     Int?
+  stop       RouteStop?    @relation(fields: [stopId], references: [id])
+  customerId Int?
+  customer   Customer?     @relation(fields: [customerId], references: [id])
+  amount     Decimal       @db.Decimal(12, 2)
+  method     PaymentMethod
+  receivedAt DateTime
+  clientOpId String        @unique
+  userId     Int
+}
+
+model Incident {
+  id          Int          @id @default(autoincrement())
+  routeId     Int
+  route       Route        @relation(fields: [routeId], references: [id])
+  stopId      Int?
+  stop        RouteStop?   @relation(fields: [stopId], references: [id])
+  type        IncidentType
+  description String
+  photo       String?      @db.Text
+  createdAt   DateTime
+  clientOpId  String       @unique
+  userId      Int
 }
