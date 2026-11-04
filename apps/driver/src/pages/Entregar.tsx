@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { Hint } from "../ui/Hint";
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { compressImage } from '../lib/image';
 import { mxn } from '../lib/format';
@@ -61,6 +62,9 @@ function Inner({ route }: { route: Route }) {
           </div>
         </div>
 
+        <Hint id="entregar">
+          Pide la <b>firma</b> del cliente o toma una <b>foto</b> como comprobante. Después de confirmar tienes 8 segundos para deshacer.
+        </Hint>
         <SignaturePad onChange={setSignature} />
 
         <div className="row">

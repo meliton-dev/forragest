@@ -23,9 +23,10 @@ export interface Stop {
   eta: string | null;
   instructions: string | null;
   paymentTerms: string;
+  arrivedAt: string | null;
   deliveredAt: string | null;
   failReason: string | null;
-  customer: { id: number; name: string; address: string; phone: string | null; contact: string | null };
+  customer: { id: number; name: string; address: string; phone: string | null; contact: string | null; lat: number | null; lng: number | null };
   items: Item[];
   total: number;
 }
@@ -67,6 +68,8 @@ export interface Op {
   createdAt: string;
   failed?: boolean;
   error?: string;
+  /** no se envía antes de esta hora (margen para deshacer) */
+  holdUntil?: number;
 }
 
 export interface Summary {

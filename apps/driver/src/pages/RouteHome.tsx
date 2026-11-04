@@ -2,8 +2,10 @@ import { Link } from 'react-router-dom';
 import { hhmm, longDay, mxn } from '../lib/format';
 import { summarize } from '../lib/logic';
 import { useStore } from '../lib/store';
+import { useTracking } from '../lib/tracking';
 import type { Stop } from '../lib/types';
-import { Badge, Header, Icon, SyncBanner, TabBar } from '../ui/kit';
+import { Hint } from "../ui/Hint";
+import { Badge, Header, Icon, Notice, SyncBanner, TabBar } from '../ui/kit';
 import { mapsUrl, RouteGate } from './common';
 
 export function RouteHome() {
@@ -16,6 +18,7 @@ export function RouteHome() {
 
 function Inner({ route }: { route: import('../lib/types').Route }) {
   const s = useStore();
+  const gps = useTracking();
   const sum = summarize(route, s.payments);
   const current = route.status === 'EN_CURSO' ? route.stops.find((x) => x.status === 'PENDIENTE') : undefined;
   const allDone = route.status === 'EN_CURSO' && sum.pending === 0;
@@ -41,6 +44,20 @@ function Inner({ route }: { route: import('../lib/types').Route }) {
         </div>
 
         <SyncBanner />
+        {route.status === "EN_CURSO" && (
+          <Hint id="ruta">
+            Toca la <b>parada destacada</b> para ver qué entregar y cuánto cobrar. Tu avance se guarda aunque no tengas señal.
+          </Hint>
+        )}
+        {route.status === 'EN_CURSO' && ['denied', 'unsupported', 'error'].includes(gps.status) && (
+          <Notice tone="warn" icon="pin">
+            {gps.status === 'denied'
+              ? 'La ubicación está desactivada: tu supervisor no podrá seguir la ruta. Actívala en los permisos del navegador (requiere conexión segura HTTPS).'
+              : gps.status === 'unsupported'
+                ? 'Este dispositivo no permite compartir la ubicación.'
+                : 'No se pudo obtener tu ubicación. Revisa que el GPS esté encendido.'}
+          </Notice>
+        )}
 
         {route.status === 'PROGRAMADA' && (
           <Link to="/carga" className="card accent">

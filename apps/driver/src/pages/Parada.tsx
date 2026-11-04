@@ -1,5 +1,6 @@
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { FAIL_LABEL, hhmm, mxn } from '../lib/format';
+import { arrive } from '../lib/store';
 import type { Route } from '../lib/types';
 import { Badge, Button, Header, Icon, Kv, Notice } from '../ui/kit';
 import { mapsUrl, RouteGate } from './common';
@@ -62,7 +63,8 @@ function Inner({ route }: { route: Route }) {
             <div className="small muted2">{stop.instructions}</div>
           </div>
         )}
-        {stop.status === 'ENTREGADA' && <Notice tone="ok" icon="check">Entregada a las {hhmm(stop.deliveredAt)}.</Notice>}
+        {stop.arrivedAt && pending && <Notice tone="info" icon="clock">Llegaste a las {hhmm(stop.arrivedAt)}.</Notice>}
+        {stop.status === 'ENTREGADA' && <Notice tone="ok" icon="check">Llegada {hhmm(stop.arrivedAt)} · entregada a las {hhmm(stop.deliveredAt)}.</Notice>}
         {stop.status === 'NO_ENTREGADA' && <Notice tone="danger" icon="alert">No entregada: {FAIL_LABEL[stop.failReason ?? 'OTRO'] ?? stop.failReason}. El producto sigue en tu camión.</Notice>}
         {pending && route.status === 'PROGRAMADA' && (
           <Notice tone="warn" icon="truck">
@@ -72,7 +74,13 @@ function Inner({ route }: { route: Route }) {
       </div>
       {canAct && (
         <div className="bar">
-          <Button icon="box" onClick={() => nav(`/parada/${stop.id}/entregar`)}>
+          <Button
+            icon="box"
+            onClick={() => {
+              arrive(stop.id);
+              nav(`/parada/${stop.id}/entregar`);
+            }}
+          >
             Llegué · Entregar
           </Button>
           <button className="btn ghost" style={{ color: 'var(--danger)' }} onClick={() => nav(`/parada/${stop.id}/no-entrega`)}>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { request, setSession, type SessionUser } from '../lib/api';
 import { ApiError, NetworkError } from '../lib/errors';
-import { Button, Field, Icon, Input, Notice } from '../ui/kit';
+import { Button, Field, Input, Notice } from '../ui/kit';
 
 export function Login({ onDone }: { onDone: () => void }) {
   const [username, setUsername] = useState('');
@@ -34,12 +34,10 @@ export function Login({ onDone }: { onDone: () => void }) {
   return (
     <form className="screen login" onSubmit={submit}>
       <div className="col gap12">
-        <div className="logo">
-          <Icon name="leaf" size={26} sw={2} />
-        </div>
+        <img className="logo" src="/icon.svg" alt="Forragest" width={64} height={64} />
         <div>
-          <h1 className="h1">Forrajera Repartos</h1>
-          <div className="small muted">Ingresa con tu usuario de chofer</div>
+          <h1 className="h1">Forragest</h1>
+          <div className="small muted">Repartos · ingresa con tu usuario de chofer</div>
         </div>
       </div>
       <div className="col gap12" style={{ gap: 16 }}>
@@ -57,7 +55,7 @@ export function Login({ onDone }: { onDone: () => void }) {
           <Input icon="lock" type={show ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" required />
         </Field>
         {error && <Notice tone="danger" icon="alert">{error}</Notice>}
-        <Button type="submit" disabled={busy || !username || !password}>
+        <Button type="submit" loading={busy} disabled={!username || !password}>
           {busy ? 'Entrando…' : 'Entrar'}
         </Button>
       </div>

@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Post, Req } from '@nestjs/common';
 import { Type } from 'class-transformer';
-import { IsDateString, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsDateString, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, MaxLength, Min, ValidateNested } from 'class-validator';
 import { Roles } from '../common/roles';
 import { DriverService } from './driver.service';
 
@@ -48,6 +48,22 @@ class CreateIncidentDto {
   @IsOptional() @IsDateString() createdAt?: string;
 }
 
+class ArriveDto {
+  @IsOptional() @IsDateString() at?: string;
+}
+
+class PingDto {
+  @IsNumber() @Min(-90) @Max(90) lat: number;
+  @IsNumber() @Min(-180) @Max(180) lng: number;
+  @IsOptional() @IsNumber() @Min(0) accuracy?: number;
+  @IsDateString() at: string;
+}
+
+class LocationsDto {
+  @IsInt() routeId: number;
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(200) @ValidateNested({ each: true }) @Type(() => PingDto) pings: PingDto[];
+}
+
 class CloseDto {
   @IsOptional() @IsDateString() returnedAt?: string;
 }
@@ -75,6 +91,16 @@ export class DriverController {
   @Post('routes/:id/close')
   close(@Param('id', ParseIntPipe) id: number, @Body() dto: CloseDto, @Req() req: any) {
     return this.driver.close(id, req.user.sub, dto.returnedAt);
+  }
+
+  @Post('stops/:id/arrive')
+  arrive(@Param('id', ParseIntPipe) id: number, @Body() dto: ArriveDto, @Req() req: any) {
+    return this.driver.arrive(id, req.user.sub, dto.at);
+  }
+
+  @Post('locations')
+  locations(@Body() dto: LocationsDto, @Req() req: any) {
+    return this.driver.savePings(req.user.sub, dto.routeId, dto.pings);
   }
 
   @Post('stops/:id/deliver')

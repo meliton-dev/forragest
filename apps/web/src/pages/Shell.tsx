@@ -12,9 +12,7 @@ export function Shell() {
     <div className="pos">
       <header className="topbar">
         <div className="brand">
-          <div className="logo">
-            <Icon name="leaf" size={16} sw={2} />
-          </div>
+          <img src="/icon.svg" alt="Forragest" width={32} height={32} style={{ borderRadius: 9 }} />
           <div>
             <div className="small strong" style={{ lineHeight: '16px' }}>Punto de venta · {pos.shift?.shift.register ?? 'Caja 1'}</div>
             <div className="caption muted">{pos.shift ? `Turno abierto ${hhmm(pos.shift.shift.openedAt)} · ${pos.user.fullName}` : pos.user.fullName}</div>

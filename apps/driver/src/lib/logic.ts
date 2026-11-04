@@ -45,7 +45,7 @@ export interface QueueResult {
  * Envía las operaciones en orden. Un rechazo definitivo del servidor (400/403/404…) marca la operación
  * como fallida y sigue con las demás; sin conexión o error 5xx detiene el envío sin perder nada.
  */
-export async function processQueue(queue: Op[], send: (op: Op) => Promise<unknown>): Promise<QueueResult> {
+export async function processQueue(queue: Op[], send: (op: Op) => Promise<unknown>, now = Date.now()): Promise<QueueResult> {
   const out: Op[] = [];
   let sent = 0;
   let stopped = false;
@@ -58,6 +58,12 @@ export async function processQueue(queue: Op[], send: (op: Op) => Promise<unknow
       continue;
     }
     if (op.failed) {
+      out.push(op);
+      continue;
+    }
+    // todavía puede deshacerse: se espera para no mandar fuera de orden lo que viene después
+    if (op.holdUntil && op.holdUntil > now) {
+      stopped = true;
       out.push(op);
       continue;
     }

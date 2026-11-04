@@ -32,6 +32,7 @@ export class DriverService {
       status: r.status,
       departedAt: r.departedAt,
       returnedAt: r.returnedAt,
+      plannedDeparture: r.plannedDeparture,
       vehicle: { plate: r.vehicle.plate, name: r.vehicle.name },
       stops: r.stops.map((s) => {
         const items = s.items.map((i) => ({
@@ -52,9 +53,10 @@ export class DriverService {
           eta: s.eta,
           instructions: s.instructions,
           paymentTerms: s.paymentTerms,
+          arrivedAt: s.arrivedAt,
           deliveredAt: s.deliveredAt,
           failReason: s.failReason,
-          customer: { id: s.customer.id, name: s.customer.name, address: s.customer.address, phone: s.customer.phone, contact: s.customer.contact },
+          customer: { id: s.customer.id, name: s.customer.name, address: s.customer.address, phone: s.customer.phone, contact: s.customer.contact, lat: s.customer.lat, lng: s.customer.lng },
           items,
           total: items.reduce((a, i) => a + i.total, 0),
         };
@@ -116,6 +118,26 @@ export class DriverService {
       await tx.route.update({ where: { id: routeId }, data: { status: 'EN_CURSO', departedAt: new Date() } });
     });
     return this.mapRoute(await this.ownedRoute(routeId, userId));
+  }
+
+  /** El repartidor llegó a la parada (RUT-005). Solo guarda la primera hora de llegada. */
+  async arrive(stopId: number, userId: number, at?: string) {
+    const stop = await this.ownedStop(stopId, userId);
+    if (stop.arrivedAt) return { ok: true, duplicate: true };
+    if (stop.route.status !== 'EN_CURSO') throw new BadRequestException('Confirma la carga y sal a ruta primero');
+    await this.prisma.routeStop.update({ where: { id: stopId }, data: { arrivedAt: at ? new Date(at) : new Date() } });
+    return { ok: true };
+  }
+
+  /** Ubicaciones del camión; los duplicados (reenvíos sin conexión) se ignoran. */
+  async savePings(userId: number, routeId: number, pings: { lat: number; lng: number; accuracy?: number; at: string }[]) {
+    const route = await this.ownedRoute(routeId, userId);
+    if (route.status !== 'EN_CURSO') return { ok: true, saved: 0 };
+    const res = await this.prisma.locationPing.createMany({
+      data: pings.map((p) => ({ routeId, lat: p.lat, lng: p.lng, accuracy: p.accuracy ?? null, recordedAt: new Date(p.at) })),
+      skipDuplicates: true,
+    });
+    return { ok: true, saved: res.count };
   }
 
   async deliver(

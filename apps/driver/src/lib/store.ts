@@ -3,6 +3,7 @@ import { useSyncExternalStore } from 'react';
 import { clearSession, request } from './api';
 import { ApiError, NetworkError } from './errors';
 import { processQueue, uid } from './logic';
+import { showToast } from './toast';
 import type { FailReason, IncidentType, LocalIncident, LocalPayment, Method, Op, Route } from './types';
 
 export interface State {
@@ -134,29 +135,69 @@ export async function startRoute() {
   }
 }
 
+/** El repartidor llegó a la parada: se guarda la hora (también sin conexión) y se manda en orden con lo demás. */
+export function arrive(stopId: number) {
+  const stop = state.route!.stops.find((s) => s.id === stopId)!;
+  if (stop.arrivedAt) return;
+  const id = uid();
+  const at = new Date().toISOString();
+  patch({
+    route: mapStop(stopId, (s) => ({ ...s, arrivedAt: at })),
+    queue: enqueue({ id, label: `Llegada · ${stop.customer.name}`, path: `/driver/stops/${stopId}/arrive`, body: { at } }),
+  });
+  void flush();
+}
+
+/** Segundos que el repartidor tiene para deshacer una acción antes de que se envíe. */
+export const UNDO_MS = 8000;
+const hold = <T extends Omit<Op, 'createdAt'>>(op: T) => ({ ...op, holdUntil: Date.now() + UNDO_MS });
+const scheduleFlush = () => setTimeout(() => void flush(), UNDO_MS + 150);
+
+/** Quita la operación de la cola y revierte lo que se mostró; si ya se envió, avisa que no se puede deshacer. */
+function undoOp(id: string, restore: () => void) {
+  if (!state.queue.some((o) => o.id === id)) {
+    showToast('Ya se envió al sistema. Si hay un error, avisa a tu supervisor.', { tone: 'warn', ms: 6000 });
+    return;
+  }
+  restore();
+  patch({ queue: state.queue.filter((o) => o.id !== id) });
+  showToast('Acción deshecha', { ms: 2500 });
+}
+
 export function deliver(stopId: number, data: { signature?: string; photo?: string; payment?: { amount: number; method: Method } }) {
   const id = uid();
   const at = new Date().toISOString();
-  const stop = state.route!.stops.find((s) => s.id === stopId)!;
+  const before = state.route!.stops.find((s) => s.id === stopId)!;
   const payment = data.payment && data.payment.amount > 0 ? data.payment : undefined;
   patch({
     route: mapStop(stopId, (s) => ({ ...s, status: 'ENTREGADA', deliveredAt: at })),
-    payments: payment ? [{ id, customer: stop.customer.name, amount: payment.amount, method: payment.method, receivedAt: at, synced: false }, ...state.payments] : state.payments,
-    queue: enqueue({ id, label: `Entrega · ${stop.customer.name}`, path: `/driver/stops/${stopId}/deliver`, body: { clientOpId: id, deliveredAt: at, signature: data.signature, photo: data.photo, payment } }),
+    payments: payment ? [{ id, customer: before.customer.name, amount: payment.amount, method: payment.method, receivedAt: at, synced: false }, ...state.payments] : state.payments,
+    queue: enqueue(hold({ id, label: `Entrega · ${before.customer.name}`, path: `/driver/stops/${stopId}/deliver`, body: { clientOpId: id, deliveredAt: at, signature: data.signature, photo: data.photo, payment } })),
+  });
+  showToast(`Entrega registrada · ${before.customer.name}`, {
+    ms: UNDO_MS,
+    undo: () => undoOp(id, () => patch({ route: mapStop(stopId, () => before), payments: state.payments.filter((p) => p.id !== id) })),
   });
   void flush();
+  scheduleFlush();
 }
 
 export function failStop(stopId: number, data: { reason: FailReason; notes?: string; photo?: string }) {
   const id = uid();
   const at = new Date().toISOString();
-  const stop = state.route!.stops.find((s) => s.id === stopId)!;
+  const before = state.route!.stops.find((s) => s.id === stopId)!;
   patch({
     route: mapStop(stopId, (s) => ({ ...s, status: 'NO_ENTREGADA', failReason: data.reason })),
     incidents: [{ id, type: data.reason === 'CLIENTE_AUSENTE' ? 'CLIENTE_AUSENTE' : 'OTRO', description: `No entrega: ${data.reason}${data.notes ? ' · ' + data.notes : ''}`, createdAt: at, synced: false }, ...state.incidents],
-    queue: enqueue({ id, label: `No entrega · ${stop.customer.name}`, path: `/driver/stops/${stopId}/fail`, body: { clientOpId: id, reason: data.reason, notes: data.notes, photo: data.photo, at } }),
+    queue: enqueue(hold({ id, label: `No entrega · ${before.customer.name}`, path: `/driver/stops/${stopId}/fail`, body: { clientOpId: id, reason: data.reason, notes: data.notes, photo: data.photo, at } })),
+  });
+  showToast(`No entrega registrada · ${before.customer.name}`, {
+    tone: 'warn',
+    ms: UNDO_MS,
+    undo: () => undoOp(id, () => patch({ route: mapStop(stopId, () => before), incidents: state.incidents.filter((i) => i.id !== id) })),
   });
   void flush();
+  scheduleFlush();
 }
 
 export function addPayment(data: { customerId?: number; customerName: string; amount: number; method: Method }) {
@@ -164,9 +205,11 @@ export function addPayment(data: { customerId?: number; customerName: string; am
   const at = new Date().toISOString();
   patch({
     payments: [{ id, customer: data.customerName, amount: data.amount, method: data.method, receivedAt: at, synced: false }, ...state.payments],
-    queue: enqueue({ id, label: `Cobro · ${data.customerName}`, path: '/driver/payments', body: { clientOpId: id, routeId: state.route!.id, customerId: data.customerId, amount: data.amount, method: data.method, receivedAt: at } }),
+    queue: enqueue(hold({ id, label: `Cobro · ${data.customerName}`, path: '/driver/payments', body: { clientOpId: id, routeId: state.route!.id, customerId: data.customerId, amount: data.amount, method: data.method, receivedAt: at } })),
   });
+  showToast(`Cobro guardado · ${data.customerName}`, { ms: UNDO_MS, undo: () => undoOp(id, () => patch({ payments: state.payments.filter((p) => p.id !== id) })) });
   void flush();
+  scheduleFlush();
 }
 
 export function addIncident(data: { type: IncidentType; description: string; stopId?: number; photo?: string }) {
@@ -176,6 +219,7 @@ export function addIncident(data: { type: IncidentType; description: string; sto
     incidents: [{ id, type: data.type, description: data.description, createdAt: at, synced: false }, ...state.incidents],
     queue: enqueue({ id, label: 'Incidencia', path: '/driver/incidents', body: { clientOpId: id, routeId: state.route!.id, stopId: data.stopId, type: data.type, description: data.description, photo: data.photo, createdAt: at } }),
   });
+  showToast('Incidencia enviada a tu supervisor', { ms: 3500 });
   void flush();
 }
 
@@ -186,5 +230,6 @@ export function closeRoute() {
     route: { ...state.route!, status: 'FINALIZADA', returnedAt: at },
     queue: enqueue({ id, label: 'Cierre de ruta', path: `/driver/routes/${state.route!.id}/close`, body: { returnedAt: at } }),
   });
+  showToast('Ruta cerrada. ¡Buen trabajo!', { ms: 4000 });
   void flush();
 }

@@ -1,4 +1,5 @@
 import { hhmm } from '../lib/format';
+import { Hint } from "../ui/Hint";
 import { discardOp, flush, pendingCount, useStore } from '../lib/store';
 import { Badge, Button, Header, Icon, Notice } from '../ui/kit';
 
@@ -10,6 +11,7 @@ export function Sync() {
     <div className="screen">
       <Header title="Sincronización" sub="Trabajo sin conexión" back="/perfil" />
       <div className="content">
+        <Hint id="sync">Aquí ves lo que todavía no llegó al sistema. Cuando dice <b>Al día</b>, todo se envió. Con señal se envía solo.</Hint>
         <div className="card" style={{ padding: 16, gap: 12 }}>
           <div className="row">
             <div style={{ width: 44, height: 44, borderRadius: 10, background: s.online ? 'var(--ok-soft)' : 'var(--warn-soft)', display: 'grid', placeItems: 'center' }}>

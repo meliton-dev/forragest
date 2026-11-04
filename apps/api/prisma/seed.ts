@@ -9,6 +9,7 @@ async function users() {
     ['cajero', 'Cajero Demo', Role.CAJERO],
     ['almacen', 'Almacenista Demo', Role.ALMACENISTA],
     ['chofer', 'Luis Gómez', Role.CHOFER],
+    ['chofer2', 'Marco Díaz', Role.CHOFER],
     ['compras', 'Gerente de Compras Demo', Role.GERENTE_COMPRAS],
     ['supervisor', 'Supervisor de Rutas Demo', Role.SUPERVISOR_RUTAS],
   ];
@@ -57,6 +58,57 @@ async function productsAndStock() {
   }
 }
 
+/** Una semana de rutas terminadas (dos repartidores) para que los reportes de eficiencia tengan datos. */
+async function history() {
+  // también borra las rutas que dejan las pruebas automáticas (llevan “(e2e)” en el nombre)
+  const old = await prisma.route.findMany({ where: { OR: [{ name: { startsWith: 'Ruta Hist-' } }, { name: { contains: '(e2e)' } }] }, select: { id: true } });
+  for (const r of old) {
+    const ids = (await prisma.routeStop.findMany({ where: { routeId: r.id }, select: { id: true } })).map((s) => s.id);
+    await prisma.locationPing.deleteMany({ where: { routeId: r.id } });
+    await prisma.payment.deleteMany({ where: { routeId: r.id } });
+    await prisma.incident.deleteMany({ where: { routeId: r.id } });
+    await prisma.stopItem.deleteMany({ where: { stopId: { in: ids } } });
+    await prisma.routeStop.deleteMany({ where: { routeId: r.id } });
+    await prisma.route.delete({ where: { id: r.id } });
+  }
+  const drivers = [await prisma.user.findUniqueOrThrow({ where: { username: 'chofer' } }), await prisma.user.findUniqueOrThrow({ where: { username: 'chofer2' } })];
+  const vehicles = [await prisma.vehicle.findUniqueOrThrow({ where: { plate: 'TUL-482' } }), await prisma.vehicle.upsert({ where: { plate: 'TUL-317' }, update: {}, create: { plate: 'TUL-317', name: 'Camión 3.5 t' } })];
+  const customers = await prisma.customer.findMany({ where: { lat: { not: null } }, orderBy: { id: 'asc' } });
+  const product = await prisma.product.findUniqueOrThrow({ where: { code: 'BV-001' } });
+  const etas = ['08:30', '09:15', '10:05', '10:40'];
+  for (let d = 6; d >= 1; d--) {
+    const day = new Date();
+    day.setDate(day.getDate() - d);
+    const date = new Date(Date.UTC(day.getFullYear(), day.getMonth(), day.getDate()));
+    for (let di = 0; di < 2; di++) {
+      const route = await prisma.route.create({
+        data: {
+          name: `Ruta Hist-${d}-${di + 1}`, date, driverId: drivers[di].id, vehicleId: vehicles[di].id, status: 'FINALIZADA', plannedDeparture: '07:50',
+          departedAt: new Date(day.getFullYear(), day.getMonth(), day.getDate(), 7, 52), returnedAt: new Date(day.getFullYear(), day.getMonth(), day.getDate(), 12, 10),
+        },
+      });
+      for (let k = 0; k < etas.length; k++) {
+        const [h, m] = etas[k].split(':').map(Number);
+        const late = (d + di + k) % 5 === 0;
+        const failed = (d * 3 + k + di) % 11 === 0;
+        const arrived = new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, m + (late ? 28 : -4 + ((d + k) % 12)));
+        const delivered = new Date(arrived.getTime() + (12 + ((d * 2 + k * 3) % 14)) * 60000);
+        const contado = k % 2 === 0;
+        const stop = await prisma.routeStop.create({
+          data: {
+            routeId: route.id, customerId: customers[(k + di) % customers.length].id, sequence: k + 1, eta: etas[k], paymentTerms: contado ? 'Contado' : 'Crédito 15 días',
+            status: failed ? 'NO_ENTREGADA' : 'ENTREGADA', arrivedAt: arrived, deliveredAt: failed ? null : delivered, failReason: failed ? (k % 2 ? 'RECHAZO' : 'CLIENTE_AUSENTE') : null,
+            items: { create: [{ productId: product.id, presentation: 'Saco 40 kg', factor: 40, quantity: 3 + k, unitPrice: 430, deliveredQty: failed ? 0 : 3 + k }] },
+          },
+        });
+        if (!failed && contado) {
+          await prisma.payment.create({ data: { routeId: route.id, stopId: stop.id, customerId: stop.customerId, amount: (3 + k) * 430, method: k % 4 === 0 ? 'TRANSFERENCIA' : 'EFECTIVO', receivedAt: delivered, clientOpId: `seed-hist-${d}-${di}-${k}`, userId: drivers[di].id } });
+        }
+      }
+    }
+  }
+}
+
 /** Cliente con una venta a crédito vencida (63 días) para mostrar la alerta de crédito bloqueado en el POS. */
 async function overdueDemo() {
   const customer = await prisma.customer.findFirstOrThrow({ where: { name: 'Borregos La Loma' } });
@@ -86,6 +138,7 @@ async function demoRoute() {
   for (const r of old) {
     const stops = await prisma.routeStop.findMany({ where: { routeId: r.id }, select: { id: true } });
     const ids = stops.map((s) => s.id);
+    await prisma.locationPing.deleteMany({ where: { routeId: r.id } });
     await prisma.payment.deleteMany({ where: { routeId: r.id } });
     await prisma.incident.deleteMany({ where: { routeId: r.id } });
     await prisma.stopItem.deleteMany({ where: { stopId: { in: ids } } });
@@ -107,7 +160,17 @@ async function demoRoute() {
     cust.push((found ?? (await prisma.customer.create({ data: { name, rfc, address, phone, contact, creditLimit, creditDays } }))).id);
   }
 
-  const route = await prisma.route.create({ data: { name: 'Ruta 12 · Zona Norte', date: today, driverId: driver.id, vehicleId: vehicle.id } });
+  // coordenadas aproximadas (Tulancingo, Hgo.) para el mapa de monitoreo
+  const coords: Record<string, [number, number]> = {
+    'Rancho San Miguel': [20.095, -98.33],
+    'Borregos La Loma': [20.078, -98.305],
+    'Establo Los Pinos': [20.11, -98.405],
+    'Granja Avícola Sol': [20.1417, -98.4333],
+    'Rancho El Encino': [20.05, -98.37],
+  };
+  for (const [name, [lat, lng]] of Object.entries(coords)) await prisma.customer.updateMany({ where: { name }, data: { lat, lng } });
+
+  const route = await prisma.route.create({ data: { name: 'Ruta 12 · Zona Norte', date: today, driverId: driver.id, vehicleId: vehicle.id, plannedDeparture: '07:50' } });
   const stops = [
     { c: 0, eta: '08:30', terms: 'Contado', note: null, items: [['BV-001', 'Saco 40 kg', 5, 430]] },
     { c: 1, eta: '09:15', terms: 'Crédito 15 días', note: null, items: [['OV-001', 'Saco 40 kg', 3, 430]] },
@@ -133,6 +196,7 @@ async function main() {
   await users();
   await productsAndStock();
   await demoRoute();
+  await history();
   await overdueDemo();
 }
 
