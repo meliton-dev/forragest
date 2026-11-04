@@ -125,9 +125,9 @@ if (!CHROME) {
   const page = await ctx.newPage();
   const pending = new Map();
   page.on('request', (r) => { if (['fetch', 'xhr'].includes(r.resourceType())) pending.set(r, performance.now()); });
-  const finish = (r, status) => { const t0 = pending.get(r); if (t0 === undefined) return; pending.delete(r); const u = new URL(r.url()); requests.push({ method: r.method(), host: u.host, hostname: u.hostname, path: u.pathname, status, ms: Math.round(performance.now() - t0) }); };
+  const finish = (r, status, error) => { const t0 = pending.get(r); if (t0 === undefined) return; pending.delete(r); const u = new URL(r.url()); requests.push({ method: r.method(), host: u.host, hostname: u.hostname, path: u.pathname, status, error, ms: Math.round(performance.now() - t0) }); };
   page.on('requestfinished', async (r) => { const res = await r.response().catch(() => null); finish(r, res?.status() ?? 0); });
-  page.on('requestfailed', (r) => finish(r, 0));
+  page.on('requestfailed', (r) => finish(r, 0, r.failure()?.errorText));
   const shot = async (title) => { shots.push({ title, data: (await page.screenshot({ type: 'jpeg', quality: 70 })).toString('base64') }); };
 
   try {
@@ -248,7 +248,7 @@ code{background:#fff;border:1px solid var(--line);border-radius:6px;padding:1px 
 <h2>Arquitectura probada</h2>
 <div class="flow"><span>Celular · app Forragest</span><i>→ HTTPS →</i><span>Servidor · API (${esc(apiUrl.hostname)})</span><i>→</i><span>Base de datos PostgreSQL</span></div>
 ${sections.map((s) => `<h2>${esc(s)}</h2><div class="card">${checks.filter((c) => c.section === s).map((c) => `<div class="row"><span class="mark ${c.ok ? 'ok' : 'bad'}">${c.ok ? '✓' : '✗'}</span><div><div>${esc(c.name)}</div>${c.detail ? `<div class="det">${esc(c.detail)}</div>` : ''}</div></div>`).join('')}</div>`).join('')}
-${apiReqs.length ? `<h2>Peticiones que hizo la app (registro de red)</h2><div class="card" style="padding:0;overflow:auto"><table><thead><tr><th>Método</th><th>Servidor</th><th>Ruta</th><th>Estado</th><th>Tiempo</th></tr></thead><tbody>${apiReqs.map((r) => `<tr><td>${esc(r.method)}</td><td>${esc(r.host)}</td><td>${esc(r.path)}</td><td>${r.status}</td><td>${r.ms} ms</td></tr>`).join('')}</tbody></table></div>` : ''}
+${apiReqs.length ? `<h2>Peticiones que hizo la app (registro de red)</h2><div class="card" style="padding:0;overflow:auto"><table><thead><tr><th>Método</th><th>Servidor</th><th>Ruta</th><th>Estado</th><th>Tiempo</th></tr></thead><tbody>${apiReqs.map((r) => `<tr><td>${esc(r.method)}</td><td>${esc(r.host)}</td><td>${esc(r.path)}</td><td>${r.status}${r.error ? ` (${esc(r.error)})` : ''}</td><td>${r.ms} ms</td></tr>`).join('')}</tbody></table></div>` : ''}
 ${shots.length ? `<h2>Capturas de la app durante la prueba</h2><div class="shots">${shots.map((s) => `<figure><img alt="${esc(s.title)}" src="data:image/jpeg;base64,${s.data}"><figcaption>${esc(s.title)}</figcaption></figure>`).join('')}</div>` : ''}
 <h2>Cómo comprobarlo por cuenta propia</h2>
 <div class="card"><div class="row"><span class="mark">1</span><div>Abre la app en tu celular con <code>${esc(APP)}</code> (sin conectarte a la red de la computadora donde se desarrolla).</div></div>

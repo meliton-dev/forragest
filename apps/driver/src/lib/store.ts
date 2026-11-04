@@ -2,7 +2,7 @@ import { del, get, set as idbSet } from 'idb-keyval';
 import { useSyncExternalStore } from 'react';
 import { clearSession, request } from './api';
 import { ApiError, NetworkError } from './errors';
-import { processQueue, uid } from './logic';
+import { mergeQueue, processQueue, uid } from './logic';
 import { showToast } from './toast';
 import type { FailReason, IncidentType, LocalIncident, LocalPayment, Method, Op, Route } from './types';
 
@@ -89,10 +89,15 @@ export function flush(): Promise<void> {
   if (flushing) return flushing;
   flushing = (async () => {
     patch({ syncing: true }, false);
-    const r = await processQueue(state.queue, (op) => request('POST', op.path, op.body));
-    patch({ queue: r.queue, syncing: false, online: !r.offline });
+    const snapshot = state.queue;
+    const r = await processQueue(snapshot, (op) => request('POST', op.path, op.body));
+    // lo registrado (o deshecho) mientras se enviaba no debe perderse al guardar el resultado
+    const queue = mergeQueue(snapshot, r.queue, state.queue);
+    const addedMeanwhile = queue.length > r.queue.length;
+    patch({ queue, syncing: false, online: !r.offline });
     if (r.unauthorized) return void (await logout());
-    if (!r.stopped && !r.queue.some((o) => !o.failed)) await pull();
+    if (addedMeanwhile && !r.stopped) setTimeout(() => void flush(), 50);
+    else if (!r.stopped && !queue.some((o) => !o.failed)) await pull();
   })().finally(() => {
     flushing = null;
   });

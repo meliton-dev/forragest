@@ -87,6 +87,18 @@ export async function processQueue(queue: Op[], send: (op: Op) => Promise<unknow
   return { queue: out, sent, stopped, offline, unauthorized };
 }
 
+/**
+ * Une el resultado de un envío con la cola actual. Mientras se enviaba, el repartidor pudo registrar algo nuevo
+ * (hay que conservarlo) o deshacer algo retenido (hay que respetarlo); sobrescribir la cola perdería esos cambios.
+ */
+export function mergeQueue(snapshot: Op[], processed: Op[], current: Op[]): Op[] {
+  const sentIds = new Set(snapshot.map((o) => o.id));
+  const currentIds = new Set(current.map((o) => o.id));
+  const removedWhileSending = new Set(snapshot.filter((o) => !currentIds.has(o.id)).map((o) => o.id));
+  const addedWhileSending = current.filter((o) => !sentIds.has(o.id));
+  return [...processed.filter((o) => !removedWhileSending.has(o.id)), ...addedWhileSending];
+}
+
 /** Identificador único; crypto.randomUUID solo existe en HTTPS, por eso el respaldo. */
 export function uid(): string {
   const c = globalThis.crypto as Crypto | undefined;

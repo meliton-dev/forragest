@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { processQueue } from './logic';
+import { mergeQueue, processQueue } from './logic';
 import { prefKey, readPref, writePref } from './prefs';
 import type { Op } from './types';
 
@@ -36,5 +36,23 @@ describe('preferencias por usuario', () => {
     const roto = { getItem: () => { throw new Error('x'); }, setItem: () => { throw new Error('x'); }, removeItem: () => { throw new Error('x'); } };
     expect(() => writePref('gps', '1', roto, 'u')).not.toThrow();
     expect(readPref('gps', roto, 'u')).toBeNull();
+  });
+});
+
+describe('fusión de la cola tras un envío', () => {
+  it('conserva lo registrado mientras se enviaba (antes se perdía)', () => {
+    const snapshot = [op('a')];
+    const current = [op('a'), op('nuevo')]; // el repartidor registró algo durante el envío
+    expect(mergeQueue(snapshot, [], current).map((o) => o.id)).toEqual(['nuevo']);
+  });
+  it('respeta lo que se deshizo mientras se enviaba otra cosa', () => {
+    const snapshot = [op('a'), op('retenida', { holdUntil: 9e12 })];
+    const processed = [op('retenida', { holdUntil: 9e12 })];
+    const current = [op('a')]; // se deshizo "retenida"
+    expect(mergeQueue(snapshot, processed, current)).toEqual([]);
+  });
+  it('sin cambios externos devuelve el resultado tal cual', () => {
+    const snapshot = [op('a'), op('b')];
+    expect(mergeQueue(snapshot, [op('b')], snapshot).map((o) => o.id)).toEqual(['b']);
   });
 });
