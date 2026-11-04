@@ -20,23 +20,59 @@ async function users() {
 
 async function productsAndStock() {
   const lines = Object.fromEntries((await prisma.productLine.findMany()).map((l) => [l.code, l.id]));
-  const defs = [
-    ['BV-001', 'Alimento bovino lechero', 'BOVINO'],
-    ['OV-001', 'Alimento ovino engorda', 'OVINO'],
-    ['AV-001', 'Alimento para postura', 'AVES'],
-  ] as const;
-  for (const [code, name, line] of defs) {
+  // [código, nombre, línea, presentaciones [nombre, kg por presentación, precio], existencia inicial en kg]
+  const catalog: [string, string, string, [string, number, number][], number][] = [
+    ['BV-001', 'Alimento bovino lechero', 'BOVINO', [['Saco 40 kg', 40, 430], ['Granel · kg', 1, 11]], 3000],
+    ['BV-003', 'Concentrado bovino engorda', 'BOVINO', [['Saco 40 kg', 40, 465]], 2000],
+    ['BV-002', 'Sal mineralizada bovino', 'BOVINO', [['Saco 25 kg', 25, 310]], 0],
+    ['BV-006', 'Pasta de soya', 'BOVINO', [['Saco 40 kg', 40, 520]], 2000],
+    ['OV-001', 'Alimento ovino engorda', 'OVINO', [['Saco 40 kg', 40, 430], ['Saco 20 kg', 20, 220]], 3000],
+    ['OV-002', 'Suplemento mineral ovino', 'OVINO', [['Saco 20 kg', 20, 185]], 1500],
+    ['OV-004', 'Alimento ovino lactancia', 'OVINO', [['Saco 40 kg', 40, 448]], 2000],
+    ['AV-001', 'Alimento para postura', 'AVES', [['Saco 40 kg', 40, 380], ['Granel · kg', 1, 9.5]], 3000],
+    ['AV-002', 'Iniciador pollo engorda', 'AVES', [['Saco 20 kg', 20, 240]], 1500],
+    ['AV-003', 'Alimento de traspatio', 'AVES', [['Saco 20 kg', 20, 205]], 1500],
+    ['AV-004', 'Maíz quebrado', 'AVES', [['Granel · kg', 1, 7.8]], 4000],
+  ];
+  for (const [code, name, line, pres, stock] of catalog) {
+    const [, f0, p0] = pres[0];
+    const salePrice = Math.round((p0 / f0) * 100) / 100;
     const p = await prisma.product.upsert({
       where: { code },
-      update: {},
-      create: { code, name, lineId: lines[line], unit: 'kg', purchasePrice: 8.5, salePrice: 10.75, minStock: 200 },
+      update: { name, salePrice },
+      create: { code, name, lineId: lines[line], unit: 'kg', purchasePrice: Math.round(salePrice * 0.78 * 100) / 100, salePrice, minStock: 200 },
     });
+    for (const [pname, factor, price] of pres) {
+      await prisma.presentation.upsert({
+        where: { productId_name: { productId: p.id, name: pname } },
+        update: { factor, salePrice: price },
+        create: { productId: p.id, name: pname, factor, salePrice: price },
+      });
+    }
     const sum = await prisma.stockLot.aggregate({ where: { productId: p.id }, _sum: { quantity: true } });
-    if (Number(sum._sum.quantity ?? 0) < 1500) {
-      const lot = await prisma.stockLot.create({ data: { productId: p.id, quantity: 3000, unitCost: 8.5 } });
-      await prisma.inventoryMovement.create({ data: { productId: p.id, lotId: lot.id, type: 'ENTRADA_AJUSTE', quantity: 3000, reason: 'Carga inicial de demostración' } });
+    if (stock > 0 && Number(sum._sum.quantity ?? 0) < 1500) {
+      const lot = await prisma.stockLot.create({ data: { productId: p.id, quantity: stock, unitCost: Math.round(salePrice * 0.78 * 100) / 100 } });
+      await prisma.inventoryMovement.create({ data: { productId: p.id, lotId: lot.id, type: 'ENTRADA_AJUSTE', quantity: stock, reason: 'Carga inicial de demostración' } });
     }
   }
+}
+
+/** Cliente con una venta a crédito vencida (63 días) para mostrar la alerta de crédito bloqueado en el POS. */
+async function overdueDemo() {
+  const customer = await prisma.customer.findFirstOrThrow({ where: { name: 'Borregos La Loma' } });
+  if (await prisma.sale.findUnique({ where: { clientOpId: 'seed-overdue-borregos' } })) return;
+  const cashier = await prisma.user.findUniqueOrThrow({ where: { username: 'cajero' } });
+  const past = new Date();
+  past.setDate(past.getDate() - 78);
+  const due = new Date();
+  due.setDate(due.getDate() - 63);
+  const shift = await prisma.cashShift.create({ data: { cashierId: cashier.id, openedAt: past, closedAt: past, status: 'CERRADO', openingFloat: 0, expectedCash: 0, countedCash: 0, difference: 0 } });
+  await prisma.sale.create({
+    data: {
+      shiftId: shift.id, cashierId: cashier.id, customerId: customer.id, status: 'POR_COBRAR', paymentMethod: 'CREDITO', subtotal: 14300, total: 14300,
+      balance: 14300, dueDate: new Date(Date.UTC(due.getFullYear(), due.getMonth(), due.getDate())), createdAt: past, clientOpId: 'seed-overdue-borregos',
+    },
+  });
 }
 
 /** Crea (o reinicia) la ruta de demostración del chofer para hoy. */
@@ -97,6 +133,7 @@ async function main() {
   await users();
   await productsAndStock();
   await demoRoute();
+  await overdueDemo();
 }
 
 main().finally(() => prisma.$disconnect());

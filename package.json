@@ -14,6 +14,11 @@
     "driver:build": "npm run build -w apps/driver",
     "driver:preview": "npm run preview -w apps/driver",
     "driver:test": "npm test -w apps/driver",
-    "api:smoke": "node apps/api/test/driver-flow.smoke.mjs"
+    "api:smoke": "node apps/api/test/driver-flow.smoke.mjs",
+    "web:dev": "npm run dev -w apps/web",
+    "web:build": "npm run build -w apps/web",
+    "web:preview": "npm run preview -w apps/web",
+    "web:test": "npm test -w apps/web",
+    "pos:smoke": "node apps/api/test/pos-flow.smoke.mjs"
   }
 }

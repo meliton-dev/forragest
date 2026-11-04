@@ -59,6 +59,7 @@ enum MovementType {
   CONTEO
   SALIDA_RUTA
   ENTRADA_RUTA
+  ENTRADA_DEVOLUCION
 }
 
 model Product {
@@ -80,6 +81,7 @@ model Product {
   movements     InventoryMovement[]
   countItems    InventoryCountItem[]
   stopItems     StopItem[]
+  saleItems     SaleItem[]
 
   @@index([lineId])
 }
@@ -188,6 +190,7 @@ model Customer {
   creditDays  Int         @default(0)
   stops       RouteStop[]
   payments    Payment[]
+  sales       Sale[]
 }
 
 model Vehicle {
@@ -279,4 +282,119 @@ model Incident {
   createdAt   DateTime
   clientOpId  String       @unique
   userId      Int
+}
+
+// ---------- Fase 3: Punto de venta ----------
+
+enum SaleStatus {
+  PAGADA
+  POR_COBRAR
+  CANCELADA
+}
+
+enum SalePayment {
+  EFECTIVO
+  TRANSFERENCIA
+  TARJETA
+  CREDITO
+}
+
+enum RefundMethod {
+  EFECTIVO
+  TARJETA
+  SALDO_A_FAVOR
+}
+
+enum ShiftStatus {
+  ABIERTO
+  CERRADO
+}
+
+model CashShift {
+  id            Int          @id @default(autoincrement())
+  register      String       @default("Caja 1")
+  cashierId     Int
+  openedAt      DateTime     @default(now())
+  closedAt      DateTime?
+  openingFloat  Decimal      @db.Decimal(12, 2)
+  status        ShiftStatus  @default(ABIERTO)
+  expectedCash  Decimal?     @db.Decimal(12, 2)
+  countedCash   Decimal?     @db.Decimal(12, 2)
+  difference    Decimal?     @db.Decimal(12, 2)
+  denominations Json?
+  notes         String?
+  sales         Sale[]
+  creditNotes   CreditNote[]
+}
+
+model Sale {
+  id                     Int          @id @default(autoincrement())
+  folio                  Int          @unique @default(autoincrement())
+  shiftId                Int
+  shift                  CashShift    @relation(fields: [shiftId], references: [id])
+  cashierId              Int
+  customerId             Int?
+  customer               Customer?    @relation(fields: [customerId], references: [id])
+  status                 SaleStatus
+  paymentMethod          SalePayment
+  subtotal               Decimal      @db.Decimal(12, 2)
+  discountAmount         Decimal      @default(0) @db.Decimal(12, 2)
+  total                  Decimal      @db.Decimal(12, 2)
+  received               Decimal?     @db.Decimal(12, 2)
+  change                 Decimal?     @db.Decimal(12, 2)
+  balance                Decimal      @default(0) @db.Decimal(12, 2)
+  dueDate                DateTime?    @db.Date
+  discountAuthorizedById Int?
+  createdAt              DateTime     @default(now())
+  cancelledAt            DateTime?
+  cancelReason           String?
+  cancelAuthorizedById   Int?
+  clientOpId             String?      @unique
+  items                  SaleItem[]
+  creditNotes            CreditNote[]
+
+  @@index([createdAt])
+  @@index([customerId, status])
+}
+
+model SaleItem {
+  id           Int              @id @default(autoincrement())
+  saleId       Int
+  sale         Sale             @relation(fields: [saleId], references: [id])
+  productId    Int
+  product      Product          @relation(fields: [productId], references: [id])
+  presentation String
+  factor       Decimal          @db.Decimal(12, 3)
+  quantity     Decimal          @db.Decimal(14, 3)
+  unitPrice    Decimal          @db.Decimal(12, 2)
+  total        Decimal          @db.Decimal(12, 2)
+  costTotal    Decimal          @default(0) @db.Decimal(12, 2)
+  returnedQty  Decimal          @default(0) @db.Decimal(14, 3)
+  noteItems    CreditNoteItem[]
+}
+
+model CreditNote {
+  id           Int              @id @default(autoincrement())
+  folio        Int              @unique @default(autoincrement())
+  saleId       Int
+  sale         Sale             @relation(fields: [saleId], references: [id])
+  shiftId      Int
+  shift        CashShift        @relation(fields: [shiftId], references: [id])
+  total        Decimal          @db.Decimal(12, 2)
+  refundMethod RefundMethod
+  reason       String
+  comments     String?
+  userId       Int
+  createdAt    DateTime         @default(now())
+  items        CreditNoteItem[]
+}
+
+model CreditNoteItem {
+  id           Int        @id @default(autoincrement())
+  creditNoteId Int
+  creditNote   CreditNote @relation(fields: [creditNoteId], references: [id])
+  saleItemId   Int
+  saleItem     SaleItem   @relation(fields: [saleItemId], references: [id])
+  quantity     Decimal    @db.Decimal(14, 3)
+  amount       Decimal    @db.Decimal(12, 2)
 }

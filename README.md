@@ -6,6 +6,7 @@ Monorepo: API (NestJS + Prisma + PostgreSQL) y app móvil del repartidor (PWA co
 |---|---|
 | `apps/api` | API REST: autenticación con roles, inventario con PEPS y rutas/entregas del repartidor |
 | `apps/driver` | App móvil del repartidor (PWA instalable, funciona sin conexión) |
+| `apps/web` | Punto de venta táctil (React + Vite): ventas, descuentos autorizados, devoluciones, corte de caja y tickets de 58/80 mm |
 
 ## Primer arranque
 
@@ -35,6 +36,20 @@ npm run driver:dev       # http://localhost:5173
 La app habla solo con su propio servidor: `/api` se reenvía a la API (`API_URL`, por defecto `http://localhost:3000`).
 Por eso basta exponer **un solo puerto** para probar en el celular y no hay problemas de CORS.
 
+## Punto de venta (web)
+
+```bash
+npm run web:dev          # http://localhost:5174  (o: npm run web:build && npm run web:preview → :4174)
+```
+
+Entra con `cajero` / `cambiar123`. Flujo: **abrir turno** (fondo de caja) → vender (efectivo, transferencia, tarjeta o crédito)
+→ ticket imprimible de 58 u 80 mm → **corte de caja** al final del turno.
+
+- **Descuentos y cancelaciones** piden usuario y contraseña de un supervisor (`supervisor` / `cambiar123`) y quedan en la bitácora.
+- **Crédito:** se bloquea si el cliente tiene saldo vencido o excede su límite. En los datos de demostración, *Borregos La Loma* está bloqueado.
+- **Devoluciones:** busca la venta por folio; genera nota de crédito, regresa el producto al inventario y prorratea el descuento.
+- **Imprimir:** el botón usa la impresión del navegador (elige tu impresora térmica); el ticket sale con el ancho del papel elegido.
+
 ## Probarla en el celular
 
 1. **Misma red Wi‑Fi (rápido, sin instalar):** abre `http://<IP-de-tu-PC>:4173` en el celular
@@ -55,5 +70,7 @@ solo al volver la conexión (pantalla *Perfil → Sincronización*).
 
 ```bash
 npm run driver:test      # lógica de la cola sin conexión y del resumen (vitest)
+npm run web:test         # lógica del carrito del POS (vitest)
 npm run db:seed && npm run api:smoke   # flujo completo del repartidor contra la API en marcha (20 verificaciones)
+npm run pos:smoke        # flujo completo del POS contra la API en marcha (38 verificaciones; requiere el seed)
 ```
