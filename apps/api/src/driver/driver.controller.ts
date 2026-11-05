@@ -12,8 +12,15 @@ class PaymentDto {
   @IsIn(METHODS) method: (typeof METHODS)[number];
 }
 
+class DeliverItemDto {
+  @IsInt() id: number;
+  @IsNumber() @Min(0) qty: number;
+}
+
 class DeliverDto {
   @IsString() @IsNotEmpty() @MaxLength(64) clientOpId: string;
+  /** cantidades realmente entregadas por renglón; si falta, se entrega todo */
+  @IsOptional() @IsArray() @ArrayMaxSize(200) @ValidateNested({ each: true }) @Type(() => DeliverItemDto) items?: DeliverItemDto[];
   @IsOptional() @IsDateString() deliveredAt?: string;
   @IsOptional() @IsString() @MaxLength(IMG) signature?: string;
   @IsOptional() @IsString() @MaxLength(IMG) photo?: string;

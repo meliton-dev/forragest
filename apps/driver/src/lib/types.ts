@@ -12,6 +12,8 @@ export interface Item {
   presentation: string;
   factor: number;
   quantity: number;
+  /** lo realmente entregado (solo cuenta si la parada está ENTREGADA) */
+  deliveredQty?: number;
   unitPrice: number;
   total: number;
 }

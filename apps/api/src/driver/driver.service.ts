@@ -43,6 +43,7 @@ export class DriverService {
           presentation: i.presentation,
           factor: num(i.factor),
           quantity: num(i.quantity),
+          deliveredQty: s.status === 'ENTREGADA' ? num(i.deliveredQty) : 0,
           unitPrice: num(i.unitPrice),
           total: num(i.quantity) * num(i.unitPrice),
         }));
@@ -143,7 +144,7 @@ export class DriverService {
   async deliver(
     stopId: number,
     userId: number,
-    dto: { clientOpId: string; deliveredAt?: string; signature?: string; photo?: string; payment?: PaymentInput },
+    dto: { clientOpId: string; deliveredAt?: string; signature?: string; photo?: string; payment?: PaymentInput; items?: { id: number; qty: number }[] },
   ) {
     const stop = await this.ownedStop(stopId, userId);
     if (stop.status === 'ENTREGADA') return { ok: true, duplicate: true };
@@ -151,9 +152,15 @@ export class DriverService {
     if (stop.route.status !== 'EN_CURSO') throw new BadRequestException('Confirma la carga y sal a ruta antes de entregar');
     if (!dto.signature && !dto.photo) throw new BadRequestException('Se requiere la firma o una fotografía del cliente');
     const at = dto.deliveredAt ? new Date(dto.deliveredAt) : new Date();
+    // entrega parcial: lo no indicado se entrega completo; nunca más de lo pedido
+    const given = new Map((dto.items ?? []).map((x) => [x.id, x.qty]));
+    for (const id of given.keys()) if (!stop.items.some((i) => i.id === id)) throw new BadRequestException('Hay un producto que no pertenece a esta parada');
+    const delivered = stop.items.map((i) => ({ id: i.id, qty: given.has(i.id) ? given.get(i.id)! : num(i.quantity), ordered: num(i.quantity) }));
+    if (delivered.some((d) => d.qty > d.ordered)) throw new BadRequestException('No puedes entregar más de lo pedido');
+    if (stop.items.length && delivered.every((d) => d.qty <= 0)) throw new BadRequestException('Entrega al menos un producto; si no se entregó nada, registra una no entrega');
     await this.prisma.$transaction(async (tx) => {
       await tx.routeStop.update({ where: { id: stopId }, data: { status: 'ENTREGADA', deliveredAt: at, signature: dto.signature, photo: dto.photo } });
-      for (const i of stop.items) await tx.stopItem.update({ where: { id: i.id }, data: { deliveredQty: i.quantity } });
+      for (const d of delivered) await tx.stopItem.update({ where: { id: d.id }, data: { deliveredQty: d.qty } });
       if (dto.payment && dto.payment.amount > 0) {
         await tx.payment.create({
           data: {

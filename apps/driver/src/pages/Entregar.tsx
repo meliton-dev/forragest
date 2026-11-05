@@ -3,6 +3,7 @@ import { Hint } from "../ui/Hint";
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { compressImage } from '../lib/image';
 import { mxn } from '../lib/format';
+import { deliveredTotal } from '../lib/logic';
 import { deliver } from '../lib/store';
 import type { Method, Route } from '../lib/types';
 import { Button, Header, Icon, Input, Kv, Notice, Segmented } from '../ui/kit';
@@ -20,16 +21,27 @@ function Inner({ route }: { route: Route }) {
   const [signature, setSignature] = useState<string | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
   const [method, setMethod] = useState<Method>('EFECTIVO');
-  const [amount, setAmount] = useState(stop && stop.paymentTerms === 'Contado' ? String(stop.total) : '');
+  // cantidad entregada por renglón; lo no tocado se entrega completo
+  const [qty, setQty] = useState<Record<number, number>>({});
+  const [edited, setEdited] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const file = useRef<HTMLInputElement>(null);
 
   if (!stop || stop.status !== 'PENDIENTE' || route.status !== 'EN_CURSO') return <Navigate to={stop ? `/parada/${stop.id}` : '/'} replace />;
 
+  const given = (i: Route['stops'][number]['items'][number]) => qty[i.id] ?? i.quantity;
+  const total = deliveredTotal(stop, qty);
+  const partial = stop.items.some((i) => given(i) < i.quantity);
+  const nothing = stop.items.every((i) => given(i) <= 0);
+  const amount = edited ?? (stop.paymentTerms === 'Contado' ? String(total) : '');
   const paid = Number(amount) || 0;
-  const rest = Math.max(0, (stop.paymentTerms === 'Contado' ? stop.total : 0) - paid);
-  const ready = !!signature || !!photo;
+  const rest = Math.max(0, (stop.paymentTerms === 'Contado' ? total : 0) - paid);
+  const ready = (!!signature || !!photo) && !nothing;
+
+  function step(i: Route['stops'][number]['items'][number], delta: number) {
+    setQty((q) => ({ ...q, [i.id]: Math.min(i.quantity, Math.max(0, (q[i.id] ?? i.quantity) + delta)) }));
+  }
 
   async function pick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -45,7 +57,7 @@ function Inner({ route }: { route: Route }) {
   function confirm() {
     if (!stop) return;
     setBusy(true);
-    deliver(stop.id, { signature: signature ?? undefined, photo: photo ?? undefined, payment: paid > 0 ? { amount: paid, method } : undefined });
+    deliver(stop.id, { signature: signature ?? undefined, photo: photo ?? undefined, payment: paid > 0 ? { amount: paid, method } : undefined, qty });
     nav('/', { replace: true });
   }
 
@@ -54,12 +66,25 @@ function Inner({ route }: { route: Route }) {
       <Header title="Confirmar entrega" sub={`Parada ${stop.sequence} de ${route.stops.length} · ${stop.customer.name}`} back />
       <div className="content">
         <div className="card">
+          <span className="overline">Cantidad entregada</span>
           {stop.items.map((it) => (
-            <Kv key={it.id} k={`${it.quantity} × ${it.name} ${it.presentation.replace('Saco ', '')}`} v={mxn(it.total)} />
+            <div key={it.id} className="row" style={{ justifyContent: 'space-between' }}>
+              <div className="grow">
+                <div className="small strong">{it.name} {it.presentation.replace('Saco ', '')}</div>
+                <div className="caption muted">Pedido: {it.quantity} · {mxn(given(it) * it.unitPrice)}</div>
+              </div>
+              <div className="qty-step">
+                <button type="button" aria-label={`Quitar uno de ${it.name}`} disabled={given(it) <= 0} onClick={() => step(it, -1)}>−</button>
+                <span className={given(it) < it.quantity ? 'warn' : ''} aria-live="polite">{given(it)}</span>
+                <button type="button" aria-label={`Agregar uno de ${it.name}`} disabled={given(it) >= it.quantity} onClick={() => step(it, 1)}>+</button>
+              </div>
+            </div>
           ))}
           <div className="row caption muted">
-            <Icon name="box" size={14} color="var(--text-3)" /> Se descargan {stop.items.reduce((a, i) => a + i.quantity * i.factor, 0)} kg del inventario del camión.
+            <Icon name="box" size={14} color="var(--text-3)" /> Se descargan {stop.items.reduce((a, i) => a + given(i) * i.factor, 0)} kg del inventario del camión.
           </div>
+          {partial && !nothing && <Notice tone="warn" icon="alert">Entrega parcial: lo que no dejes regresa al almacén al cerrar la ruta.</Notice>}
+          {nothing && <Notice tone="danger" icon="alert">Si no se entregó nada, usa «Registrar no entrega».</Notice>}
         </div>
 
         <Hint id="entregar">
@@ -84,7 +109,7 @@ function Inner({ route }: { route: Route }) {
           <span className="overline">Cobro en ruta</span>
           <div className="row">
             <div className="grow">
-              <Input prefix="$" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ''))} placeholder="0.00" aria-label="Monto cobrado" />
+              <Input prefix="$" inputMode="decimal" value={amount} onChange={(e) => setEdited(e.target.value.replace(/[^\d.]/g, ''))} placeholder="0.00" aria-label="Monto cobrado" />
             </div>
             <div style={{ width: 188 }}>
               <Segmented value={method} onChange={setMethod} options={[['EFECTIVO', 'Efectivo'], ['TRANSFERENCIA', 'Transf.']]} />

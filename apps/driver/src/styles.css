@@ -90,6 +90,11 @@ a.card:active, button.card:active { background: var(--surface-2); }
 .seg { display: flex; padding: 3px; gap: 2px; background: var(--bg); border-radius: var(--r-md); }
 .seg button { flex: 1; height: 44px; border: 0; border-radius: var(--r-sm); background: none; font-size: 13px; font-weight: 500; color: var(--text-3); }
 .seg button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow); border: 1px solid var(--border); }
+.qty-step { display: flex; align-items: center; gap: 4px; }
+.qty-step button { width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); font-size: 22px; line-height: 1; color: var(--accent); }
+.qty-step button:disabled { opacity: 0.35; }
+.qty-step span { min-width: 32px; text-align: center; font-size: 17px; font-weight: 700; }
+.qty-step span.warn { color: var(--warn); }
 .radio { display: flex; align-items: center; gap: 12px; padding: 0 14px; height: 52px; border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-md); width: 100%; text-align: left; }
 .radio.on { background: var(--accent-soft); border: 2px solid var(--accent); }
 .radio .r { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border-strong); display: grid; place-items: center; flex: none; }

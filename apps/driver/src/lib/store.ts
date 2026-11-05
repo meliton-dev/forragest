@@ -171,15 +171,19 @@ function undoOp(id: string, restore: () => void) {
   showToast('Acción deshecha', { ms: 2500 });
 }
 
-export function deliver(stopId: number, data: { signature?: string; photo?: string; payment?: { amount: number; method: Method } }) {
+export function deliver(
+  stopId: number,
+  data: { signature?: string; photo?: string; payment?: { amount: number; method: Method }; /** renglón → cantidad entregada; omitido = completo */ qty?: Record<number, number> },
+) {
   const id = uid();
   const at = new Date().toISOString();
   const before = state.route!.stops.find((s) => s.id === stopId)!;
   const payment = data.payment && data.payment.amount > 0 ? data.payment : undefined;
+  const items = before.items.map((i) => ({ id: i.id, qty: Math.min(i.quantity, Math.max(0, data.qty?.[i.id] ?? i.quantity)) }));
   patch({
-    route: mapStop(stopId, (s) => ({ ...s, status: 'ENTREGADA', deliveredAt: at })),
+    route: mapStop(stopId, (s) => ({ ...s, status: 'ENTREGADA', deliveredAt: at, items: s.items.map((i) => ({ ...i, deliveredQty: items.find((x) => x.id === i.id)!.qty })) })),
     payments: payment ? [{ id, customer: before.customer.name, amount: payment.amount, method: payment.method, receivedAt: at, synced: false }, ...state.payments] : state.payments,
-    queue: enqueue(hold({ id, label: `Entrega · ${before.customer.name}`, path: `/driver/stops/${stopId}/deliver`, body: { clientOpId: id, deliveredAt: at, signature: data.signature, photo: data.photo, payment } })),
+    queue: enqueue(hold({ id, label: `Entrega · ${before.customer.name}`, path: `/driver/stops/${stopId}/deliver`, body: { clientOpId: id, deliveredAt: at, signature: data.signature, photo: data.photo, payment, items } })),
   });
   showToast(`Entrega registrada · ${before.customer.name}`, {
     ms: UNDO_MS,

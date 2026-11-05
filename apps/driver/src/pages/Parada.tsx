@@ -1,5 +1,6 @@
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { FAIL_LABEL, hhmm, mxn } from '../lib/format';
+import { isPartial } from '../lib/logic';
 import { arrive } from '../lib/store';
 import type { Route } from '../lib/types';
 import { Badge, Button, Header, Icon, Kv, Notice } from '../ui/kit';
@@ -51,8 +52,7 @@ function Inner({ route }: { route: Route }) {
           <span className="overline">A entregar</span>
           {stop.items.map((it) => (
             <Kv key={it.id} k={`${it.quantity} × ${it.name} ${it.presentation.replace('Saco ', '')}`} v={mxn(it.total)} />
-          ))}
-          <hr className="divider" />
+          ))}          <hr className="divider" />
           <Kv k="Condición de pago" v={stop.paymentTerms} />
           <Kv k={stop.paymentTerms === 'Contado' ? 'Por cobrar al entregar' : 'Total de la entrega'} v={mxn(stop.total)} tone={stop.paymentTerms === 'Contado' ? 'var(--accent-dark)' : undefined} />
         </div>
@@ -65,6 +65,11 @@ function Inner({ route }: { route: Route }) {
         )}
         {stop.arrivedAt && pending && <Notice tone="info" icon="clock">Llegaste a las {hhmm(stop.arrivedAt)}.</Notice>}
         {stop.status === 'ENTREGADA' && <Notice tone="ok" icon="check">Llegada {hhmm(stop.arrivedAt)} · entregada a las {hhmm(stop.deliveredAt)}.</Notice>}
+        {isPartial(stop) && (
+          <Notice tone="warn" icon="alert">
+            Entrega parcial: {stop.items.filter((i) => (i.deliveredQty ?? i.quantity) < i.quantity).map((i) => `${i.quantity - (i.deliveredQty ?? i.quantity)} × ${i.name}`).join(', ')} sin entregar; regresa al almacén al cerrar.
+          </Notice>
+        )}
         {stop.status === 'NO_ENTREGADA' && <Notice tone="danger" icon="alert">No entregada: {FAIL_LABEL[stop.failReason ?? 'OTRO'] ?? stop.failReason}. El producto sigue en tu camión.</Notice>}
         {pending && route.status === 'PROGRAMADA' && (
           <Notice tone="warn" icon="truck">

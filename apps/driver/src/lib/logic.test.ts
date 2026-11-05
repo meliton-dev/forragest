@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError, NetworkError } from './errors';
-import { processQueue, summarize, uid } from './logic';
+import { deliveredTotal, isPartial, processQueue, summarize, uid } from './logic';
 import type { LocalPayment, Op, Route } from './types';
 
 const op = (id: string, extra: Partial<Op> = {}): Op => ({ id, label: id, path: '/x/' + id, body: {}, createdAt: '2026-10-30T10:00:00Z', ...extra });
@@ -87,6 +87,27 @@ describe('summarize', () => {
       { code: 'A', name: 'A', presentation: 'Saco', quantity: 3 },
       { code: 'B', name: 'B', presentation: 'Saco', quantity: 1 },
     ]);
+  });
+});
+
+describe('entrega parcial', () => {
+  const item = (id: number, quantity: number, deliveredQty?: number) => ({ id, productId: id, code: 'A', name: 'A', presentation: 'Saco', quantity, unitPrice: 100, deliveredQty });
+  const stop = (status: string, items: ReturnType<typeof item>[]) => ({ id: 1, status, paymentTerms: 'Contado', total: 0, items });
+
+  it('el importe usa lo entregado y lo no tocado cuenta completo', () => {
+    expect(deliveredTotal(stop('PENDIENTE', [item(1, 3), item(2, 2)]) as never, { 1: 1 })).toBe(100 + 200);
+  });
+
+  it('detecta si una parada entregada fue parcial', () => {
+    expect(isPartial(stop('ENTREGADA', [item(1, 3, 2)]) as never)).toBe(true);
+    expect(isPartial(stop('ENTREGADA', [item(1, 3, 3)]) as never)).toBe(false);
+    expect(isPartial(stop('ENTREGADA', [item(1, 3)]) as never)).toBe(false);
+    expect(isPartial(stop('NO_ENTREGADA', [item(1, 3, 0)]) as never)).toBe(false);
+  });
+
+  it('lo no entregado de una parada parcial regresa al almacén', () => {
+    const route = { stops: [stop('ENTREGADA', [item(1, 3, 1)]), stop('NO_ENTREGADA', [item(1, 2)])] } as unknown as Route;
+    expect(summarize(route, []).leftover).toEqual([{ code: 'A', name: 'A', presentation: 'Saco', quantity: 4 }]);
   });
 });
 

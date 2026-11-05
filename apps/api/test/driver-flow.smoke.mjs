@@ -69,7 +69,18 @@ check('entrega parada 3 con foto y transferencia', d3.status === 201);
 const closeEarly = await call('POST', `/driver/routes/${route.id}/close`, {});
 check('no cierra con paradas pendientes', closeEarly.status === 400, closeEarly.json.message);
 
-await call('POST', `/driver/stops/${s4.id}/deliver`, { clientOpId: 'smoke-d4', signature: PNG });
+const it4 = s4.items[0];
+const over = await call('POST', `/driver/stops/${s4.id}/deliver`, { clientOpId: 'smoke-over', signature: PNG, items: [{ id: it4.id, qty: it4.quantity + 1 }] });
+check('no se puede entregar más de lo pedido', over.status === 400, over.json.message);
+const foreign = await call('POST', `/driver/stops/${s4.id}/deliver`, { clientOpId: 'smoke-foreign', signature: PNG, items: [{ id: s5.items[0].id, qty: 1 }] });
+check('rechaza un producto de otra parada', foreign.status === 400, foreign.json.message);
+const none = await call('POST', `/driver/stops/${s4.id}/deliver`, { clientOpId: 'smoke-none', signature: PNG, items: s4.items.map((i) => ({ id: i.id, qty: 0 })) });
+check('entregar cero de todo pide registrar no entrega', none.status === 400, none.json.message);
+const leftBefore = (await call('GET', `/driver/routes/${route.id}/summary`)).json.leftover.find((l) => l.code === it4.code)?.quantity ?? 0;
+const d4 = await call('POST', `/driver/stops/${s4.id}/deliver`, { clientOpId: 'smoke-d4', signature: PNG, items: [{ id: it4.id, qty: it4.quantity - 1 }] });
+check('entrega parcial de la parada 4 (1 saco menos)', d4.status === 201 && d4.json.ok);
+const leftAfter = (await call('GET', `/driver/routes/${route.id}/summary`)).json.leftover.find((l) => l.code === it4.code)?.quantity ?? 0;
+check('al entregar la parada 4 solo queda por regresar 1 saco de ella', leftAfter - leftBefore === 1 - it4.quantity, `${leftBefore} → ${leftAfter}`);
 await call('POST', `/driver/stops/${s5.id}/deliver`, { clientOpId: 'smoke-d5', signature: PNG, payment: { amount: s5.total, method: 'EFECTIVO' } });
 const extra = await call('POST', '/driver/payments', { clientOpId: 'smoke-p1', routeId: route.id, customerId: s2.customer.id, amount: 500, method: 'EFECTIVO' });
 check('cobro suelto', extra.status === 201);
@@ -89,7 +100,8 @@ check('resumen', sum.json.delivered === 4 && sum.json.failed === 1 && sum.json.p
 const close = await call('POST', `/driver/routes/${route.id}/close`, {});
 check('cierre de ruta', close.status === 201 && close.json.status === 'FINALIZADA');
 const afterClose = await stockOf(adminToken, 'OV-001');
-check('lo no entregado regresa al almacén (3 sacos de OV-001 = 120 kg)', close.json.leftover.some((l) => l.code === 'OV-001' && l.quantity === 3), `OV-001 stock ${afterClose}`);
+const expectedOv = 3 + (it4.code === 'OV-001' ? 1 : 0); // + el saco que quedó de la entrega parcial
+check(`lo no entregado regresa al almacén (${expectedOv} sacos de OV-001)`, close.json.leftover.some((l) => l.code === 'OV-001' && l.quantity === expectedOv), `OV-001 stock ${afterClose}`);
 
 console.log(failed ? `\n${failed} verificación(es) fallaron` : '\nTodo correcto');
 process.exit(failed ? 1 : 0);

@@ -12,10 +12,11 @@ export function summarize(route: Route, payments: LocalPayment[]): Summary {
   }
   const left = new Map<number, Summary['leftover'][number]>();
   for (const s of route.stops) {
-    if (s.status === 'ENTREGADA') continue;
     for (const i of s.items) {
+      const rest = i.quantity - (s.status === 'ENTREGADA' ? i.deliveredQty ?? i.quantity : 0);
+      if (rest <= 0) continue;
       const cur = left.get(i.productId) ?? { code: i.code, name: i.name, presentation: i.presentation, quantity: 0 };
-      cur.quantity += i.quantity;
+      cur.quantity += rest;
       left.set(i.productId, cur);
     }
   }
@@ -30,6 +31,16 @@ export function summarize(route: Route, payments: LocalPayment[]): Summary {
     pendingToCollect: route.stops.filter((s) => s.status === 'PENDIENTE' && s.paymentTerms === 'Contado').reduce((a, s) => a + s.total, 0),
     leftover: [...left.values()],
   };
+}
+
+/** Importe de lo realmente entregado en una parada (entrega parcial). */
+export function deliveredTotal(stop: Pick<Route['stops'][number], 'items'>, qty: Record<number, number>): number {
+  return stop.items.reduce((a, i) => a + (qty[i.id] ?? i.quantity) * i.unitPrice, 0);
+}
+
+/** Una parada entregada es parcial si algún renglón se entregó incompleto. */
+export function isPartial(stop: Pick<Route['stops'][number], 'status' | 'items'>): boolean {
+  return stop.status === 'ENTREGADA' && stop.items.some((i) => (i.deliveredQty ?? i.quantity) < i.quantity);
 }
 
 export interface QueueResult {
