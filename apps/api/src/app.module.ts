@@ -5,10 +5,11 @@ import { HealthController } from './health.controller';
 import { InventoryModule } from './inventory/inventory.module';
 import { PosModule } from './pos/pos.module';
 import { PrismaService } from './prisma.service';
+import { PurchasingModule } from './purchasing/purchasing.module';
 import { RoutesModule } from './routes/routes.module';
 
 @Module({
-  imports: [AuthModule, InventoryModule, DriverModule, PosModule, RoutesModule],
+  imports: [AuthModule, InventoryModule, DriverModule, PosModule, RoutesModule, PurchasingModule],
   controllers: [HealthController],
   providers: [PrismaService],
 })

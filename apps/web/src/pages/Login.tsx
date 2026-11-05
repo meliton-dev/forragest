@@ -16,7 +16,7 @@ export function Login({ onDone }: { onDone: () => void }) {
     setError(null);
     try {
       const res = await api<{ accessToken: string; user: SessionUser }>('POST', '/auth/login', { username: username.trim(), password });
-      if (!['CAJERO', 'ADMINISTRADOR', 'SUPERVISOR_RUTAS'].includes(res.user.role)) {
+      if (!['CAJERO', 'ADMINISTRADOR', 'SUPERVISOR_RUTAS', 'GERENTE_COMPRAS'].includes(res.user.role)) {
         setError('Tu perfil no tiene acceso a esta aplicación.');
         return;
       }

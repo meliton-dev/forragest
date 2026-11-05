@@ -189,6 +189,44 @@ async function demoRoute() {
   }
 }
 
+/** Proveedores y compras de demostración: una orden enviada, una recibida con faltante y cuentas por pagar vencida y por vencer. */
+async function purchasingDemo() {
+  const lines = Object.fromEntries((await prisma.productLine.findMany()).map((l) => [l.code, l.id]));
+  const defs: [string, string, string, number, string[]][] = [
+    ['Molinos del Bajío S.A. de C.V.', 'MBA010203AB1', '442 555 0101', 15, ['BOVINO', 'OVINO']],
+    ['Granos y Forrajes Tula', 'GFT950612XY9', '773 555 0144', 0, ['AVES', 'BOVINO']],
+    ['Minerales del Centro', 'MCE000101KL4', '55 5555 0188', 30, ['OVINO']],
+  ];
+  const sup: Record<string, number> = {};
+  for (const [name, rfc, phone, paymentDays, ls] of defs) {
+    const found = await prisma.supplier.findFirst({ where: { name } });
+    const data = { name, rfc, phone, paymentDays, contact: 'Ventas', lines: { set: ls.map((l) => ({ id: lines[l] })) } };
+    sup[name] = found ? (await prisma.supplier.update({ where: { id: found.id }, data })).id : (await prisma.supplier.create({ data: { ...data, lines: { connect: ls.map((l) => ({ id: lines[l] })) } } })).id;
+  }
+  const admin = await prisma.user.findUniqueOrThrow({ where: { username: 'compras' } });
+  const prod = Object.fromEntries((await prisma.product.findMany()).map((x) => [x.code, x]));
+  const day = 86_400_000;
+  const todayUtc = (() => { const d = new Date(); return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); })();
+  const orders: { folio: string; supplier: string; status: 'ENVIADA' | 'RECIBIDA'; items: [string, number, number, number][]; payableDue?: number }[] = [
+    { folio: 'OC-DEMO1', supplier: defs[0][0], status: 'ENVIADA', items: [['BV-001', 2000, 8.4, 0], ['BV-003', 1200, 9.1, 0]] },
+    { folio: 'OC-DEMO2', supplier: defs[1][0], status: 'RECIBIDA', items: [['AV-004', 3000, 5.9, 2800]], payableDue: -3 },
+    { folio: 'OC-DEMO3', supplier: defs[2][0], status: 'RECIBIDA', items: [['OV-002', 800, 7.6, 800]], payableDue: 5 },
+  ];
+  for (const o of orders) {
+    if (await prisma.purchaseOrder.findUnique({ where: { folio: o.folio } })) continue;
+    const order = await prisma.purchaseOrder.create({
+      data: {
+        folio: o.folio, supplierId: sup[o.supplier], status: o.status, createdBy: admin.id, sentAt: new Date(Date.now() - 6 * day), closedAt: o.status === 'RECIBIDA' ? new Date() : null,
+        items: { create: o.items.map(([code, quantity, unitCost, receivedQty]) => ({ productId: prod[code].id, quantity, unitCost, receivedQty })) },
+      },
+    });
+    if (o.payableDue === undefined) continue;
+    const receipt = await prisma.purchaseReceipt.create({ data: { orderId: order.id, receivedBy: admin.id, notes: 'Recepción de demostración' } });
+    const amount = o.items.reduce((a, [, , cost, got]) => a + cost * got, 0);
+    await prisma.payable.create({ data: { supplierId: sup[o.supplier], orderId: order.id, receiptId: receipt.id, amount: Math.round(amount * 100) / 100, dueDate: new Date(todayUtc.getTime() + o.payableDue * day) } });
+  }
+}
+
 async function main() {
   for (const [code, name] of [['OVINO', 'Ovino'], ['BOVINO', 'Bovino'], ['AVES', 'Aves']]) {
     await prisma.productLine.upsert({ where: { code }, update: {}, create: { code, name } });
@@ -198,6 +236,7 @@ async function main() {
   await demoRoute();
   await history();
   await overdueDemo();
+  await purchasingDemo();
 }
 
 main().finally(() => prisma.$disconnect());

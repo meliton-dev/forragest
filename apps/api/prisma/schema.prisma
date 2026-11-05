@@ -18,10 +18,11 @@ enum Role {
 
 // Línea como tabla (no enum) para agregar líneas sin rediseño.
 model ProductLine {
-  id       Int       @id @default(autoincrement())
-  code     String    @unique
-  name     String
-  products Product[]
+  id        Int        @id @default(autoincrement())
+  code      String     @unique
+  name      String
+  products  Product[]
+  suppliers Supplier[]
 }
 
 model User {
@@ -82,6 +83,7 @@ model Product {
   countItems    InventoryCountItem[]
   stopItems     StopItem[]
   saleItems     SaleItem[]
+  purchaseItems PurchaseOrderItem[]
 
   @@index([lineId])
 }
@@ -415,4 +417,103 @@ model LocationPing {
   recordedAt DateTime
 
   @@unique([routeId, recordedAt])
+}
+
+// ---------- Fase 4: Compras y proveedores ----------
+
+enum PurchaseStatus {
+  BORRADOR
+  ENVIADA
+  PARCIAL
+  RECIBIDA
+  CANCELADA
+}
+
+// COM-001
+model Supplier {
+  id          Int             @id @default(autoincrement())
+  name        String
+  rfc         String?
+  contact     String?
+  phone       String?
+  email       String?
+  address     String?
+  paymentDays Int             @default(0) // 0 = de contado
+  active      Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  lines       ProductLine[] // líneas que surte
+  orders      PurchaseOrder[]
+  payables    Payable[]
+}
+
+// COM-002
+model PurchaseOrder {
+  id         Int                 @id @default(autoincrement())
+  folio      String              @unique
+  supplierId Int
+  supplier   Supplier            @relation(fields: [supplierId], references: [id])
+  status     PurchaseStatus      @default(BORRADOR)
+  expectedAt DateTime?
+  notes      String?
+  createdBy  Int
+  createdAt  DateTime            @default(now())
+  sentAt     DateTime?
+  closedAt   DateTime?
+  items      PurchaseOrderItem[]
+  receipts   PurchaseReceipt[]
+  payables   Payable[]
+
+  @@index([supplierId, createdAt])
+}
+
+model PurchaseOrderItem {
+  id           Int                   @id @default(autoincrement())
+  orderId      Int
+  order        PurchaseOrder         @relation(fields: [orderId], references: [id])
+  productId    Int
+  product      Product               @relation(fields: [productId], references: [id])
+  quantity     Decimal               @db.Decimal(14, 3) // en la unidad base del producto
+  unitCost     Decimal               @db.Decimal(12, 2) // precio acordado
+  receivedQty  Decimal               @default(0) @db.Decimal(14, 3)
+  receiptItems PurchaseReceiptItem[]
+}
+
+// COM-003: cada recepción (total o parcial) deja su propio registro
+model PurchaseReceipt {
+  id         Int                   @id @default(autoincrement())
+  orderId    Int
+  order      PurchaseOrder         @relation(fields: [orderId], references: [id])
+  notes      String?
+  receivedBy Int
+  createdAt  DateTime              @default(now())
+  items      PurchaseReceiptItem[]
+  payable    Payable?
+}
+
+model PurchaseReceiptItem {
+  id          Int               @id @default(autoincrement())
+  receiptId   Int
+  receipt     PurchaseReceipt   @relation(fields: [receiptId], references: [id])
+  orderItemId Int
+  orderItem   PurchaseOrderItem @relation(fields: [orderItemId], references: [id])
+  quantity    Decimal           @db.Decimal(14, 3)
+  note        String? // diferencia: faltante, daño, caducidad...
+}
+
+// COM-006: cuenta por pagar generada por cada recepción
+model Payable {
+  id         Int             @id @default(autoincrement())
+  supplierId Int
+  supplier   Supplier        @relation(fields: [supplierId], references: [id])
+  orderId    Int
+  order      PurchaseOrder   @relation(fields: [orderId], references: [id])
+  receiptId  Int             @unique
+  receipt    PurchaseReceipt @relation(fields: [receiptId], references: [id])
+  amount     Decimal         @db.Decimal(12, 2)
+  paidAmount Decimal         @default(0) @db.Decimal(12, 2)
+  dueDate    DateTime
+  paidAt     DateTime?
+  createdAt  DateTime        @default(now())
+
+  @@index([dueDate])
 }

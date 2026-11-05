@@ -4,8 +4,14 @@ import { clearSession, getToken, getUser } from './lib/api';
 import { BackShell } from './pages/back/BackShell';
 import { Eficiencia } from './pages/back/Eficiencia';
 import { Monitoreo } from './pages/back/Monitoreo';
+import { NuevaOrden } from './pages/back/NuevaOrden';
 import { NuevaRuta } from './pages/back/NuevaRuta';
+import { Ordenes } from './pages/back/Ordenes';
+import { PorPagar } from './pages/back/PorPagar';
+import { Precios } from './pages/back/Precios';
+import { Proveedores } from './pages/back/Proveedores';
 import { RutasLista } from './pages/back/RutasLista';
+import { Sugerencias } from './pages/back/Sugerencias';
 import { Corte } from './pages/Corte';
 import { Devoluciones } from './pages/Devoluciones';
 import { Login } from './pages/Login';
@@ -17,6 +23,7 @@ import { PosProvider } from './pos-context';
 // Qué ve cada perfil: el cajero el punto de venta, el supervisor de rutas el módulo de rutas y el administrador ambos.
 const canPos = (role?: string) => role === 'CAJERO' || role === 'ADMINISTRADOR';
 const canRoutes = (role?: string) => role === 'SUPERVISOR_RUTAS' || role === 'ADMINISTRADOR';
+const canPurchasing = (role?: string) => role === 'GERENTE_COMPRAS' || role === 'ADMINISTRADOR';
 
 export default function App() {
   const [auth, setAuth] = useState(!!getToken());
@@ -32,7 +39,7 @@ export default function App() {
 
   if (!auth) return <Login onDone={() => setAuth(true)} />;
   const role = getUser()?.role;
-  const home = canPos(role) ? '/' : '/rutas';
+  const home = canPos(role) ? '/' : canRoutes(role) ? '/rutas' : '/compras';
 
   return (
     <BrowserRouter>
@@ -58,6 +65,14 @@ export default function App() {
           <Route path="nueva" element={<NuevaRuta />} />
           <Route path="mapa" element={<Monitoreo />} />
           <Route path="eficiencia" element={<Eficiencia />} />
+        </Route>
+        <Route path="/compras" element={canPurchasing(role) ? <BackShell /> : <Navigate to={home} replace />}>
+          <Route index element={<Ordenes />} />
+          <Route path="nueva" element={<NuevaOrden />} />
+          <Route path="sugerencias" element={<Sugerencias />} />
+          <Route path="proveedores" element={<Proveedores />} />
+          <Route path="por-pagar" element={<PorPagar />} />
+          <Route path="precios" element={<Precios />} />
         </Route>
         <Route path="*" element={<Navigate to={home} replace />} />
       </Routes>
