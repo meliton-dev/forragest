@@ -9,8 +9,8 @@ Resultado de la revisión del proyecto (noviembre 2026). Ordenado por prioridad:
 | 3   | Más pruebas en la API (inventario, crédito, devoluciones) | ✅ Hecho     |
 | 4   | Límite de intentos de login y cabeceras de seguridad      | ✅ Hecho     |
 | 5   | Fotos y firmas fuera de la base de datos                  | ⏳ Pendiente |
-| 6   | ESLint y Prettier                                         | ⏳ Pendiente |
-| 7   | Tipos compartidos entre API y apps (`packages/shared`)    | ⏳ Pendiente |
+| 6   | ESLint y Prettier                                         | ✅ Hecho     |
+| 7   | Tipos compartidos entre API y apps (`packages/shared`)    | ✅ Hecho     |
 | 8   | Respaldos, monitoreo de errores y logs estructurados      | ⏳ Pendiente |
 
 ## 1. Existencias negativas
