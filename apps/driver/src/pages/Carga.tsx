@@ -71,7 +71,8 @@ function Inner({ route }: { route: import('../lib/types').Route }) {
               style={{ textAlign: 'left' }}
               onClick={() => {
                 const n = new Set(checked);
-                on ? n.delete(id) : n.add(id);
+                if (on) n.delete(id);
+                else n.add(id);
                 setChecked(n);
               }}
             >

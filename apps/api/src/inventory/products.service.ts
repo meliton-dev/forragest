@@ -9,7 +9,7 @@ export class ProductsService {
     const line = await this.prisma.productLine.findUnique({ where: { code: dto.lineCode.toUpperCase() } });
     if (!line) throw new NotFoundException('Línea no encontrada');
     if (await this.prisma.product.findUnique({ where: { code: dto.code } })) throw new ConflictException('Código ya existe');
-    const { lineCode, ...data } = dto;
+    const { lineCode: _lineCode, ...data } = dto;
     return this.prisma.product.create({ data: { ...data, lineId: line.id }, include: { line: true } });
   }
 

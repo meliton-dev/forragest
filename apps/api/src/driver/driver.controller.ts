@@ -1,3 +1,4 @@
+import type { AuthedRequest } from '../auth/jwt-auth.guard';
 import { Body, Controller, Get, Param, ParseIntPipe, Post, Req } from '@nestjs/common';
 import { Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsDateString, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, MaxLength, Min, ValidateNested } from 'class-validator';
@@ -74,62 +75,62 @@ export class DriverController {
   constructor(private driver: DriverService) {}
 
   @Get('route')
-  route(@Req() req: any) {
+  route(@Req() req: AuthedRequest) {
     return this.driver.currentRoute(req.user.sub);
   }
 
   @Post('routes/:id/start')
-  start(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+  start(@Param('id', ParseIntPipe) id: number, @Req() req: AuthedRequest) {
     return this.driver.start(id, req.user.sub);
   }
 
   @Get('routes/:id/summary')
-  summary(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+  summary(@Param('id', ParseIntPipe) id: number, @Req() req: AuthedRequest) {
     return this.driver.summary(id, req.user.sub);
   }
 
   @Post('routes/:id/close')
-  close(@Param('id', ParseIntPipe) id: number, @Body() dto: CloseDto, @Req() req: any) {
+  close(@Param('id', ParseIntPipe) id: number, @Body() dto: CloseDto, @Req() req: AuthedRequest) {
     return this.driver.close(id, req.user.sub, dto.returnedAt);
   }
 
   @Post('stops/:id/arrive')
-  arrive(@Param('id', ParseIntPipe) id: number, @Body() dto: ArriveDto, @Req() req: any) {
+  arrive(@Param('id', ParseIntPipe) id: number, @Body() dto: ArriveDto, @Req() req: AuthedRequest) {
     return this.driver.arrive(id, req.user.sub, dto.at);
   }
 
   @Post('locations')
-  locations(@Body() dto: LocationsDto, @Req() req: any) {
+  locations(@Body() dto: LocationsDto, @Req() req: AuthedRequest) {
     return this.driver.savePings(req.user.sub, dto.routeId, dto.pings);
   }
 
   @Post('stops/:id/deliver')
-  deliver(@Param('id', ParseIntPipe) id: number, @Body() dto: DeliverDto, @Req() req: any) {
+  deliver(@Param('id', ParseIntPipe) id: number, @Body() dto: DeliverDto, @Req() req: AuthedRequest) {
     return this.driver.deliver(id, req.user.sub, dto);
   }
 
   @Post('stops/:id/fail')
-  fail(@Param('id', ParseIntPipe) id: number, @Body() dto: FailDto, @Req() req: any) {
+  fail(@Param('id', ParseIntPipe) id: number, @Body() dto: FailDto, @Req() req: AuthedRequest) {
     return this.driver.fail(id, req.user.sub, dto);
   }
 
   @Get('routes/:id/payments')
-  payments(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+  payments(@Param('id', ParseIntPipe) id: number, @Req() req: AuthedRequest) {
     return this.driver.payments(id, req.user.sub);
   }
 
   @Post('payments')
-  createPayment(@Body() dto: CreatePaymentDto, @Req() req: any) {
+  createPayment(@Body() dto: CreatePaymentDto, @Req() req: AuthedRequest) {
     return this.driver.createPayment(req.user.sub, dto);
   }
 
   @Get('routes/:id/incidents')
-  incidents(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+  incidents(@Param('id', ParseIntPipe) id: number, @Req() req: AuthedRequest) {
     return this.driver.incidents(id, req.user.sub);
   }
 
   @Post('incidents')
-  createIncident(@Body() dto: CreateIncidentDto, @Req() req: any) {
+  createIncident(@Body() dto: CreateIncidentDto, @Req() req: AuthedRequest) {
     return this.driver.createIncident(req.user.sub, dto);
   }
 }

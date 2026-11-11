@@ -22,7 +22,7 @@ export class AuditInterceptor implements NestInterceptor {
     if (!MUTATING.has(req.method) || req.path === '/auth/login') return next.handle();
     return next.handle().pipe(
       tap(() => {
-        const { password, ...body } = req.body ?? {};
+        const { password: _password, ...body } = req.body ?? {};
         this.prisma.auditLog
           .create({ data: { userId: req.user?.sub ?? null, action: req.method, entity: req.path, payload: shorten(body) } })
           .catch(() => undefined);

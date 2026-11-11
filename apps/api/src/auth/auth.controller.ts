@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Ip, Post, Req } from '@nestjs/common';
 import { IsString } from 'class-validator';
 import { AuthService } from './auth.service';
-import { Public } from './jwt-auth.guard';
+import { AuthedRequest, Public } from './jwt-auth.guard';
 
 class LoginDto {
   @IsString() username: string;
@@ -19,7 +19,7 @@ export class AuthController {
   }
 
   @Get('me')
-  me(@Req() req: any) {
+  me(@Req() req: AuthedRequest) {
     return req.user;
   }
 }

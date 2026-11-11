@@ -80,7 +80,6 @@ async function http(method, path, { token, body } = {}) {
   return { status: res.status, ms: Math.round(performance.now() - t0), headers: res.headers, json };
 }
 const login = async (u) => (await http('POST', '/auth/login', { body: { username: u.user, password: u.pass } }));
-const hostOf = (u) => { try { return new URL(u).hostname; } catch { return ''; } };
 
 const apiUrl = new URL(API);
 const appUrl = new URL(APP);
@@ -97,9 +96,9 @@ check('Destino', 'La API usa HTTPS con certificado válido', apiTls?.ok, apiTls 
 
 // ---------- 2. servicio
 const lat = [];
-let health = null; let serverHeader = '';
+let health = null;
 for (let i = 0; i < 5; i++) {
-  try { const r = await http('GET', '/health'); lat.push(r.ms); if (r.status === 200) { health = r.json; serverHeader = r.headers.get('server') ?? r.headers.get('via') ?? r.headers.get('x-render-origin-server') ?? ''; } } catch { /* se cuenta como falla abajo */ }
+  try { const r = await http('GET', '/health'); lat.push(r.ms); if (r.status === 200) health = r.json; } catch { /* se cuenta como falla abajo */ }
 }
 check('Servicio', 'GET /health responde 200 con la base de datos activa', health?.status === 'ok' && health?.db === 'up', health ? `host del servidor: ${health.host} · entorno: ${health.environment} · en línea desde hace ${health.uptimeSeconds} s` : 'sin respuesta');
 check('Servicio', 'El servicio corre en modo producción', health?.environment === 'production', `NODE_ENV=${health?.environment ?? '—'}`);
@@ -203,7 +202,7 @@ if (!CHROME) {
       const mid = await stopStatuses();
       check('Escritura de extremo a extremo', 'Sin conexión la entrega NO llega al servidor y queda guardada en el teléfono', mid.stops[1] === 'PENDIENTE', `parada 2 en el servidor: ${mid.stops[1]}`);
       await ctx.setOffline(false);
-      await page.evaluate(() => window.dispatchEvent(new Event('online')));
+      await page.evaluate(() => globalThis.dispatchEvent(new Event('online')));
       const t2 = await waitStop(1, 'ENTREGADA', 60000);
       await shot('Al volver la conexión la app sincroniza con el servidor');
       check('Escritura de extremo a extremo', 'Al volver la conexión la app sincroniza sola con el servidor', t2 !== null, t2 !== null ? `sincronizada ${(t2 / 1000).toFixed(1)} s después de recuperar la señal` : 'no sincronizó en 60 s');

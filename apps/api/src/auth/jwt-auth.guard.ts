@@ -1,4 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable, SetMetadata, UnauthorizedException } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 
@@ -21,4 +22,15 @@ export class JwtAuthGuard implements CanActivate {
     }
     return true;
   }
+}
+
+/** Datos de la sesión que el guard deja en `req.user`. */
+export interface SessionUser {
+  sub: number;
+  username: string;
+  role: Role;
+}
+/** Petición ya autenticada (solo lo que usan los controladores). */
+export interface AuthedRequest {
+  user: SessionUser;
 }

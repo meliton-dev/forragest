@@ -26,7 +26,7 @@ export function Monitoreo() {
     return () => clearInterval(t);
   }, []);
 
-  const routes = data?.routes ?? [];
+  const routes = useMemo(() => data?.routes ?? [], [data]);
   const visible = routes.filter((r) => sel === 'all' || String(r.id) === sel);
   const now = data ? new Date(data.now).getTime() : Date.now();
 
