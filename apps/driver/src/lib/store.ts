@@ -1,7 +1,7 @@
 import { del, get, set as idbSet } from 'idb-keyval';
 import { useSyncExternalStore } from 'react';
 import { clearSession, request } from './api';
-import { ApiError, NetworkError } from './errors';
+import { ApiError, NetworkError } from '@forrajera/shared';
 import { mergeQueue, processQueue, uid } from './logic';
 import { showToast } from './toast';
 import type { FailReason, IncidentType, LocalIncident, LocalPayment, Method, Op, Route } from './types';

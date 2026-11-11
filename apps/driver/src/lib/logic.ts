@@ -1,4 +1,4 @@
-import { ApiError, NetworkError } from './errors';
+import { ApiError, NetworkError } from '@forrajera/shared';
 import type { LocalPayment, Op, Route, Summary } from './types';
 
 /** Resumen de la ruta calculado en el teléfono (funciona sin conexión). */

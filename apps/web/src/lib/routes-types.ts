@@ -1,7 +1,7 @@
 import type { CatalogItem } from './types';
 
-export type RouteStatus = 'PROGRAMADA' | 'EN_CURSO' | 'FINALIZADA';
-export type StopStatus = 'PENDIENTE' | 'ENTREGADA' | 'NO_ENTREGADA';
+import type { RouteStatus, StopStatus } from '@forrajera/shared';
+export type { RouteStatus, StopStatus };
 
 export interface RouteRow {
   id: number;
@@ -106,11 +106,4 @@ export interface Efficiency {
 
 /** Almacén de salida (referencia para trazar las rutas en el mapa). */
 export const DEPOT: [number, number] = [20.0833, -98.3631];
-export const FAIL_LABEL: Record<string, string> = {
-  CLIENTE_AUSENTE: 'Cliente ausente',
-  RECHAZO: 'Rechazo del producto',
-  DIRECCION_INCORRECTA: 'Dirección incorrecta',
-  SIN_ACCESO: 'Sin acceso al predio',
-  OTRO: 'Otro motivo',
-};
-export const ROUTE_STATUS_LABEL: Record<RouteStatus, string> = { PROGRAMADA: 'Programada', EN_CURSO: 'En curso', FINALIZADA: 'Finalizada' };
+export { FAIL_LABEL, ROUTE_STATUS_LABEL } from '@forrajera/shared';

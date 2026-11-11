@@ -1,5 +1,7 @@
-export type PayMethod = 'EFECTIVO' | 'TRANSFERENCIA' | 'TARJETA' | 'CREDITO';
-export type SaleStatus = 'PAGADA' | 'POR_COBRAR' | 'CANCELADA';
+import type { SalePayment } from '@forrajera/shared';
+import type { SaleStatus } from '@forrajera/shared';
+export type { SaleStatus };
+export type PayMethod = SalePayment;
 
 export interface CatalogItem {
   key: string;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ApiError, NetworkError } from './errors';
+import { ApiError, NetworkError } from '@forrajera/shared';
 import { processQueue, summarize, uid } from './logic';
 import type { LocalPayment, Op, Route } from './types';
 

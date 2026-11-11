@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { api, setSession, type SessionUser } from '../lib/api';
-import { ApiError, NetworkError } from '../lib/errors';
+import { ApiError, NetworkError } from '@forrajera/shared';
 import { Button, Field, Input, Notice } from '../ui/kit';
 
 export function Login({ onDone }: { onDone: () => void }) {

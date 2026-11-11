@@ -47,13 +47,14 @@ Estas pruebas encontraron y se corrigieron 7 errores más:
 
 Hoy viajan en base64 y se guardan como texto en `Delivery`/`Incident`. Propuesta: guardarlas en almacenamiento de objetos (S3, Cloudflare R2 o el disco del servidor) y dejar en la base solo la ruta. Requiere decidir el proveedor.
 
-## 6. ESLint y Prettier (pendiente)
+## 6. ESLint y Prettier
+- `npm run lint` (ESLint con typescript-eslint y reglas de hooks de React) y `npm run format` / `format:check` (Prettier, 160 columnas).
+- El CI falla si hay errores de lint o archivos sin formato.
+- El formateo inicial está en un commit aparte, listado en `.git-blame-ignore-revs` (`git config blame.ignoreRevsFile .git-blame-ignore-revs`).
+- Quedan ~30 avisos de `any` (sin bloquear) para ir tipando poco a poco.
 
-Configuración única en la raíz; aplicarla en un commit aparte para no mezclar formato con cambios de lógica.
-
-## 7. Tipos compartidos (pendiente)
-
-Crear `packages/shared` con los tipos y mensajes de error que hoy están copiados en `apps/driver/src/lib/types.ts`, `apps/web/src/lib/types.ts` y sus `errors.ts`.
+## 7. Tipos compartidos
+`packages/shared` (`@forrajera/shared`): estados de ruta/parada/venta, formas de pago, motivos de no entrega, sus etiquetas y las clases `ApiError`/`NetworkError`. Las dos apps lo usan; `apps/api/src/common/shared.spec.ts` falla si un enum de `schema.prisma` cambia y el paquete no.
 
 ## 8. Operación (pendiente)
 

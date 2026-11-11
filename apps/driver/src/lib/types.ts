@@ -1,8 +1,6 @@
-export type StopStatus = 'PENDIENTE' | 'ENTREGADA' | 'NO_ENTREGADA';
-export type RouteStatus = 'PROGRAMADA' | 'EN_CURSO' | 'FINALIZADA';
-export type Method = 'EFECTIVO' | 'TRANSFERENCIA' | 'TARJETA';
-export type IncidentType = 'CLIENTE_AUSENTE' | 'PRODUCTO_DANADO' | 'RETRASO' | 'OTRO';
-export type FailReason = 'CLIENTE_AUSENTE' | 'RECHAZO' | 'DIRECCION_INCORRECTA' | 'SIN_ACCESO' | 'OTRO';
+import type { FailReason, IncidentType, PaymentMethod, RouteStatus, StopStatus } from '@forrajera/shared';
+export type { FailReason, IncidentType, RouteStatus, StopStatus };
+export type Method = PaymentMethod;
 
 export interface Item {
   id: number;

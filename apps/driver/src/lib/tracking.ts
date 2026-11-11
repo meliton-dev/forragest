@@ -1,7 +1,7 @@
 import { get, set } from 'idb-keyval';
 import { useSyncExternalStore } from 'react';
 import { request } from './api';
-import { ApiError, NetworkError } from './errors';
+import { ApiError, NetworkError } from '@forrajera/shared';
 
 export interface Ping {
   lat: number;

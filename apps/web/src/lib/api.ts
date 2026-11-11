@@ -1,4 +1,4 @@
-import { ApiError, NetworkError } from './errors';
+import { ApiError, NetworkError } from '@forrajera/shared';
 
 const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api';
 const TOKEN_KEY = 'fw.token';
