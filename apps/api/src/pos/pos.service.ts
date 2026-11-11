@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { Prisma, RefundMethod, SalePayment } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { InventoryService } from '../inventory/inventory.service';
+import { LoginLimiter } from '../common/login-limiter';
 import { PrismaService } from '../prisma.service';
 
 const num = (d: Prisma.Decimal | number | null | undefined) => Number(d ?? 0);
@@ -33,7 +34,7 @@ export interface Authorization {
 
 @Injectable()
 export class PosService {
-  constructor(private prisma: PrismaService, private inventory: InventoryService) {}
+  constructor(private prisma: PrismaService, private inventory: InventoryService, private limiter: LoginLimiter) {}
 
   // ---------- turno de caja ----------
   private openShiftOf(userId: number) {
@@ -151,9 +152,15 @@ export class PosService {
 
   // ---------- autorización de supervisor ----------
   private async authorize(a?: Authorization): Promise<number> {
+    const key = `supervisor:${(a?.username ?? '').trim().toLowerCase()}`;
+    this.limiter.check(key);
     const user = a?.username ? await this.prisma.user.findUnique({ where: { username: a.username.trim() } }) : null;
     const ok = !!user && user.active && ['SUPERVISOR_RUTAS', 'ADMINISTRADOR'].includes(user.role) && (await bcrypt.compare(a!.password ?? '', user.passwordHash));
-    if (!ok) throw new ForbiddenException('Autorización inválida: se requiere un supervisor o administrador');
+    if (!ok) {
+      this.limiter.fail(key);
+      throw new ForbiddenException('Autorización inválida: se requiere un supervisor o administrador');
+    }
+    this.limiter.succeed(key);
     return user!.id;
   }
 
