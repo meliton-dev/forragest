@@ -24,7 +24,10 @@ describe('PEPS', () => {
     await inventory.addEntry({ productId: p.id, quantity: 5, unitCost: 10 });
     await inventory.addEntry({ productId: p.id, quantity: 5, unitCost: 12 });
     const consumed = await inventory.removeStock({ productId: p.id, quantity: 7, type: 'SALIDA_VENTA' });
-    expect(consumed.map((c) => [c.quantity, c.unitCost])).toEqual([[5, 10], [2, 12]]);
+    expect(consumed.map((c) => [c.quantity, c.unitCost])).toEqual([
+      [5, 10],
+      [2, 12],
+    ]);
     expect(await inventory.stockOf(p.id)).toBe(3);
   });
 
@@ -41,9 +44,7 @@ describe('concurrencia', () => {
     const p = await newProduct();
     await inventory.addEntry({ productId: p.id, quantity: 10, unitCost: 10 });
     // 6 ventas de 4 kg a la vez sobre 10 kg: solo caben 2.
-    const results = await Promise.allSettled(
-      Array.from({ length: 6 }, () => inventory.removeStock({ productId: p.id, quantity: 4, type: 'SALIDA_VENTA' })),
-    );
+    const results = await Promise.allSettled(Array.from({ length: 6 }, () => inventory.removeStock({ productId: p.id, quantity: 4, type: 'SALIDA_VENTA' })));
     expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(2);
     expect(await inventory.stockOf(p.id)).toBe(2);
   });

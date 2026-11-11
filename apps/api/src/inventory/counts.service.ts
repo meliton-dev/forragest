@@ -5,7 +5,10 @@ import { InventoryService } from './inventory.service';
 /** INV-006: conteo cíclico con reporte de diferencias. */
 @Injectable()
 export class CountsService {
-  constructor(private prisma: PrismaService, private inventory: InventoryService) {}
+  constructor(
+    private prisma: PrismaService,
+    private inventory: InventoryService,
+  ) {}
 
   async open(userId: number, lineCode?: string) {
     const line = lineCode ? await this.prisma.productLine.findUnique({ where: { code: lineCode.toUpperCase() } }) : null;
@@ -14,7 +17,8 @@ export class CountsService {
     if (!stock.length) throw new BadRequestException('No hay productos para contar');
     return this.prisma.inventoryCount.create({
       data: {
-        lineId: line?.id, createdBy: userId,
+        lineId: line?.id,
+        createdBy: userId,
         items: { create: stock.map((p) => ({ productId: p.id, systemQty: p.stock })) },
       },
       include: { items: true },
@@ -32,14 +36,18 @@ export class CountsService {
 
   async report(countId: number) {
     const count = await this.prisma.inventoryCount.findUnique({
-      where: { id: countId }, include: { items: { include: { product: true } } },
+      where: { id: countId },
+      include: { items: { include: { product: true } } },
     });
     if (!count) throw new NotFoundException('Conteo no encontrado');
     const items = count.items.map((i) => {
       const counted = i.countedQty === null ? null : Number(i.countedQty);
       return {
-        productId: i.productId, code: i.product.code, name: i.product.name,
-        systemQty: Number(i.systemQty), countedQty: counted,
+        productId: i.productId,
+        code: i.product.code,
+        name: i.product.name,
+        systemQty: Number(i.systemQty),
+        countedQty: counted,
         difference: counted === null ? null : +(counted - Number(i.systemQty)).toFixed(3),
       };
     });

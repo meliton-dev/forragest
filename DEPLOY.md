@@ -10,13 +10,13 @@ Además de cumplir con el reporte, con HTTPS la app **ya puede instalarse en el 
 
 ## Qué hay preparado en el repositorio
 
-| Archivo | Para qué sirve |
-|---|---|
-| `apps/api/Dockerfile` | Imagen de la API. Al arrancar aplica las migraciones y levanta el servicio. Probada: construye, arranca y responde en `/health`. |
-| `render.yaml` | "Blueprint" de Render: crea la base de datos, la API y la app móvil con un clic. |
-| `.env.example` | Variables que necesita la API (`DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS`…). |
-| `GET /health` | Estado público del servicio y de la base de datos. |
-| `scripts/reporte-remoto.mjs` | Genera el reporte con evidencia (ver abajo). |
+| Archivo                      | Para qué sirve                                                                                                                   |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/api/Dockerfile`        | Imagen de la API. Al arrancar aplica las migraciones y levanta el servicio. Probada: construye, arranca y responde en `/health`. |
+| `render.yaml`                | "Blueprint" de Render: crea la base de datos, la API y la app móvil con un clic.                                                 |
+| `.env.example`               | Variables que necesita la API (`DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS`…).                                                   |
+| `GET /health`                | Estado público del servicio y de la base de datos.                                                                               |
+| `scripts/reporte-remoto.mjs` | Genera el reporte con evidencia (ver abajo).                                                                                     |
 
 Seguridad ya incluida: en producción la API **no arranca** si `JWT_SECRET` falta o es débil, y con `CORS_ORIGINS` solo acepta peticiones de tus apps.
 
@@ -34,8 +34,8 @@ Necesitas una cuenta en [GitHub](https://github.com) y otra en [Render](https://
 4. Al terminar, copia las dos direcciones que Render asignó (por ejemplo `https://forragest-api.onrender.com` y `https://forragest-repartos.onrender.com`) y completa:
    - En la API: `CORS_ORIGINS` = dirección de la app móvil, y `SEED_PASSWORD` = una contraseña propia (no uses `cambiar123`).
    - En la app móvil: `VITE_API_URL` = dirección de la API.
-   Guarda y pulsa **Manual Deploy** en la app móvil (el valor se incorpora al compilar).
-5. **Carga los datos de demostración** desde tu computadora, apuntando a la base remota (copia la *External Database URL* desde Render):
+     Guarda y pulsa **Manual Deploy** en la app móvil (el valor se incorpora al compilar).
+5. **Carga los datos de demostración** desde tu computadora, apuntando a la base remota (copia la _External Database URL_ desde Render):
    ```bash
    DATABASE_URL="postgresql://…externa…" SEED_PASSWORD="tu-contraseña" npm run db:seed
    ```
@@ -51,6 +51,7 @@ docker run -d -p 3000:3000 \
   -e DATABASE_URL=postgresql://usuario:clave@host:5432/forragest \
   -e CORS_ORIGINS=https://tu-app.ejemplo.com forragest-api
 ```
+
 Pon delante un proxy con HTTPS (Caddy, Nginx o el del proveedor). La app móvil se compila con `VITE_API_URL=https://tu-api.ejemplo.com npm run build -w apps/driver` y la carpeta `apps/driver/dist` se publica en cualquier hosting estático (Netlify, Cloudflare Pages, Vercel…); ya incluye el archivo `_redirects` para las rutas internas.
 
 Genera un secreto así: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`

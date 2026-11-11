@@ -90,7 +90,14 @@ describe('devoluciones', () => {
     const s = await cash(p.id, 2);
     await expect(giveBack(s.id, s.items[0].id, 3)).rejects.toThrow(/Solo se pueden devolver/);
     await expect(
-      pos.createReturn(cashierId, { saleId: s.id, items: [{ saleItemId: s.items[0].id, quantity: 2 }, { saleItemId: s.items[0].id, quantity: 2 }], reason: 'x' }),
+      pos.createReturn(cashierId, {
+        saleId: s.id,
+        items: [
+          { saleItemId: s.items[0].id, quantity: 2 },
+          { saleItemId: s.items[0].id, quantity: 2 },
+        ],
+        reason: 'x',
+      }),
     ).rejects.toThrow(/Solo se pueden devolver/);
     expect(await inventory.stockOf(p.id)).toBe(998);
   });

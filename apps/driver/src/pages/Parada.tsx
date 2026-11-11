@@ -24,7 +24,15 @@ function Inner({ route }: { route: Route }) {
         title={stop.customer.name}
         sub={`Parada ${stop.sequence} de ${route.stops.length} · ETA ${stop.eta}`}
         back="/"
-        right={stop.status === 'ENTREGADA' ? <Badge tone="ok">Entregada</Badge> : stop.status === 'NO_ENTREGADA' ? <Badge tone="danger">No entregada</Badge> : <Badge tone="accent">Pendiente</Badge>}
+        right={
+          stop.status === 'ENTREGADA' ? (
+            <Badge tone="ok">Entregada</Badge>
+          ) : stop.status === 'NO_ENTREGADA' ? (
+            <Badge tone="danger">No entregada</Badge>
+          ) : (
+            <Badge tone="accent">Pendiente</Badge>
+          )
+        }
       />
       <div className="content">
         <div className="card">
@@ -54,7 +62,11 @@ function Inner({ route }: { route: Route }) {
           ))}
           <hr className="divider" />
           <Kv k="Condición de pago" v={stop.paymentTerms} />
-          <Kv k={stop.paymentTerms === 'Contado' ? 'Por cobrar al entregar' : 'Total de la entrega'} v={mxn(stop.total)} tone={stop.paymentTerms === 'Contado' ? 'var(--accent-dark)' : undefined} />
+          <Kv
+            k={stop.paymentTerms === 'Contado' ? 'Por cobrar al entregar' : 'Total de la entrega'}
+            v={mxn(stop.total)}
+            tone={stop.paymentTerms === 'Contado' ? 'var(--accent-dark)' : undefined}
+          />
         </div>
 
         {stop.instructions && (
@@ -63,12 +75,28 @@ function Inner({ route }: { route: Route }) {
             <div className="small muted2">{stop.instructions}</div>
           </div>
         )}
-        {stop.arrivedAt && pending && <Notice tone="info" icon="clock">Llegaste a las {hhmm(stop.arrivedAt)}.</Notice>}
-        {stop.status === 'ENTREGADA' && <Notice tone="ok" icon="check">Llegada {hhmm(stop.arrivedAt)} · entregada a las {hhmm(stop.deliveredAt)}.</Notice>}
-        {stop.status === 'NO_ENTREGADA' && <Notice tone="danger" icon="alert">No entregada: {FAIL_LABEL[stop.failReason ?? 'OTRO'] ?? stop.failReason}. El producto sigue en tu camión.</Notice>}
+        {stop.arrivedAt && pending && (
+          <Notice tone="info" icon="clock">
+            Llegaste a las {hhmm(stop.arrivedAt)}.
+          </Notice>
+        )}
+        {stop.status === 'ENTREGADA' && (
+          <Notice tone="ok" icon="check">
+            Llegada {hhmm(stop.arrivedAt)} · entregada a las {hhmm(stop.deliveredAt)}.
+          </Notice>
+        )}
+        {stop.status === 'NO_ENTREGADA' && (
+          <Notice tone="danger" icon="alert">
+            No entregada: {FAIL_LABEL[stop.failReason ?? 'OTRO'] ?? stop.failReason}. El producto sigue en tu camión.
+          </Notice>
+        )}
         {pending && route.status === 'PROGRAMADA' && (
           <Notice tone="warn" icon="truck">
-            Primero <Link to="/carga" className="link">carga el camión y sal a ruta</Link> para poder entregar.
+            Primero{' '}
+            <Link to="/carga" className="link">
+              carga el camión y sal a ruta
+            </Link>{' '}
+            para poder entregar.
           </Notice>
         )}
       </div>

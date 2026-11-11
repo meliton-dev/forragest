@@ -22,7 +22,10 @@ export interface PaymentInput {
 
 @Injectable()
 export class DriverService {
-  constructor(private prisma: PrismaService, private inventory: InventoryService) {}
+  constructor(
+    private prisma: PrismaService,
+    private inventory: InventoryService,
+  ) {}
 
   private mapRoute(r: RouteFull) {
     return {
@@ -56,7 +59,15 @@ export class DriverService {
           arrivedAt: s.arrivedAt,
           deliveredAt: s.deliveredAt,
           failReason: s.failReason,
-          customer: { id: s.customer.id, name: s.customer.name, address: s.customer.address, phone: s.customer.phone, contact: s.customer.contact, lat: s.customer.lat, lng: s.customer.lng },
+          customer: {
+            id: s.customer.id,
+            name: s.customer.name,
+            address: s.customer.address,
+            phone: s.customer.phone,
+            contact: s.customer.contact,
+            lat: s.customer.lat,
+            lng: s.customer.lng,
+          },
           items,
           total: items.reduce((a, i) => a + i.total, 0),
         };
@@ -143,11 +154,7 @@ export class DriverService {
     return { ok: true, saved: res.count };
   }
 
-  async deliver(
-    stopId: number,
-    userId: number,
-    dto: { clientOpId: string; deliveredAt?: string; signature?: string; photo?: string; payment?: PaymentInput },
-  ) {
+  async deliver(stopId: number, userId: number, dto: { clientOpId: string; deliveredAt?: string; signature?: string; photo?: string; payment?: PaymentInput }) {
     const stop = await this.ownedStop(stopId, userId);
     if (stop.status === 'ENTREGADA') return { ok: true, duplicate: true };
     if (stop.status === 'NO_ENTREGADA') throw new BadRequestException('La parada ya se marcó como no entregada');
@@ -160,8 +167,14 @@ export class DriverService {
       if (dto.payment && dto.payment.amount > 0) {
         await tx.payment.create({
           data: {
-            routeId: stop.routeId, stopId, customerId: stop.customerId, amount: dto.payment.amount, method: dto.payment.method,
-            receivedAt: at, clientOpId: `${dto.clientOpId}:pay`, userId,
+            routeId: stop.routeId,
+            stopId,
+            customerId: stop.customerId,
+            amount: dto.payment.amount,
+            method: dto.payment.method,
+            receivedAt: at,
+            clientOpId: `${dto.clientOpId}:pay`,
+            userId,
           },
         });
       }
@@ -179,8 +192,14 @@ export class DriverService {
       await tx.routeStop.update({ where: { id: stopId }, data: { status: 'NO_ENTREGADA', failReason: dto.reason, failNotes: dto.notes, photo: dto.photo } });
       await tx.incident.create({
         data: {
-          routeId: stop.routeId, stopId, type, description: `No entrega: ${dto.reason}${dto.notes ? ' · ' + dto.notes : ''}`,
-          photo: dto.photo, createdAt: at, clientOpId: `${dto.clientOpId}:inc`, userId,
+          routeId: stop.routeId,
+          stopId,
+          type,
+          description: `No entrega: ${dto.reason}${dto.notes ? ' · ' + dto.notes : ''}`,
+          photo: dto.photo,
+          createdAt: at,
+          clientOpId: `${dto.clientOpId}:inc`,
+          userId,
         },
       });
     });
@@ -197,8 +216,14 @@ export class DriverService {
     if (dto.amount <= 0) throw new BadRequestException('El monto debe ser mayor a 0');
     await this.prisma.payment.create({
       data: {
-        routeId: dto.routeId, stopId: dto.stopId, customerId: dto.customerId, amount: dto.amount, method: dto.method,
-        receivedAt: dto.receivedAt ? new Date(dto.receivedAt) : new Date(), clientOpId: dto.clientOpId, userId,
+        routeId: dto.routeId,
+        stopId: dto.stopId,
+        customerId: dto.customerId,
+        amount: dto.amount,
+        method: dto.method,
+        receivedAt: dto.receivedAt ? new Date(dto.receivedAt) : new Date(),
+        clientOpId: dto.clientOpId,
+        userId,
       },
     });
     return { ok: true };
@@ -229,8 +254,14 @@ export class DriverService {
     if (dup) return { ok: true, duplicate: true };
     await this.prisma.incident.create({
       data: {
-        routeId: dto.routeId, stopId: dto.stopId, type: dto.type, description: dto.description, photo: dto.photo,
-        createdAt: dto.createdAt ? new Date(dto.createdAt) : new Date(), clientOpId: dto.clientOpId, userId,
+        routeId: dto.routeId,
+        stopId: dto.stopId,
+        type: dto.type,
+        description: dto.description,
+        photo: dto.photo,
+        createdAt: dto.createdAt ? new Date(dto.createdAt) : new Date(),
+        clientOpId: dto.clientOpId,
+        userId,
       },
     });
     return { ok: true };
@@ -262,7 +293,9 @@ export class DriverService {
       pending: count('PENDIENTE'),
       collected: pay.total,
       byMethod: pay.byMethod,
-      pendingToCollect: route.stops.filter((s) => s.status === 'PENDIENTE').reduce((a, s) => a + (s.paymentTerms === 'Contado' ? s.items.reduce((x, i) => x + num(i.quantity) * num(i.unitPrice), 0) : 0), 0),
+      pendingToCollect: route.stops
+        .filter((s) => s.status === 'PENDIENTE')
+        .reduce((a, s) => a + (s.paymentTerms === 'Contado' ? s.items.reduce((x, i) => x + num(i.quantity) * num(i.unitPrice), 0) : 0), 0),
       leftover: [...left.values()],
       departedAt: route.departedAt,
       returnedAt: route.returnedAt,

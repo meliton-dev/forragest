@@ -18,7 +18,10 @@ function assertProductionConfig() {
 async function bootstrap() {
   assertProductionConfig();
   // CORS_ORIGINS="https://app.ejemplo.com,https://caja.ejemplo.com"; sin definir (desarrollo) acepta cualquier origen
-  const origins = (process.env.CORS_ORIGINS ?? '').split(',').map((o) => o.trim()).filter(Boolean);
+  const origins = (process.env.CORS_ORIGINS ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { cors: origins.length ? { origin: origins } : true });
   app.use(helmet()); // cabeceras de seguridad HTTP
   app.set('trust proxy', 1); // detrás del balanceador del hosting (HTTPS termina allí)

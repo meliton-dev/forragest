@@ -12,7 +12,11 @@ async function call(token, method, path, body) {
   });
   const text = await res.text();
   let json;
-  try { json = JSON.parse(text); } catch { json = text; }
+  try {
+    json = JSON.parse(text);
+  } catch {
+    json = text;
+  }
   return { status: res.status, json };
 }
 function check(name, cond, extra = '') {
@@ -52,7 +56,10 @@ check('búsqueda por nombre', busca.length >= 1 && busca.every((c) => /postura/i
 // ---- venta en efectivo
 const bv0 = await stockKg('BV-001');
 const av0 = await stockKg('AV-001');
-const lines = [{ productId: bv.productId, presentationId: bv.presentationId, quantity: 2 }, { productId: av.productId, presentationId: av.presentationId, quantity: 1 }];
+const lines = [
+  { productId: bv.productId, presentationId: bv.presentationId, quantity: 2 },
+  { productId: av.productId, presentationId: av.presentationId, quantity: 1 },
+];
 const s1 = await call(cajero, 'POST', '/pos/sales', { clientOpId: 'smoke-pos-1-' + Date.now(), items: lines, paymentMethod: 'EFECTIVO', received: 1500 });
 check('venta de contado: total, recibido y cambio', s1.status === 201 && s1.json.total === 1240 && s1.json.change === 260, `folio ${s1.json.folio}`);
 check('el inventario baja en tiempo real (80 kg y 40 kg)', bv0 - (await stockKg('BV-001')) === 80 && av0 - (await stockKg('AV-001')) === 40);
@@ -66,15 +73,35 @@ check('reenviar la misma venta no la duplica', a.json.folio === b.json.folio);
 // ---- descuento con autorización
 const noAuth = await call(cajero, 'POST', '/pos/sales', { items: lines, paymentMethod: 'EFECTIVO', received: 2000, discountPercent: 5 });
 check('descuento sin autorización → 403', noAuth.status === 403);
-const badAuth = await call(cajero, 'POST', '/pos/sales', { items: lines, paymentMethod: 'EFECTIVO', received: 2000, discountPercent: 5, authorization: { username: 'cajero', password: 'cambiar123' } });
+const badAuth = await call(cajero, 'POST', '/pos/sales', {
+  items: lines,
+  paymentMethod: 'EFECTIVO',
+  received: 2000,
+  discountPercent: 5,
+  authorization: { username: 'cajero', password: 'cambiar123' },
+});
 check('un cajero no puede autorizar su propio descuento', badAuth.status === 403);
-const wrongPw = await call(cajero, 'POST', '/pos/sales', { items: lines, paymentMethod: 'EFECTIVO', received: 2000, discountPercent: 5, authorization: { username: 'supervisor', password: 'mala' } });
+const wrongPw = await call(cajero, 'POST', '/pos/sales', {
+  items: lines,
+  paymentMethod: 'EFECTIVO',
+  received: 2000,
+  discountPercent: 5,
+  authorization: { username: 'supervisor', password: 'mala' },
+});
 check('contraseña de supervisor incorrecta → 403', wrongPw.status === 403);
 const disc = await call(cajero, 'POST', '/pos/sales', { items: lines, paymentMethod: 'EFECTIVO', received: 1200, discountPercent: 5, authorization: SUP });
-check('descuento 5 % autorizado por supervisor', disc.status === 201 && disc.json.discountAmount === 62 && disc.json.total === 1178 && disc.json.change === 22, `total $${disc.json.total}`);
+check(
+  'descuento 5 % autorizado por supervisor',
+  disc.status === 201 && disc.json.discountAmount === 62 && disc.json.total === 1178 && disc.json.change === 22,
+  `total $${disc.json.total}`,
+);
 
 // ---- existencia insuficiente
-const sinStock = await call(cajero, 'POST', '/pos/sales', { items: [{ productId: agotado.productId, presentationId: agotado.presentationId, quantity: 1 }], paymentMethod: 'EFECTIVO', received: 1000 });
+const sinStock = await call(cajero, 'POST', '/pos/sales', {
+  items: [{ productId: agotado.productId, presentationId: agotado.presentationId, quantity: 1 }],
+  paymentMethod: 'EFECTIVO',
+  received: 1000,
+});
 check('sin existencia se rechaza y nombra el producto', sinStock.status === 400 && /Sal mineralizada/.test(sinStock.json.message), sinStock.json.message);
 
 // ---- crédito
@@ -94,20 +121,40 @@ check('el saldo del cliente aumenta', bal1 - bal0 === 1240, `${bal0} → ${bal1}
 
 // ---- devolución con nota de crédito
 const bvBeforeReturn = await stockKg('BV-001');
-const ret = await call(cajero, 'POST', '/pos/returns', { saleId: s1.json.id, items: [{ saleItemId: s1.json.items[0].id, quantity: 1 }], reason: 'Producto en mal estado', refundMethod: 'EFECTIVO' });
+const ret = await call(cajero, 'POST', '/pos/returns', {
+  saleId: s1.json.id,
+  items: [{ saleItemId: s1.json.items[0].id, quantity: 1 }],
+  reason: 'Producto en mal estado',
+  refundMethod: 'EFECTIVO',
+});
 check('devolución de 1 saco genera nota de crédito', ret.status === 201 && ret.json.total === 430 && ret.json.folio > 0, `NC ${ret.json.folio}`);
 check('la devolución regresa 40 kg al inventario', (await stockKg('BV-001')) - bvBeforeReturn === 40);
 const over = await call(cajero, 'POST', '/pos/returns', { saleId: s1.json.id, items: [{ saleItemId: s1.json.items[0].id, quantity: 5 }], reason: 'x' });
 check('no se puede devolver más de lo vendido', over.status === 400, over.json.message);
-const retDisc = await call(cajero, 'POST', '/pos/returns', { saleId: disc.json.id, items: [{ saleItemId: disc.json.items[1].id, quantity: 1 }], reason: 'Cambio', refundMethod: 'EFECTIVO' });
+const retDisc = await call(cajero, 'POST', '/pos/returns', {
+  saleId: disc.json.id,
+  items: [{ saleItemId: disc.json.items[1].id, quantity: 1 }],
+  reason: 'Cambio',
+  refundMethod: 'EFECTIVO',
+});
 check('la devolución prorratea el descuento de la venta (380 − 5 % = 361)', retDisc.json.total === 361, `$${retDisc.json.total}`);
-const retCredit = await call(cajero, 'POST', '/pos/returns', { saleId: cred.json.id, items: [{ saleItemId: cred.json.items[1].id, quantity: 1 }], reason: 'No lo necesitaba' });
-check('devolver una venta a crédito baja el saldo del cliente', retCredit.json.refundMethod === 'SALDO_A_FAVOR' && (await call(cajero, 'GET', `/pos/customers/${pinos.id}/credit`)).json.balance === bal1 - 380);
+const retCredit = await call(cajero, 'POST', '/pos/returns', {
+  saleId: cred.json.id,
+  items: [{ saleItemId: cred.json.items[1].id, quantity: 1 }],
+  reason: 'No lo necesitaba',
+});
+check(
+  'devolver una venta a crédito baja el saldo del cliente',
+  retCredit.json.refundMethod === 'SALDO_A_FAVOR' && (await call(cajero, 'GET', `/pos/customers/${pinos.id}/credit`)).json.balance === bal1 - 380,
+);
 
 // ---- cancelación con autorización
 const toCancel = await call(cajero, 'POST', '/pos/sales', { items: [lines[1]], paymentMethod: 'EFECTIVO', received: 400 });
 const avBefore = await stockKg('AV-001');
-const cNo = await call(cajero, 'POST', `/pos/sales/${toCancel.json.id}/cancel`, { reason: 'Error de captura', authorization: { username: 'supervisor', password: 'x' } });
+const cNo = await call(cajero, 'POST', `/pos/sales/${toCancel.json.id}/cancel`, {
+  reason: 'Error de captura',
+  authorization: { username: 'supervisor', password: 'x' },
+});
 check('cancelar sin autorización válida → 403', cNo.status === 403);
 const cOk = await call(cajero, 'POST', `/pos/sales/${toCancel.json.id}/cancel`, { reason: 'Error de captura', authorization: SUP });
 check('cancelación autorizada', cOk.status === 201 && cOk.json.status === 'CANCELADA');
@@ -122,7 +169,11 @@ const list = (await call(cajero, 'GET', '/pos/sales')).json;
 check('ventas del día', list.length >= 5 && list.some((s) => s.status === 'CANCELADA'), `${list.length} ventas`);
 const sum = (await call(cajero, 'GET', '/pos/shift')).json;
 const expectedCash = 1000 + 1240 + 1178 - 430 - 361 + 0; // fondo + efectivo (s1, descuento) − reembolsos en efectivo
-check('corte: efectivo esperado = fondo + ventas en efectivo − reembolsos', sum.expectedCash === expectedCash, `$${sum.expectedCash} (esperado $${expectedCash})`);
+check(
+  'corte: efectivo esperado = fondo + ventas en efectivo − reembolsos',
+  sum.expectedCash === expectedCash,
+  `$${sum.expectedCash} (esperado $${expectedCash})`,
+);
 check('corte: totales por forma de pago', sum.byMethod.CREDITO.total === 1240 && sum.byMethod.TARJETA.count === 1 && sum.cancelledCount === 1);
 const closed = await call(cajero, 'POST', '/pos/shift/close', { countedCash: sum.expectedCash - 10, notes: 'Prueba', denominations: { 500: 2 } });
 check('cierre de turno con diferencia de −$10', closed.status === 201 && closed.json.difference === -10, `dif $${closed.json.difference}`);

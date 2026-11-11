@@ -39,8 +39,14 @@ export class InventoryService {
       });
       await t.inventoryMovement.create({
         data: {
-          productId: input.productId, lotId: lot.id, type: input.type ?? 'ENTRADA_COMPRA', quantity: input.quantity,
-          reason: input.reason, refType: input.refType, refId: input.refId, userId: input.userId,
+          productId: input.productId,
+          lotId: lot.id,
+          type: input.type ?? 'ENTRADA_COMPRA',
+          quantity: input.quantity,
+          reason: input.reason,
+          refType: input.refType,
+          refId: input.refId,
+          userId: input.userId,
         },
       });
       return lot;
@@ -75,8 +81,14 @@ export class InventoryService {
         await t.stockLot.update({ where: { id: lot.id }, data: { quantity: { decrement: take } } });
         await t.inventoryMovement.create({
           data: {
-            productId: input.productId, lotId: lot.id, type: input.type, quantity: -take,
-            reason: input.reason, refType: input.refType, refId: input.refId, userId: input.userId,
+            productId: input.productId,
+            lotId: lot.id,
+            type: input.type,
+            quantity: -take,
+            reason: input.reason,
+            refType: input.refType,
+            refId: input.refId,
+            userId: input.userId,
           },
         });
         consumed.push({ lotId: lot.id, quantity: take, unitCost: Number(lot.unitCost) });

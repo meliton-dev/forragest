@@ -25,7 +25,8 @@ export const emptyCart = (): Cart => ({ lines: [], customer: null, payment: 'EFE
 export function totalsOf(cart: Cart) {
   const subtotal = r2(cart.lines.reduce((a, l) => a + r2(l.qty * l.item.price), 0));
   let discount = 0;
-  if (cart.discount) discount = cart.discount.mode === 'PERCENT' ? r2((subtotal * Math.min(cart.discount.value, 100)) / 100) : r2(Math.min(cart.discount.value, subtotal));
+  if (cart.discount)
+    discount = cart.discount.mode === 'PERCENT' ? r2((subtotal * Math.min(cart.discount.value, 100)) / 100) : r2(Math.min(cart.discount.value, subtotal));
   const total = r2(subtotal - discount);
   const received = Number(cart.received) || 0;
   return { subtotal, discount, total, received, change: Math.max(0, r2(received - total)) };

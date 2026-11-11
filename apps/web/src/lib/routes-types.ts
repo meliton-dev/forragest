@@ -63,16 +63,44 @@ export interface RouteOptions {
 export interface MonitorRoute extends RouteRow {
   lastPing: { lat: number; lng: number; at: string } | null;
   trail: [number, number][];
-  stopsMap: { id: number; sequence: number; status: StopStatus; eta: string | null; arrivedAt: string | null; deliveredAt: string | null; customer: { name: string; address: string; lat: number | null; lng: number | null } }[];
+  stopsMap: {
+    id: number;
+    sequence: number;
+    status: StopStatus;
+    eta: string | null;
+    arrivedAt: string | null;
+    deliveredAt: string | null;
+    customer: { name: string; address: string; lat: number | null; lng: number | null };
+  }[];
 }
 
 export interface Efficiency {
   from: string;
   to: string;
   toleranceMin: number;
-  kpis: { stops: number; delivered: number; onTime: number; late: number; failed: number; onTimePct: number | null; latePct: number | null; avgMinutes: number | null };
+  kpis: {
+    stops: number;
+    delivered: number;
+    onTime: number;
+    late: number;
+    failed: number;
+    onTimePct: number | null;
+    latePct: number | null;
+    avgMinutes: number | null;
+  };
   perDay: { date: string; onTime: number; late: number; failed: number }[];
-  perDriver: { driverId: number; name: string; routes: number; stops: number; onTime: number; late: number; failed: number; onTimePct: number | null; avgMinutes: number | null; collected: number }[];
+  perDriver: {
+    driverId: number;
+    name: string;
+    routes: number;
+    stops: number;
+    onTime: number;
+    late: number;
+    failed: number;
+    onTimePct: number | null;
+    avgMinutes: number | null;
+    collected: number;
+  }[];
   reasons: Record<string, number>;
 }
 

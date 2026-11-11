@@ -87,8 +87,14 @@ function Inner({ route }: { route: import('../lib/types').Route }) {
             </button>
           );
         })}
-        <Notice tone="neutral" icon="truck">Al confirmar, el inventario sale del almacén y queda “en tránsito” en tu camión.</Notice>
-        {error && <Notice tone="danger" icon="alert">{error}</Notice>}
+        <Notice tone="neutral" icon="truck">
+          Al confirmar, el inventario sale del almacén y queda “en tránsito” en tu camión.
+        </Notice>
+        {error && (
+          <Notice tone="danger" icon="alert">
+            {error}
+          </Notice>
+        )}
       </div>
       <div className="bar">
         <Button icon="route" disabled={busy || checked.size < list.length} onClick={confirm}>

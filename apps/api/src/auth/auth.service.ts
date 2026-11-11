@@ -6,7 +6,11 @@ import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService, private jwt: JwtService, private limiter: LoginLimiter) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwt: JwtService,
+    private limiter: LoginLimiter,
+  ) {}
 
   async login(username: string, password: string, ip = '') {
     const key = `login:${username.trim().toLowerCase()}:${ip}`;

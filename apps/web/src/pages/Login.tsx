@@ -43,7 +43,15 @@ export function Login({ onDone }: { onDone: () => void }) {
           <div className="small muted">Ingresa con tu usuario</div>
         </div>
         <Field label="Usuario">
-          <Input icon="user" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="ej. cajero" autoCapitalize="none" autoComplete="username" required />
+          <Input
+            icon="user"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="ej. cajero"
+            autoCapitalize="none"
+            autoComplete="username"
+            required
+          />
         </Field>
         <Field
           label="Contraseña"
@@ -53,9 +61,21 @@ export function Login({ onDone }: { onDone: () => void }) {
             </button>
           }
         >
-          <Input icon="lock" type={show ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" required />
+          <Input
+            icon="lock"
+            type={show ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            autoComplete="current-password"
+            required
+          />
         </Field>
-        {error && <Notice tone="danger" icon="alert">{error}</Notice>}
+        {error && (
+          <Notice tone="danger" icon="alert">
+            {error}
+          </Notice>
+        )}
         <Button variant="primary" size="lg" type="submit" disabled={busy || !username || !password}>
           {busy ? 'Entrando…' : 'Entrar'}
         </Button>

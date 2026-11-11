@@ -38,7 +38,11 @@ export interface Authorization {
 
 @Injectable()
 export class PosService {
-  constructor(private prisma: PrismaService, private inventory: InventoryService, private limiter: LoginLimiter) {}
+  constructor(
+    private prisma: PrismaService,
+    private inventory: InventoryService,
+    private limiter: LoginLimiter,
+  ) {}
 
   // ---------- turno de caja ----------
   private openShiftOf(userId: number) {
@@ -76,8 +80,13 @@ export class PosService {
     const expectedCash = r2(num(shift.openingFloat) + byMethod.EFECTIVO.total - cashRefunds);
     return {
       shift: {
-        id: shift.id, register: shift.register, openedAt: shift.openedAt, closedAt: shift.closedAt, status: shift.status,
-        openingFloat: num(shift.openingFloat), countedCash: shift.countedCash === null ? null : num(shift.countedCash),
+        id: shift.id,
+        register: shift.register,
+        openedAt: shift.openedAt,
+        closedAt: shift.closedAt,
+        status: shift.status,
+        openingFloat: num(shift.openingFloat),
+        countedCash: shift.countedCash === null ? null : num(shift.countedCash),
         difference: shift.difference === null ? null : num(shift.difference),
       },
       salesCount: done.length,
@@ -97,8 +106,13 @@ export class PosService {
     await this.prisma.cashShift.update({
       where: { id: shift.id },
       data: {
-        status: 'CERRADO', closedAt: new Date(), expectedCash: sum.expectedCash, countedCash: dto.countedCash, difference,
-        notes: dto.notes, denominations: dto.denominations as Prisma.InputJsonValue | undefined,
+        status: 'CERRADO',
+        closedAt: new Date(),
+        expectedCash: sum.expectedCash,
+        countedCash: dto.countedCash,
+        difference,
+        notes: dto.notes,
+        denominations: dto.denominations as Prisma.InputJsonValue | undefined,
       },
     });
     return { ...(await this.shiftSummary(shift.id)), difference };
@@ -121,12 +135,27 @@ export class PosService {
     for (const p of products) {
       const kg = stock.get(p.id) ?? 0;
       const pres = p.presentations.length
-        ? p.presentations.map((x) => ({ id: x.id as number | null, name: x.name, factor: num(x.factor), price: x.salePrice !== null ? num(x.salePrice) : r2(num(p.salePrice) * num(x.factor)) }))
+        ? p.presentations.map((x) => ({
+            id: x.id as number | null,
+            name: x.name,
+            factor: num(x.factor),
+            price: x.salePrice !== null ? num(x.salePrice) : r2(num(p.salePrice) * num(x.factor)),
+          }))
         : [{ id: null, name: p.unit === 'kg' ? 'Granel · kg' : p.unit, factor: 1, price: num(p.salePrice) }];
       for (const x of pres) {
         out.push({
-          key: `${p.id}-${x.id ?? 0}`, productId: p.id, presentationId: x.id, code: p.code, name: p.name, line: p.line.code,
-          presentation: x.name, factor: x.factor, price: x.price, stockKg: kg, stockUnits: Math.floor(kg / x.factor), low: kg <= num(p.minStock),
+          key: `${p.id}-${x.id ?? 0}`,
+          productId: p.id,
+          presentationId: x.id,
+          code: p.code,
+          name: p.name,
+          line: p.line.code,
+          presentation: x.name,
+          factor: x.factor,
+          price: x.price,
+          stockKg: kg,
+          stockUnits: Math.floor(kg / x.factor),
+          low: kg <= num(p.minStock),
         });
       }
     }
@@ -159,7 +188,8 @@ export class PosService {
     const key = `supervisor:${(a?.username ?? '').trim().toLowerCase()}`;
     this.limiter.check(key);
     const user = a?.username ? await this.prisma.user.findUnique({ where: { username: a.username.trim() } }) : null;
-    const ok = !!user && user.active && ['SUPERVISOR_RUTAS', 'ADMINISTRADOR'].includes(user.role) && (await bcrypt.compare(a!.password ?? '', user.passwordHash));
+    const ok =
+      !!user && user.active && ['SUPERVISOR_RUTAS', 'ADMINISTRADOR'].includes(user.role) && (await bcrypt.compare(a!.password ?? '', user.passwordHash));
     if (!ok) {
       this.limiter.fail(key);
       throw new ForbiddenException('Autorización inválida: se requiere un supervisor o administrador');
@@ -178,8 +208,14 @@ export class PosService {
   async createSale(
     userId: number,
     dto: {
-      clientOpId?: string; items: SaleLineInput[]; customerId?: number; paymentMethod: SalePayment; received?: number;
-      discountPercent?: number; discountAmount?: number; authorization?: Authorization;
+      clientOpId?: string;
+      items: SaleLineInput[];
+      customerId?: number;
+      paymentMethod: SalePayment;
+      received?: number;
+      discountPercent?: number;
+      discountAmount?: number;
+      authorization?: Authorization;
     },
   ) {
     if (dto.clientOpId) {
@@ -189,7 +225,10 @@ export class PosService {
     const shift = await this.requireShift(userId);
     if (!dto.items.length) throw new BadRequestException('Agrega al menos un producto');
 
-    const products = await this.prisma.product.findMany({ where: { id: { in: dto.items.map((i) => i.productId) }, active: true }, include: { presentations: true } });
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: dto.items.map((i) => i.productId) }, active: true },
+      include: { presentations: true },
+    });
     const lines = dto.items.map((i) => {
       const p = products.find((x) => x.id === i.productId);
       if (!p) throw new BadRequestException('Producto no disponible');
@@ -198,8 +237,14 @@ export class PosService {
       const factor = pr ? num(pr.factor) : 1;
       const unitPrice = pr ? (pr.salePrice !== null ? num(pr.salePrice) : r2(num(p.salePrice) * factor)) : num(p.salePrice);
       return {
-        p, productId: p.id, presentation: pr ? pr.name : p.unit === 'kg' ? 'Granel · kg' : p.unit, factor, quantity: i.quantity, unitPrice,
-        total: r2(i.quantity * unitPrice), kg: r3(i.quantity * factor),
+        p,
+        productId: p.id,
+        presentation: pr ? pr.name : p.unit === 'kg' ? 'Granel · kg' : p.unit,
+        factor,
+        quantity: i.quantity,
+        unitPrice,
+        total: r2(i.quantity * unitPrice),
+        kg: r3(i.quantity * factor),
       };
     });
     const subtotal = r2(lines.reduce((a, l) => a + l.total, 0));
@@ -241,20 +286,46 @@ export class PosService {
           if (credit.blocked) throw new BadRequestException(`Crédito bloqueado: ${credit.reason}`);
           if (total > credit.available) throw new BadRequestException(`La venta excede el crédito disponible (${money(credit.available)})`);
         }
-        await this.inventory.lockProducts(lines.map((l) => l.productId), tx);
+        await this.inventory.lockProducts(
+          lines.map((l) => l.productId),
+          tx,
+        );
         const sale = await tx.sale.create({
           data: {
-            shiftId: shift.id, cashierId: userId, customerId: dto.customerId ?? null, status, paymentMethod: dto.paymentMethod, subtotal, discountAmount,
-            total, received, change, balance, dueDate, discountAuthorizedById, clientOpId: dto.clientOpId,
+            shiftId: shift.id,
+            cashierId: userId,
+            customerId: dto.customerId ?? null,
+            status,
+            paymentMethod: dto.paymentMethod,
+            subtotal,
+            discountAmount,
+            total,
+            received,
+            change,
+            balance,
+            dueDate,
+            discountAuthorizedById,
+            clientOpId: dto.clientOpId,
           },
         });
         for (const l of lines) {
           const item = await tx.saleItem.create({
-            data: { saleId: sale.id, productId: l.productId, presentation: l.presentation, factor: l.factor, quantity: l.quantity, unitPrice: l.unitPrice, total: l.total },
+            data: {
+              saleId: sale.id,
+              productId: l.productId,
+              presentation: l.presentation,
+              factor: l.factor,
+              quantity: l.quantity,
+              unitPrice: l.unitPrice,
+              total: l.total,
+            },
           });
           let consumed;
           try {
-            consumed = await this.inventory.removeStock({ productId: l.productId, quantity: l.kg, type: 'SALIDA_VENTA', reason: `Venta folio ${sale.folio}`, refType: 'Venta', refId: sale.id, userId }, tx);
+            consumed = await this.inventory.removeStock(
+              { productId: l.productId, quantity: l.kg, type: 'SALIDA_VENTA', reason: `Venta folio ${sale.folio}`, refType: 'Venta', refId: sale.id, userId },
+              tx,
+            );
           } catch (e) {
             if (e instanceof BadRequestException) throw new BadRequestException(`${l.p.name}: ${e.message}`);
             throw e;
@@ -277,14 +348,33 @@ export class PosService {
     if (!s) throw new NotFoundException('Venta no encontrada');
     const cashier = await this.prisma.user.findUnique({ where: { id: s.cashierId } });
     return {
-      id: s.id, folio: s.folio, createdAt: s.createdAt, status: s.status, paymentMethod: s.paymentMethod,
+      id: s.id,
+      folio: s.folio,
+      createdAt: s.createdAt,
+      status: s.status,
+      paymentMethod: s.paymentMethod,
       customer: s.customer ? { id: s.customer.id, name: s.customer.name } : null,
-      subtotal: num(s.subtotal), discountAmount: num(s.discountAmount), total: num(s.total), received: s.received === null ? null : num(s.received),
-      change: s.change === null ? null : num(s.change), balance: num(s.balance), dueDate: s.dueDate, cancelReason: s.cancelReason,
-      cashier: cashier?.fullName ?? '', register: s.shift.register,
+      subtotal: num(s.subtotal),
+      discountAmount: num(s.discountAmount),
+      total: num(s.total),
+      received: s.received === null ? null : num(s.received),
+      change: s.change === null ? null : num(s.change),
+      balance: num(s.balance),
+      dueDate: s.dueDate,
+      cancelReason: s.cancelReason,
+      cashier: cashier?.fullName ?? '',
+      register: s.shift.register,
       items: s.items.map((i) => ({
-        id: i.id, productId: i.productId, code: i.product.code, name: i.product.name, presentation: i.presentation, factor: num(i.factor),
-        quantity: num(i.quantity), unitPrice: num(i.unitPrice), total: num(i.total), returnedQty: num(i.returnedQty),
+        id: i.id,
+        productId: i.productId,
+        code: i.product.code,
+        name: i.product.name,
+        presentation: i.presentation,
+        factor: num(i.factor),
+        quantity: num(i.quantity),
+        unitPrice: num(i.unitPrice),
+        total: num(i.total),
+        returnedQty: num(i.returnedQty),
       })),
       creditNotes: s.creditNotes.map((n) => ({ id: n.id, folio: n.folio, total: num(n.total), refundMethod: n.refundMethod, createdAt: n.createdAt })),
     };
@@ -313,8 +403,13 @@ export class PosService {
       take: 100,
     });
     return rows.map((s) => ({
-      id: s.id, folio: s.folio, createdAt: s.createdAt, customer: s.customer?.name ?? 'Público general', paymentMethod: s.paymentMethod,
-      total: num(s.total), status: s.status,
+      id: s.id,
+      folio: s.folio,
+      createdAt: s.createdAt,
+      customer: s.customer?.name ?? 'Público general',
+      paymentMethod: s.paymentMethod,
+      total: num(s.total),
+      status: s.status,
     }));
   }
 
@@ -334,11 +429,23 @@ export class PosService {
       for (const i of sale.items) {
         const kg = r3(num(i.quantity) * num(i.factor));
         await this.inventory.addEntry(
-          { productId: i.productId, quantity: kg, unitCost: kg ? r2(num(i.costTotal) / kg) : 0, type: 'ENTRADA_DEVOLUCION', reason: `Cancelación folio ${sale.folio}`, refType: 'Venta', refId: sale.id, userId },
+          {
+            productId: i.productId,
+            quantity: kg,
+            unitCost: kg ? r2(num(i.costTotal) / kg) : 0,
+            type: 'ENTRADA_DEVOLUCION',
+            reason: `Cancelación folio ${sale.folio}`,
+            refType: 'Venta',
+            refId: sale.id,
+            userId,
+          },
           tx,
         );
       }
-      await tx.sale.update({ where: { id: saleId }, data: { status: 'CANCELADA', balance: 0, cancelledAt: new Date(), cancelReason: dto.reason, cancelAuthorizedById: authId } });
+      await tx.sale.update({
+        where: { id: saleId },
+        data: { status: 'CANCELADA', balance: 0, cancelledAt: new Date(), cancelReason: dto.reason, cancelAuthorizedById: authId },
+      });
     });
     return this.getSale(saleId);
   }
@@ -380,16 +487,27 @@ export class PosService {
         total = r2(picked.reduce((a, p) => a + p.amount, 0));
       }
       const onCredit = sale.paymentMethod === 'CREDITO';
-      const refundMethod: RefundMethod = onCredit ? 'SALDO_A_FAVOR' : dto.refundMethod ?? 'EFECTIVO';
+      const refundMethod: RefundMethod = onCredit ? 'SALDO_A_FAVOR' : (dto.refundMethod ?? 'EFECTIVO');
 
-      const note = await tx.creditNote.create({ data: { saleId: sale.id, shiftId: shift.id, total, refundMethod, reason: dto.reason, comments: dto.comments, userId } });
+      const note = await tx.creditNote.create({
+        data: { saleId: sale.id, shiftId: shift.id, total, refundMethod, reason: dto.reason, comments: dto.comments, userId },
+      });
       for (const p of picked) {
         await tx.creditNoteItem.create({ data: { creditNoteId: note.id, saleItemId: p.it.id, quantity: p.qty, amount: p.amount } });
         await tx.saleItem.update({ where: { id: p.it.id }, data: { returnedQty: { increment: p.qty } } });
         const kg = r3(p.qty * num(p.it.factor));
         const totalKg = num(p.it.quantity) * num(p.it.factor);
         await this.inventory.addEntry(
-          { productId: p.it.productId, quantity: kg, unitCost: totalKg ? r2(num(p.it.costTotal) / totalKg) : 0, type: 'ENTRADA_DEVOLUCION', reason: `Devolución folio ${sale.folio}`, refType: 'NotaCredito', refId: note.id, userId },
+          {
+            productId: p.it.productId,
+            quantity: kg,
+            unitCost: totalKg ? r2(num(p.it.costTotal) / totalKg) : 0,
+            type: 'ENTRADA_DEVOLUCION',
+            reason: `Devolución folio ${sale.folio}`,
+            refType: 'NotaCredito',
+            refId: note.id,
+            userId,
+          },
           tx,
         );
       }
@@ -398,11 +516,25 @@ export class PosService {
       }
       return { noteId: note.id, saleFolio: sale.folio };
     });
-    const note = await this.prisma.creditNote.findUniqueOrThrow({ where: { id: noteId }, include: { items: { include: { saleItem: { include: { product: true } } } } } });
+    const note = await this.prisma.creditNote.findUniqueOrThrow({
+      where: { id: noteId },
+      include: { items: { include: { saleItem: { include: { product: true } } } } },
+    });
     return {
-      id: note.id, folio: note.folio, total: num(note.total), refundMethod: note.refundMethod, reason: note.reason, createdAt: note.createdAt,
-      saleFolio, store: STORE,
-      items: note.items.map((i) => ({ name: i.saleItem.product.name, presentation: i.saleItem.presentation, quantity: num(i.quantity), amount: num(i.amount) })),
+      id: note.id,
+      folio: note.folio,
+      total: num(note.total),
+      refundMethod: note.refundMethod,
+      reason: note.reason,
+      createdAt: note.createdAt,
+      saleFolio,
+      store: STORE,
+      items: note.items.map((i) => ({
+        name: i.saleItem.product.name,
+        presentation: i.saleItem.presentation,
+        quantity: num(i.quantity),
+        amount: num(i.amount),
+      })),
     };
   }
 }

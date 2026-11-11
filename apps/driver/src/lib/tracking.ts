@@ -37,7 +37,11 @@ const patch = (p: Partial<TState>) => {
   state = { ...state, ...p };
   listeners.forEach((l) => l());
 };
-export const useTracking = () => useSyncExternalStore((cb) => (listeners.add(cb), () => listeners.delete(cb)), () => state);
+export const useTracking = () =>
+  useSyncExternalStore(
+    (cb) => (listeners.add(cb), () => listeners.delete(cb)),
+    () => state,
+  );
 
 let routeId: number | null = null;
 let watchId: number | null = null;

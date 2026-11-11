@@ -5,7 +5,16 @@ import { PrismaService } from '../prisma.service';
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(dto: { code: string; name: string; description?: string; lineCode: string; unit: string; purchasePrice: number; salePrice: number; minStock?: number }) {
+  async create(dto: {
+    code: string;
+    name: string;
+    description?: string;
+    lineCode: string;
+    unit: string;
+    purchasePrice: number;
+    salePrice: number;
+    minStock?: number;
+  }) {
     const line = await this.prisma.productLine.findUnique({ where: { code: dto.lineCode.toUpperCase() } });
     if (!line) throw new NotFoundException('Línea no encontrada');
     if (await this.prisma.product.findUnique({ where: { code: dto.code } })) throw new ConflictException('Código ya existe');
@@ -33,7 +42,10 @@ export class ProductsService {
     return p;
   }
 
-  async update(id: number, dto: Partial<{ name: string; description: string; unit: string; purchasePrice: number; salePrice: number; minStock: number; active: boolean }>) {
+  async update(
+    id: number,
+    dto: Partial<{ name: string; description: string; unit: string; purchasePrice: number; salePrice: number; minStock: number; active: boolean }>,
+  ) {
     await this.get(id);
     return this.prisma.product.update({ where: { id }, data: dto });
   }

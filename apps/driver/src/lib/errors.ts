@@ -8,7 +8,10 @@ export class NetworkError extends Error {
 
 /** El servidor respondió con un error. */
 export class ApiError extends Error {
-  constructor(message: string, public status: number) {
+  constructor(
+    message: string,
+    public status: number,
+  ) {
     super(message);
     this.name = 'ApiError';
   }

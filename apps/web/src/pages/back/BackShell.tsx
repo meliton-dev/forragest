@@ -12,7 +12,12 @@ export function BackShell() {
     ['/rutas/mapa', 'Monitoreo en vivo', 'map', false],
     ['/rutas/eficiencia', 'Eficiencia de entregas', 'chart', false],
   ];
-  const initials = user.fullName.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+  const initials = user.fullName
+    .split(' ')
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
   return (
     <div className="back">
       <aside className="side">
@@ -30,7 +35,11 @@ export function BackShell() {
         {user.role === 'ADMINISTRADOR' && (
           <>
             <div className="grp overline">Operación</div>
-            <Link to="/" className="item" style={{ display: 'flex', alignItems: 'center', gap: 10, height: 32, padding: '0 8px', fontSize: 13, color: 'var(--text-2)' }}>
+            <Link
+              to="/"
+              className="item"
+              style={{ display: 'flex', alignItems: 'center', gap: 10, height: 32, padding: '0 8px', fontSize: 13, color: 'var(--text-2)' }}
+            >
               <Icon name="receipt" size={16} />
               Punto de venta
             </Link>

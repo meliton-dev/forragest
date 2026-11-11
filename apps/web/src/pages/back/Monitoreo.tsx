@@ -20,7 +20,13 @@ export function Monitoreo() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const load = () => api<{ now: string; routes: MonitorRoute[] }>('GET', '/routes/monitor').then((d) => { setData(d); setError(null); }).catch((e) => setError(errMsg(e)));
+    const load = () =>
+      api<{ now: string; routes: MonitorRoute[] }>('GET', '/routes/monitor')
+        .then((d) => {
+          setData(d);
+          setError(null);
+        })
+        .catch((e) => setError(errMsg(e)));
     void load();
     const t = setInterval(load, 10000);
     return () => clearInterval(t);
@@ -33,19 +39,28 @@ export function Monitoreo() {
   const { markers, lines } = useMemo(() => {
     const markers: MapMarker[] = [{ lat: DEPOT[0], lng: DEPOT[1], kind: 'depot' }];
     const lines: MapLine[] = [];
-    routes.filter((r) => sel === 'all' || String(r.id) === sel).forEach((r) => {
-      const color = COLORS[routes.indexOf(r) % COLORS.length];
-      const planned: [number, number][] = [DEPOT];
-      for (const s of r.stopsMap) {
-        const { lat, lng } = s.customer;
-        if (lat == null || lng == null) continue;
-        planned.push([lat, lng]);
-        markers.push({ lat, lng, kind: 'stop', label: String(s.sequence), state: s.status === 'ENTREGADA' ? 'done' : s.status === 'NO_ENTREGADA' ? 'failed' : 'pending', tooltip: `${s.sequence}. ${s.customer.name} · ${s.eta ?? 's/h'}` });
-      }
-      lines.push({ points: planned, color, dashed: true });
-      if (r.trail.length > 1) lines.push({ points: r.trail, color });
-      if (r.lastPing) markers.push({ lat: r.lastPing.lat, lng: r.lastPing.lng, kind: 'truck', color, tooltip: `${r.name} · ${r.driver.name}` });
-    });
+    routes
+      .filter((r) => sel === 'all' || String(r.id) === sel)
+      .forEach((r) => {
+        const color = COLORS[routes.indexOf(r) % COLORS.length];
+        const planned: [number, number][] = [DEPOT];
+        for (const s of r.stopsMap) {
+          const { lat, lng } = s.customer;
+          if (lat == null || lng == null) continue;
+          planned.push([lat, lng]);
+          markers.push({
+            lat,
+            lng,
+            kind: 'stop',
+            label: String(s.sequence),
+            state: s.status === 'ENTREGADA' ? 'done' : s.status === 'NO_ENTREGADA' ? 'failed' : 'pending',
+            tooltip: `${s.sequence}. ${s.customer.name} · ${s.eta ?? 's/h'}`,
+          });
+        }
+        lines.push({ points: planned, color, dashed: true });
+        if (r.trail.length > 1) lines.push({ points: r.trail, color });
+        if (r.lastPing) markers.push({ lat: r.lastPing.lat, lng: r.lastPing.lng, kind: 'truck', color, tooltip: `${r.name} · ${r.driver.name}` });
+      });
     return { markers, lines };
   }, [routes, sel]);
 
@@ -56,9 +71,19 @@ export function Monitoreo() {
           <h1 className="h1">Monitoreo en vivo</h1>
           <div className="small muted">Ubicación de los repartidores · se actualiza cada 10 s</div>
         </div>
-        {routes.length > 1 && <Segmented value={sel} onChange={setSel} options={[['all', 'Todas'], ...routes.map((r): [string, string] => [String(r.id), r.name.split(' ·')[0]])]} />}
+        {routes.length > 1 && (
+          <Segmented
+            value={sel}
+            onChange={setSel}
+            options={[['all', 'Todas'], ...routes.map((r): [string, string] => [String(r.id), r.name.split(' ·')[0]])]}
+          />
+        )}
       </div>
-      {error && <Notice tone="danger" icon="alert">{error}</Notice>}
+      {error && (
+        <Notice tone="danger" icon="alert">
+          {error}
+        </Notice>
+      )}
 
       <div className="split">
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -66,7 +91,11 @@ export function Monitoreo() {
         </div>
         <aside className="col gap12" style={{ width: 380, flex: 'none' }}>
           {data && routes.length === 0 && (
-            <div className="card"><Empty icon="truck" title="No hay rutas en curso">Cuando un repartidor cargue su camión y salga a ruta, aparecerá aquí.</Empty></div>
+            <div className="card">
+              <Empty icon="truck" title="No hay rutas en curso">
+                Cuando un repartidor cargue su camión y salga a ruta, aparecerá aquí.
+              </Empty>
+            </div>
           )}
           {visible.map((r) => {
             const color = COLORS[routes.indexOf(r) % COLORS.length];
@@ -75,25 +104,62 @@ export function Monitoreo() {
             return (
               <div key={r.id} className="card" data-testid="monitor-route">
                 <div className="card-h">
-                  <span className="row gap8"><i className="dot" style={{ color }} /><span className="title">{r.name}</span></span>
-                  <Link to="/rutas" className="link">Detalle</Link>
+                  <span className="row gap8">
+                    <i className="dot" style={{ color }} />
+                    <span className="title">{r.name}</span>
+                  </span>
+                  <Link to="/rutas" className="link">
+                    Detalle
+                  </Link>
                 </div>
                 <div className="card-b">
                   <div className="row between">
-                    <span className="small muted2">{r.driver.name} · {r.vehicle.plate}</span>
-                    {ageMin === null ? <Badge>Sin ubicación</Badge> : ageMin > SIGNAL_LOST_MIN ? <Badge tone="warn"><Icon name="wifioff" size={12} /> Sin señal {ago(now, r.lastPing!.at)}</Badge> : <Badge tone="ok" dot>Ubicación hace {ago(now, r.lastPing!.at)}</Badge>}
+                    <span className="small muted2">
+                      {r.driver.name} · {r.vehicle.plate}
+                    </span>
+                    {ageMin === null ? (
+                      <Badge>Sin ubicación</Badge>
+                    ) : ageMin > SIGNAL_LOST_MIN ? (
+                      <Badge tone="warn">
+                        <Icon name="wifioff" size={12} /> Sin señal {ago(now, r.lastPing!.at)}
+                      </Badge>
+                    ) : (
+                      <Badge tone="ok" dot>
+                        Ubicación hace {ago(now, r.lastPing!.at)}
+                      </Badge>
+                    )}
                   </div>
-                  <div className="small strong">{r.stops.delivered + r.stops.failed} de {r.stops.total} entregas{next ? ` · siguiente ETA ${next.eta ?? '—'}` : ''}</div>
-                  <div className="pbar">{r.stopsMap.map((s) => <i key={s.id} className={s.status === 'ENTREGADA' ? 'on' : s.status === 'NO_ENTREGADA' ? 'bad' : s.id === next?.id ? 'cur' : ''} />)}</div>
+                  <div className="small strong">
+                    {r.stops.delivered + r.stops.failed} de {r.stops.total} entregas{next ? ` · siguiente ETA ${next.eta ?? '—'}` : ''}
+                  </div>
+                  <div className="pbar">
+                    {r.stopsMap.map((s) => (
+                      <i key={s.id} className={s.status === 'ENTREGADA' ? 'on' : s.status === 'NO_ENTREGADA' ? 'bad' : s.id === next?.id ? 'cur' : ''} />
+                    ))}
+                  </div>
                   <hr className="divider" />
                   <span className="overline">Eventos</span>
-                  {r.departedAt && <div className="row gap12"><span className="small strong muted" style={{ width: 42 }}>{hhmm(r.departedAt)}</span><span className="small">Salida del almacén</span></div>}
-                  {r.stopsMap.filter((s) => s.arrivedAt || s.deliveredAt).slice(-4).map((s) => (
-                    <div key={s.id} className="row gap12">
-                      <span className="small strong muted" style={{ width: 42 }}>{hhmm(s.deliveredAt ?? s.arrivedAt)}</span>
-                      <span className="small">{s.customer.name} · {s.status === 'ENTREGADA' ? 'entregada' : s.status === 'NO_ENTREGADA' ? 'no entregada' : 'llegó'}</span>
+                  {r.departedAt && (
+                    <div className="row gap12">
+                      <span className="small strong muted" style={{ width: 42 }}>
+                        {hhmm(r.departedAt)}
+                      </span>
+                      <span className="small">Salida del almacén</span>
                     </div>
-                  ))}
+                  )}
+                  {r.stopsMap
+                    .filter((s) => s.arrivedAt || s.deliveredAt)
+                    .slice(-4)
+                    .map((s) => (
+                      <div key={s.id} className="row gap12">
+                        <span className="small strong muted" style={{ width: 42 }}>
+                          {hhmm(s.deliveredAt ?? s.arrivedAt)}
+                        </span>
+                        <span className="small">
+                          {s.customer.name} · {s.status === 'ENTREGADA' ? 'entregada' : s.status === 'NO_ENTREGADA' ? 'no entregada' : 'llegó'}
+                        </span>
+                      </div>
+                    ))}
                 </div>
               </div>
             );

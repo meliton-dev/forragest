@@ -82,7 +82,16 @@ export interface SaleRow {
 }
 
 export interface ShiftSummary {
-  shift: { id: number; register: string; openedAt: string; closedAt: string | null; status: string; openingFloat: number; countedCash: number | null; difference: number | null };
+  shift: {
+    id: number;
+    register: string;
+    openedAt: string;
+    closedAt: string | null;
+    status: string;
+    openingFloat: number;
+    countedCash: number | null;
+    difference: number | null;
+  };
   salesCount: number;
   cancelledCount: number;
   total: number;

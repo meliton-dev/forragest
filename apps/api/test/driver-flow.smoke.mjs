@@ -14,7 +14,11 @@ async function call(method, path, body, auth = true) {
   });
   const text = await res.text();
   let json;
-  try { json = JSON.parse(text); } catch { json = text; }
+  try {
+    json = JSON.parse(text);
+  } catch {
+    json = text;
+  }
   return { status: res.status, json };
 }
 function check(name, cond, extra = '') {
@@ -71,7 +75,13 @@ check('no cierra con paradas pendientes', closeEarly.status === 400, closeEarly.
 
 await call('POST', `/driver/stops/${s4.id}/deliver`, { clientOpId: 'smoke-d4', signature: PNG });
 await call('POST', `/driver/stops/${s5.id}/deliver`, { clientOpId: 'smoke-d5', signature: PNG, payment: { amount: s5.total, method: 'EFECTIVO' } });
-const extra = await call('POST', '/driver/payments', { clientOpId: 'smoke-p1', routeId: route.id, customerId: s2.customer.id, amount: 500, method: 'EFECTIVO' });
+const extra = await call('POST', '/driver/payments', {
+  clientOpId: 'smoke-p1',
+  routeId: route.id,
+  customerId: s2.customer.id,
+  amount: 500,
+  method: 'EFECTIVO',
+});
 check('cobro suelto', extra.status === 201);
 
 const inc = await call('POST', '/driver/incidents', { clientOpId: 'smoke-i1', routeId: route.id, type: 'PRODUCTO_DANADO', description: 'Saco roto' });
@@ -89,7 +99,11 @@ check('resumen', sum.json.delivered === 4 && sum.json.failed === 1 && sum.json.p
 const close = await call('POST', `/driver/routes/${route.id}/close`, {});
 check('cierre de ruta', close.status === 201 && close.json.status === 'FINALIZADA');
 const afterClose = await stockOf(adminToken, 'OV-001');
-check('lo no entregado regresa al almacén (3 sacos de OV-001 = 120 kg)', close.json.leftover.some((l) => l.code === 'OV-001' && l.quantity === 3), `OV-001 stock ${afterClose}`);
+check(
+  'lo no entregado regresa al almacén (3 sacos de OV-001 = 120 kg)',
+  close.json.leftover.some((l) => l.code === 'OV-001' && l.quantity === 3),
+  `OV-001 stock ${afterClose}`,
+);
 
 console.log(failed ? `\n${failed} verificación(es) fallaron` : '\nTodo correcto');
 process.exit(failed ? 1 : 0);

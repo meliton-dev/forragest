@@ -49,7 +49,10 @@ export function MapView({ markers, lines, fitKey, height = 360 }: { markers: Map
 
   useEffect(() => {
     const m = L.map(el.current!, { zoomControl: true, attributionControl: true }).setView([20.0833, -98.3631], 11);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(m);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(m);
     layer.current = L.layerGroup().addTo(m);
     map.current = m;
     // el contenedor cambia de tamaño al cargar la página: sin esto Leaflet calcula mal el encuadre y los tiles

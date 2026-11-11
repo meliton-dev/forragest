@@ -96,7 +96,10 @@ export class ProductsController {
 
 @Controller('inventory')
 export class InventoryController {
-  constructor(private inventory: InventoryService, private counts: CountsService) {}
+  constructor(
+    private inventory: InventoryService,
+    private counts: CountsService,
+  ) {}
 
   @Get()
   current(@Query('line') line?: string) {
@@ -130,8 +133,13 @@ export class InventoryController {
   @Post('entries')
   entry(@Body() dto: EntryDto, @Req() req: AuthedRequest) {
     return this.inventory.addEntry({
-      productId: dto.productId, quantity: dto.quantity, unitCost: dto.unitCost, expiresAt: dto.expiresAt,
-      type: 'ENTRADA_AJUSTE', reason: dto.reason, userId: req.user.sub,
+      productId: dto.productId,
+      quantity: dto.quantity,
+      unitCost: dto.unitCost,
+      expiresAt: dto.expiresAt,
+      type: 'ENTRADA_AJUSTE',
+      reason: dto.reason,
+      userId: req.user.sub,
     });
   }
 
