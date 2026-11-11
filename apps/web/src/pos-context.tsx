@@ -51,13 +51,20 @@ export function PosProvider({ children, onLogout }: { children: ReactNode; onLog
     (key: string, qty: number) =>
       setCartState((c) => ({
         ...c,
-        lines: qty <= 0 ? c.lines.filter((l) => l.item.key !== key) : c.lines.map((l) => (l.item.key === key ? { ...l, qty: Math.min(qty, l.item.stockUnits) } : l)),
+        lines:
+          qty <= 0 ? c.lines.filter((l) => l.item.key !== key) : c.lines.map((l) => (l.item.key === key ? { ...l, qty: Math.min(qty, l.item.stockUnits) } : l)),
       })),
     [],
   );
 
   const value: Pos = {
-    user, shift, reloadShift, cart, setCart, add, setQty,
+    user,
+    shift,
+    reloadShift,
+    cart,
+    setCart,
+    add,
+    setQty,
     clearCart: () => setCartState(emptyCart()),
     catalogVersion,
     bumpCatalog: () => setCatalogVersion((v) => v + 1),

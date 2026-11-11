@@ -82,7 +82,11 @@ function Form({ route }: { route: Route }) {
       <div className="content">
         <Field label="Cliente">
           <div className="input">
-            <select value={stopId} onChange={(e) => setStopId(Number(e.target.value))} style={{ flex: 1, border: 0, background: 'none', height: '100%', fontSize: 16 }}>
+            <select
+              value={stopId}
+              onChange={(e) => setStopId(Number(e.target.value))}
+              style={{ flex: 1, border: 0, background: 'none', height: '100%', fontSize: 16 }}
+            >
               {route.stops.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.customer.name}
@@ -93,10 +97,24 @@ function Form({ route }: { route: Route }) {
           </div>
         </Field>
         <Field label="Monto recibido">
-          <Input prefix="$" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ''))} placeholder="0.00" autoFocus />
+          <Input
+            prefix="$"
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ''))}
+            placeholder="0.00"
+            autoFocus
+          />
         </Field>
         <Field label="Forma de pago">
-          <Segmented value={method} onChange={setMethod} options={[['EFECTIVO', 'Efectivo'], ['TRANSFERENCIA', 'Transferencia']]} />
+          <Segmented
+            value={method}
+            onChange={setMethod}
+            options={[
+              ['EFECTIVO', 'Efectivo'],
+              ['TRANSFERENCIA', 'Transferencia'],
+            ]}
+          />
         </Field>
         <Notice tone="info">El cobro queda guardado en tu teléfono y se envía al sistema en cuanto haya conexión.</Notice>
       </div>

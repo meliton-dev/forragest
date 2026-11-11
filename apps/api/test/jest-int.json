@@ -1,0 +1,7 @@
+{
+  "preset": "ts-jest",
+  "testEnvironment": "node",
+  "rootDir": "..",
+  "testRegex": "test/int/.*[.]int-spec[.]ts$",
+  "testTimeout": 30000
+}

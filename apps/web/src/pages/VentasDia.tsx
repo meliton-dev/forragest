@@ -6,7 +6,12 @@ import { usePos } from '../pos-context';
 import { Badge, Button, Empty, Field, Icon, Input, Kv, Modal, Notice, Segmented, TextArea } from '../ui/kit';
 import { ReceiptModal, SaleReceipt } from '../ui/Receipt';
 
-const FILTERS: [string, string][] = [['', 'Todas'], ['PAGADA', 'Pagadas'], ['POR_COBRAR', 'A crédito'], ['CANCELADA', 'Canceladas']];
+const FILTERS: [string, string][] = [
+  ['', 'Todas'],
+  ['PAGADA', 'Pagadas'],
+  ['POR_COBRAR', 'A crédito'],
+  ['CANCELADA', 'Canceladas'],
+];
 const TONE: Record<string, 'ok' | 'warn' | 'danger'> = { PAGADA: 'ok', POR_COBRAR: 'warn', CANCELADA: 'danger' };
 
 export function VentasDia() {
@@ -25,7 +30,7 @@ export function VentasDia() {
       const r = await api<SaleRow[]>('GET', `/pos/sales?q=${encodeURIComponent(q)}&status=${status}`);
       setRows(r);
       setError(null);
-      setSelId((cur) => (cur && r.some((x) => x.id === cur) ? cur : r[0]?.id ?? null));
+      setSelId((cur) => (cur && r.some((x) => x.id === cur) ? cur : (r[0]?.id ?? null)));
     } catch (e) {
       setError(errMsg(e));
     }
@@ -38,7 +43,9 @@ export function VentasDia() {
 
   useEffect(() => {
     if (selId === null) return setSale(null);
-    api<Sale>('GET', `/pos/sales/${selId}`).then(setSale).catch((e) => setError(errMsg(e)));
+    api<Sale>('GET', `/pos/sales/${selId}`)
+      .then(setSale)
+      .catch((e) => setError(errMsg(e)));
   }, [selId, rows]);
 
   return (
@@ -51,11 +58,24 @@ export function VentasDia() {
             <input placeholder="Folio o cliente" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Buscar venta" />
           </div>
         </div>
-        {error && <Notice tone="danger" icon="alert">{error}</Notice>}
+        {error && (
+          <Notice tone="danger" icon="alert">
+            {error}
+          </Notice>
+        )}
         <div className="tw">
           <table className="t">
             <thead>
-              <tr><th style={{ width: 90 }}>Folio</th><th style={{ width: 70 }}>Hora</th><th>Cliente</th><th style={{ width: 130 }}>Pago</th><th className="right" style={{ width: 110 }}>Total</th><th style={{ width: 120 }}>Estado</th></tr>
+              <tr>
+                <th style={{ width: 90 }}>Folio</th>
+                <th style={{ width: 70 }}>Hora</th>
+                <th>Cliente</th>
+                <th style={{ width: 130 }}>Pago</th>
+                <th className="right" style={{ width: 110 }}>
+                  Total
+                </th>
+                <th style={{ width: 120 }}>Estado</th>
+              </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
@@ -63,14 +83,24 @@ export function VentasDia() {
                   <td className="muted">{folio(r.folio)}</td>
                   <td className="muted">{hhmm(r.createdAt)}</td>
                   <td className="strong">{r.customer}</td>
-                  <td><Badge>{PAY_LABEL[r.paymentMethod]}</Badge></td>
+                  <td>
+                    <Badge>{PAY_LABEL[r.paymentMethod]}</Badge>
+                  </td>
                   <td className="right strong">{mxn(r.total)}</td>
-                  <td><Badge tone={TONE[r.status]} dot>{STATUS_LABEL[r.status]}</Badge></td>
+                  <td>
+                    <Badge tone={TONE[r.status]} dot>
+                      {STATUS_LABEL[r.status]}
+                    </Badge>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {rows.length === 0 && <Empty icon="receipt" title="Sin ventas">No hay ventas con este filtro hoy.</Empty>}
+          {rows.length === 0 && (
+            <Empty icon="receipt" title="Sin ventas">
+              No hay ventas con este filtro hoy.
+            </Empty>
+          )}
         </div>
       </div>
 
@@ -81,17 +111,26 @@ export function VentasDia() {
           <>
             <div className="card-h">
               <span className="title">Venta {folio(sale.folio)}</span>
-              <Badge tone={TONE[sale.status]} dot>{STATUS_LABEL[sale.status]}</Badge>
+              <Badge tone={TONE[sale.status]} dot>
+                {STATUS_LABEL[sale.status]}
+              </Badge>
             </div>
             <div className="card-b">
-              <div className="caption muted">{new Date(sale.createdAt).toLocaleString('es-MX')} · {sale.register} · {sale.cashier}</div>
+              <div className="caption muted">
+                {new Date(sale.createdAt).toLocaleString('es-MX')} · {sale.register} · {sale.cashier}
+              </div>
               {sale.customer && <div className="small strong">Cliente: {sale.customer.name}</div>}
               <div>
                 {sale.items.map((i) => (
                   <div key={i.id} className="line" style={{ padding: '8px 0' }}>
                     <div className="grow">
-                      <div className="small strong">{i.quantity} × {i.name}</div>
-                      <div className="caption muted">{i.presentation} · {mxn(i.unitPrice)}{i.returnedQty > 0 ? ` · devueltos ${i.returnedQty}` : ''}</div>
+                      <div className="small strong">
+                        {i.quantity} × {i.name}
+                      </div>
+                      <div className="caption muted">
+                        {i.presentation} · {mxn(i.unitPrice)}
+                        {i.returnedQty > 0 ? ` · devueltos ${i.returnedQty}` : ''}
+                      </div>
                     </div>
                     <span className="small strong">{mxn(i.total)}</span>
                   </div>
@@ -103,11 +142,23 @@ export function VentasDia() {
               {sale.change !== null && sale.paymentMethod === 'EFECTIVO' && <Kv k="Cambio" v={mxn(sale.change)} />}
               {sale.paymentMethod === 'CREDITO' && <Kv k="Saldo por cobrar" v={mxn(sale.balance)} tone="var(--warn)" />}
               <Kv k="Total" v={mxn(sale.total)} big />
-              {sale.cancelReason && <Notice tone="danger" icon="x">Cancelada: {sale.cancelReason}</Notice>}
-              {sale.creditNotes.map((n) => <Notice key={n.id} tone="info" icon="undo">Nota de crédito {folio(n.folio)} por {mxn(n.total)}</Notice>)}
+              {sale.cancelReason && (
+                <Notice tone="danger" icon="x">
+                  Cancelada: {sale.cancelReason}
+                </Notice>
+              )}
+              {sale.creditNotes.map((n) => (
+                <Notice key={n.id} tone="info" icon="undo">
+                  Nota de crédito {folio(n.folio)} por {mxn(n.total)}
+                </Notice>
+              ))}
               <div className="col gap8" style={{ paddingTop: 4 }}>
-                <Button icon="printer" onClick={() => setPrint(true)}>Reimprimir ticket</Button>
-                <Button icon="x" disabled={sale.status === 'CANCELADA' || sale.creditNotes.length > 0} onClick={() => setCancel(true)}>Cancelar venta</Button>
+                <Button icon="printer" onClick={() => setPrint(true)}>
+                  Reimprimir ticket
+                </Button>
+                <Button icon="x" disabled={sale.status === 'CANCELADA' || sale.creditNotes.length > 0} onClick={() => setCancel(true)}>
+                  Cancelar venta
+                </Button>
                 <div className="caption muted">Cancelar requiere autorización de supervisor y queda en la bitácora.</div>
               </div>
             </div>
@@ -115,7 +166,14 @@ export function VentasDia() {
         )}
       </aside>
 
-      {print && sale && <ReceiptModal title={`Ticket ${folio(sale.folio)}`} onClose={() => setPrint(false)} extra={<span />} render={(mm) => <SaleReceipt sale={sale} mm={mm} />} />}
+      {print && sale && (
+        <ReceiptModal
+          title={`Ticket ${folio(sale.folio)}`}
+          onClose={() => setPrint(false)}
+          extra={<span />}
+          render={(mm) => <SaleReceipt sale={sale} mm={mm} />}
+        />
+      )}
       {cancel && sale && (
         <CancelModal
           sale={sale}
@@ -166,14 +224,34 @@ function CancelModal({ sale, onClose, onDone }: { sale: Sale; onClose: () => voi
       }
     >
       <Field label="Motivo de la cancelación">
-        <TextArea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ej. Error de captura" maxLength={300} aria-label="Motivo de la cancelación" />
+        <TextArea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Ej. Error de captura"
+          maxLength={300}
+          aria-label="Motivo de la cancelación"
+        />
       </Field>
-      <span className="overline row gap4"><Icon name="lock" size={13} /> Autorización de supervisor</span>
+      <span className="overline row gap4">
+        <Icon name="lock" size={13} /> Autorización de supervisor
+      </span>
       <div className="row gap12">
-        <div className="grow"><Field label="Usuario"><Input icon="user" value={username} onChange={(e) => setUsername(e.target.value)} autoCapitalize="none" aria-label="Usuario del supervisor" /></Field></div>
-        <div className="grow"><Field label="Contraseña"><Input icon="lock" type="password" value={password} onChange={(e) => setPassword(e.target.value)} aria-label="Contraseña del supervisor" /></Field></div>
+        <div className="grow">
+          <Field label="Usuario">
+            <Input icon="user" value={username} onChange={(e) => setUsername(e.target.value)} autoCapitalize="none" aria-label="Usuario del supervisor" />
+          </Field>
+        </div>
+        <div className="grow">
+          <Field label="Contraseña">
+            <Input icon="lock" type="password" value={password} onChange={(e) => setPassword(e.target.value)} aria-label="Contraseña del supervisor" />
+          </Field>
+        </div>
       </div>
-      {error && <Notice tone="danger" icon="alert">{error}</Notice>}
+      {error && (
+        <Notice tone="danger" icon="alert">
+          {error}
+        </Notice>
+      )}
     </Modal>
   );
 }

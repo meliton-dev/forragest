@@ -1,0 +1,45 @@
+name: Respaldo diario
+
+# Todas las noches (3:17 a. m. hora del centro de México) guarda una copia cifrada de la base
+# como artefacto de GitHub Actions durante 30 días. Gratis dentro de los límites de GitHub.
+# Requiere dos secretos del repositorio (Settings → Secrets and variables → Actions):
+#   BACKUP_DATABASE_URL  conexión externa a la base (en Render: "External Database URL")
+#   BACKUP_PASSPHRASE    contraseña larga para cifrar; guárdala aparte, sin ella no se puede restaurar
+on:
+  schedule:
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Verificar configuración
+        id: cfg
+        env:
+          URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          PASS: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$PASS" ]; then
+            echo "::warning::Faltan los secretos BACKUP_DATABASE_URL o BACKUP_PASSPHRASE; no se hizo respaldo."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.ok == 'true'
+      # pg_dump viene instalado en ubuntu-latest (v18); funciona con servidores de esa versión o anteriores
+      - name: Respaldar
+        if: steps.cfg.outputs.ok == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: ./scripts/respaldo.sh respaldos
+      - uses: actions/upload-artifact@v4
+        if: steps.cfg.outputs.ok == 'true'
+        with:
+          name: respaldo-${{ github.run_number }}
+          path: respaldos/*.gpg
+          retention-days: 30
+          if-no-files-found: error

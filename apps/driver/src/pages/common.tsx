@@ -14,7 +14,9 @@ export function RouteGate({ title, tabs, children }: { title: string; tabs?: boo
         {s.loading || !s.ready ? (
           <Empty icon="sync" title="Cargando tu ruta…" />
         ) : s.noRoute ? (
-          <Empty icon="route" title="Sin ruta asignada hoy">Cuando tu supervisor te asigne una ruta aparecerá aquí.</Empty>
+          <Empty icon="route" title="Sin ruta asignada hoy">
+            Cuando tu supervisor te asigne una ruta aparecerá aquí.
+          </Empty>
         ) : (
           <Empty icon="wifioff" title="No hay datos guardados">
             Conéctate a internet una vez para descargar tu ruta.

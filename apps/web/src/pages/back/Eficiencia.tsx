@@ -15,7 +15,12 @@ export function Eficiencia() {
   useEffect(() => {
     const to = new Date();
     const from = new Date(to.getTime() - (Number(days) - 1) * 86400000);
-    api<Efficiency>('GET', `/routes/efficiency?from=${iso(from)}&to=${iso(to)}`).then((d) => { setData(d); setError(null); }).catch((e) => setError(errMsg(e)));
+    api<Efficiency>('GET', `/routes/efficiency?from=${iso(from)}&to=${iso(to)}`)
+      .then((d) => {
+        setData(d);
+        setError(null);
+      })
+      .catch((e) => setError(errMsg(e)));
   }, [days]);
 
   const k = data?.kpis;
@@ -28,28 +33,75 @@ export function Eficiencia() {
       <div className="row between">
         <div>
           <h1 className="h1">Eficiencia de entregas</h1>
-          <div className="small muted">Entregas a tiempo vs. tardías · se considera tardía una llegada con más de {data?.toleranceMin ?? 15} min sobre la hora estimada</div>
+          <div className="small muted">
+            Entregas a tiempo vs. tardías · se considera tardía una llegada con más de {data?.toleranceMin ?? 15} min sobre la hora estimada
+          </div>
         </div>
-        <Segmented value={days} onChange={setDays} options={[['7', '7 días'], ['14', '14 días'], ['30', '30 días']]} />
+        <Segmented
+          value={days}
+          onChange={setDays}
+          options={[
+            ['7', '7 días'],
+            ['14', '14 días'],
+            ['30', '30 días'],
+          ]}
+        />
       </div>
-      {error && <Notice tone="danger" icon="alert">{error}</Notice>}
+      {error && (
+        <Notice tone="danger" icon="alert">
+          {error}
+        </Notice>
+      )}
 
       {k && (
         <>
           <div className="kpis">
-            <div className="card kpi"><span className="overline">Entregas a tiempo</span><span className="num-lg" style={{ color: k.onTimePct !== null && k.onTimePct >= 85 ? 'var(--ok)' : 'var(--warn)' }} data-testid="kpi-ontime">{k.onTimePct === null ? '—' : `${k.onTimePct} %`}</span><span className="caption muted">{k.onTime} de {k.delivered} entregas</span></div>
-            <div className="card kpi"><span className="overline">Entregas tardías</span><span className="num-lg" style={{ color: 'var(--warn)' }}>{k.latePct === null ? '—' : `${k.latePct} %`}</span><span className="caption muted">{k.late} entregas</span></div>
-            <div className="card kpi"><span className="overline">Tiempo por parada</span><span className="num-lg">{k.avgMinutes === null ? '—' : `${k.avgMinutes} min`}</span><span className="caption muted">De la llegada a la entrega</span></div>
-            <div className="card kpi"><span className="overline">No entregadas</span><span className="num-lg" style={{ color: k.failed ? 'var(--danger)' : undefined }}>{k.failed}</span><span className="caption muted">de {k.stops} paradas atendidas</span></div>
+            <div className="card kpi">
+              <span className="overline">Entregas a tiempo</span>
+              <span className="num-lg" style={{ color: k.onTimePct !== null && k.onTimePct >= 85 ? 'var(--ok)' : 'var(--warn)' }} data-testid="kpi-ontime">
+                {k.onTimePct === null ? '—' : `${k.onTimePct} %`}
+              </span>
+              <span className="caption muted">
+                {k.onTime} de {k.delivered} entregas
+              </span>
+            </div>
+            <div className="card kpi">
+              <span className="overline">Entregas tardías</span>
+              <span className="num-lg" style={{ color: 'var(--warn)' }}>
+                {k.latePct === null ? '—' : `${k.latePct} %`}
+              </span>
+              <span className="caption muted">{k.late} entregas</span>
+            </div>
+            <div className="card kpi">
+              <span className="overline">Tiempo por parada</span>
+              <span className="num-lg">{k.avgMinutes === null ? '—' : `${k.avgMinutes} min`}</span>
+              <span className="caption muted">De la llegada a la entrega</span>
+            </div>
+            <div className="card kpi">
+              <span className="overline">No entregadas</span>
+              <span className="num-lg" style={{ color: k.failed ? 'var(--danger)' : undefined }}>
+                {k.failed}
+              </span>
+              <span className="caption muted">de {k.stops} paradas atendidas</span>
+            </div>
           </div>
 
           <div className="split">
             <div className="card grow" style={{ flex: 1 }}>
-              <div className="card-h"><span className="title">A tiempo vs. tardías por día</span></div>
+              <div className="card-h">
+                <span className="title">A tiempo vs. tardías por día</span>
+              </div>
               <div className="card-b">
                 <div className="row gap16">
-                  {[['A tiempo', 'var(--accent)'], ['Tardías', 'var(--warn)'], ['No entregadas', 'var(--danger)']].map(([n, c]) => (
-                    <span key={n} className="row gap4 caption muted2"><i style={{ width: 8, height: 8, borderRadius: 2, background: c, display: 'inline-block' }} />{n}</span>
+                  {[
+                    ['A tiempo', 'var(--accent)'],
+                    ['Tardías', 'var(--warn)'],
+                    ['No entregadas', 'var(--danger)'],
+                  ].map(([n, c]) => (
+                    <span key={n} className="row gap4 caption muted2">
+                      <i style={{ width: 8, height: 8, borderRadius: 2, background: c, display: 'inline-block' }} />
+                      {n}
+                    </span>
                   ))}
                 </div>
                 <div className="bar-chart">
@@ -71,13 +123,20 @@ export function Eficiencia() {
               </div>
             </div>
             <div className="card" style={{ width: 340, flex: 'none' }}>
-              <div className="card-h"><span className="title">Motivos de no entrega</span></div>
+              <div className="card-h">
+                <span className="title">Motivos de no entrega</span>
+              </div>
               <div className="card-b" style={{ gap: 14 }}>
                 {reasons.length === 0 && <div className="small muted">Sin no entregas en el periodo.</div>}
                 {reasons.map(([r, v]) => (
                   <div key={r} className="col gap4">
-                    <div className="row between"><span className="small strong">{FAIL_LABEL[r] ?? r}</span><span className="small strong">{v}</span></div>
-                    <div className="hbar"><i style={{ width: `${(v / maxReason) * 100}%`, background: 'var(--danger)' }} /></div>
+                    <div className="row between">
+                      <span className="small strong">{FAIL_LABEL[r] ?? r}</span>
+                      <span className="small strong">{v}</span>
+                    </div>
+                    <div className="hbar">
+                      <i style={{ width: `${(v / maxReason) * 100}%`, background: 'var(--danger)' }} />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -87,14 +146,42 @@ export function Eficiencia() {
           <div className="tw">
             <table className="t">
               <thead>
-                <tr><th>Repartidor</th><th className="right" style={{ width: 70 }}>Rutas</th><th className="right" style={{ width: 90 }}>Paradas</th><th className="right" style={{ width: 100 }}>A tiempo</th><th className="right" style={{ width: 90 }}>Tardías</th><th className="right" style={{ width: 120 }}>No entregadas</th><th className="right" style={{ width: 130 }}>Tiempo / parada</th><th className="right" style={{ width: 120 }}>Cobrado</th></tr>
+                <tr>
+                  <th>Repartidor</th>
+                  <th className="right" style={{ width: 70 }}>
+                    Rutas
+                  </th>
+                  <th className="right" style={{ width: 90 }}>
+                    Paradas
+                  </th>
+                  <th className="right" style={{ width: 100 }}>
+                    A tiempo
+                  </th>
+                  <th className="right" style={{ width: 90 }}>
+                    Tardías
+                  </th>
+                  <th className="right" style={{ width: 120 }}>
+                    No entregadas
+                  </th>
+                  <th className="right" style={{ width: 130 }}>
+                    Tiempo / parada
+                  </th>
+                  <th className="right" style={{ width: 120 }}>
+                    Cobrado
+                  </th>
+                </tr>
               </thead>
               <tbody>
                 {data.perDriver.map((d) => (
                   <tr key={d.driverId}>
-                    <td className="strong">{d.name}</td><td className="right">{d.routes}</td><td className="right">{d.stops}</td>
-                    <td className="right strong">{d.onTimePct === null ? '—' : `${d.onTimePct} %`}</td><td className="right">{d.late}</td><td className="right">{d.failed}</td>
-                    <td className="right">{d.avgMinutes === null ? '—' : `${d.avgMinutes} min`}</td><td className="right strong">{mxn(d.collected)}</td>
+                    <td className="strong">{d.name}</td>
+                    <td className="right">{d.routes}</td>
+                    <td className="right">{d.stops}</td>
+                    <td className="right strong">{d.onTimePct === null ? '—' : `${d.onTimePct} %`}</td>
+                    <td className="right">{d.late}</td>
+                    <td className="right">{d.failed}</td>
+                    <td className="right">{d.avgMinutes === null ? '—' : `${d.avgMinutes} min`}</td>
+                    <td className="right strong">{mxn(d.collected)}</td>
                   </tr>
                 ))}
               </tbody>

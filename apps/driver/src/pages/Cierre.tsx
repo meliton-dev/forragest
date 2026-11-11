@@ -24,10 +24,16 @@ function Inner({ route }: { route: Route }) {
         <div className="card" style={{ padding: 16, gap: 12 }}>
           <span className="overline">Resumen de la ruta</span>
           <div className="row" style={{ alignItems: 'flex-start' }}>
-            {[['Entregas', `${sum.delivered} de ${sum.total}`, ''], ['No entregadas', String(sum.failed), sum.failed ? 'var(--danger)' : ''], ['Cobrado', mxn(sum.collected), 'var(--ok)']].map(([k, v, c]) => (
+            {[
+              ['Entregas', `${sum.delivered} de ${sum.total}`, ''],
+              ['No entregadas', String(sum.failed), sum.failed ? 'var(--danger)' : ''],
+              ['Cobrado', mxn(sum.collected), 'var(--ok)'],
+            ].map(([k, v, c]) => (
               <div key={k} className="grow col" style={{ gap: 2 }}>
                 <span className="caption muted">{k}</span>
-                <span className="num" style={c ? { color: c } : undefined}>{v}</span>
+                <span className="num" style={c ? { color: c } : undefined}>
+                  {v}
+                </span>
               </div>
             ))}
           </div>
@@ -36,7 +42,11 @@ function Inner({ route }: { route: Route }) {
           <Kv k="Regreso" v={closed ? hhmm(route.returnedAt) : 'Al cerrar'} />
         </div>
 
-        {sum.pending > 0 && <Notice tone="warn" icon="alert">Aún tienes {sum.pending} parada{sum.pending === 1 ? '' : 's'} pendiente{sum.pending === 1 ? '' : 's'}. Atiéndelas antes de cerrar la ruta.</Notice>}
+        {sum.pending > 0 && (
+          <Notice tone="warn" icon="alert">
+            Aún tienes {sum.pending} parada{sum.pending === 1 ? '' : 's'} pendiente{sum.pending === 1 ? '' : 's'}. Atiéndelas antes de cerrar la ruta.
+          </Notice>
+        )}
 
         <div className="card" style={{ gap: 10 }}>
           <span className="overline">Producto que regresa al almacén</span>
@@ -54,7 +64,12 @@ function Inner({ route }: { route: Route }) {
         </div>
 
         <Notice tone="info">El almacenista confirmará la recepción; el producto en tránsito vuelve al inventario.</Notice>
-        {closed && <Notice tone="ok" icon="check">La ruta quedó cerrada{s.queue.some((o) => o.path.endsWith('/close')) ? ' en tu teléfono y se enviará al sistema al recuperar conexión' : ' y registrada en el sistema'}.</Notice>}
+        {closed && (
+          <Notice tone="ok" icon="check">
+            La ruta quedó cerrada
+            {s.queue.some((o) => o.path.endsWith('/close')) ? ' en tu teléfono y se enviará al sistema al recuperar conexión' : ' y registrada en el sistema'}.
+          </Notice>
+        )}
       </div>
       {!closed && (
         <div className="bar">

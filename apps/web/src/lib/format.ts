@@ -8,6 +8,4 @@ export const fecha = (iso: string) => dm.format(new Date(iso));
 export const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 export const folio = (n: number) => String(n).padStart(6, '0');
 
-export const PAY_LABEL: Record<string, string> = { EFECTIVO: 'Efectivo', TRANSFERENCIA: 'Transferencia', TARJETA: 'Tarjeta', CREDITO: 'Crédito' };
-export const STATUS_LABEL: Record<string, string> = { PAGADA: 'Pagada', POR_COBRAR: 'Por cobrar', CANCELADA: 'Cancelada' };
-export const REFUND_LABEL: Record<string, string> = { EFECTIVO: 'Efectivo', TARJETA: 'A tarjeta', SALDO_A_FAVOR: 'Saldo a favor' };
+export { PAY_LABEL, REFUND_LABEL, SALE_STATUS_LABEL as STATUS_LABEL } from '@forrajera/shared';

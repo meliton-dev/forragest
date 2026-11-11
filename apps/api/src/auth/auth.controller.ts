@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Ip, Post, Req } from '@nestjs/common';
 import { IsString } from 'class-validator';
 import { AuthService } from './auth.service';
-import { Public } from './jwt-auth.guard';
+import { AuthedRequest, Public } from './jwt-auth.guard';
 
 class LoginDto {
   @IsString() username: string;
@@ -14,12 +14,12 @@ export class AuthController {
 
   @Public()
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.auth.login(dto.username, dto.password);
+  login(@Body() dto: LoginDto, @Ip() ip: string) {
+    return this.auth.login(dto.username, dto.password, ip);
   }
 
   @Get('me')
-  me(@Req() req: any) {
+  me(@Req() req: AuthedRequest) {
     return req.user;
   }
 }

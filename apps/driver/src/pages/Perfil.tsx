@@ -16,7 +16,12 @@ export function Perfil() {
   const user = getUser();
   const [prompt, setPrompt] = useState<any>(null);
   const pending = pendingCount(s);
-  const initials = (user?.fullName ?? '?').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+  const initials = (user?.fullName ?? '?')
+    .split(' ')
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 
   useEffect(() => {
     const h = (e: Event) => {
@@ -32,7 +37,18 @@ export function Perfil() {
       <Header title="Perfil" />
       <div className="content">
         <div className="card row-card" style={{ padding: 16, gap: 14 }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--accent-soft)', color: 'var(--accent-dark)', display: 'grid', placeItems: 'center' }} className="h2">
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              background: 'var(--accent-soft)',
+              color: 'var(--accent-dark)',
+              display: 'grid',
+              placeItems: 'center',
+            }}
+            className="h2"
+          >
             {initials}
           </div>
           <div className="grow">
@@ -42,7 +58,14 @@ export function Perfil() {
         </div>
 
         {!standalone && prompt && (
-          <Button icon="download" onClick={async () => { prompt.prompt(); await prompt.userChoice; setPrompt(null); }}>
+          <Button
+            icon="download"
+            onClick={async () => {
+              prompt.prompt();
+              await prompt.userChoice;
+              setPrompt(null);
+            }}
+          >
             Instalar la aplicación
           </Button>
         )}
@@ -53,13 +76,37 @@ export function Perfil() {
         )}
 
         <div className="card" style={{ padding: 0, gap: 0, overflow: 'hidden' }}>
-          <Row icon="wifioff" label="Modo sin conexión" right={<span className="switch on"><i /></span>} />
+          <Row
+            icon="wifioff"
+            label="Modo sin conexión"
+            right={
+              <span className="switch on">
+                <i />
+              </span>
+            }
+          />
           <Row
             icon="pin"
             label="Compartir ubicación"
-            value={gpsPref === '0' ? 'Desactivada' : { idle: 'Solo en ruta', active: gps.pending ? `Activa · ${gps.pending} por enviar` : 'Activa', denied: 'Sin permiso', unsupported: 'No disponible', error: 'Sin señal GPS' }[gps.status]}
+            value={
+              gpsPref === '0'
+                ? 'Desactivada'
+                : {
+                    idle: 'Solo en ruta',
+                    active: gps.pending ? `Activa · ${gps.pending} por enviar` : 'Activa',
+                    denied: 'Sin permiso',
+                    unsupported: 'No disponible',
+                    error: 'Sin señal GPS',
+                  }[gps.status]
+            }
             right={
-              <button role="switch" aria-checked={gpsPref !== '0'} aria-label="Compartir ubicación durante la ruta" className={'switch' + (gpsPref !== '0' ? ' on' : '')} onClick={() => writePref('gps', gpsPref === '0' ? '1' : '0')}>
+              <button
+                role="switch"
+                aria-checked={gpsPref !== '0'}
+                aria-label="Compartir ubicación durante la ruta"
+                className={'switch' + (gpsPref !== '0' ? ' on' : '')}
+                onClick={() => writePref('gps', gpsPref === '0' ? '1' : '0')}
+              >
                 <i />
               </button>
             }
@@ -74,7 +121,11 @@ export function Perfil() {
           <Icon name="logout" size={17} color="var(--danger)" />
           <span style={{ color: 'var(--danger)' }}>Cerrar sesión</span>
         </button>
-        {pending > 0 && <Notice tone="warn" icon="alert">Tienes {pending} registro{pending === 1 ? '' : 's'} sin enviar. Al cerrar sesión se perderían.</Notice>}
+        {pending > 0 && (
+          <Notice tone="warn" icon="alert">
+            Tienes {pending} registro{pending === 1 ? '' : 's'} sin enviar. Al cerrar sesión se perderían.
+          </Notice>
+        )}
       </div>
       <TabBar />
     </div>

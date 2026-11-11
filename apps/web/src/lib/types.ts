@@ -1,5 +1,7 @@
-export type PayMethod = 'EFECTIVO' | 'TRANSFERENCIA' | 'TARJETA' | 'CREDITO';
-export type SaleStatus = 'PAGADA' | 'POR_COBRAR' | 'CANCELADA';
+import type { SalePayment } from '@forrajera/shared';
+import type { SaleStatus } from '@forrajera/shared';
+export type { SaleStatus };
+export type PayMethod = SalePayment;
 
 export interface CatalogItem {
   key: string;
@@ -82,7 +84,16 @@ export interface SaleRow {
 }
 
 export interface ShiftSummary {
-  shift: { id: number; register: string; openedAt: string; closedAt: string | null; status: string; openingFloat: number; countedCash: number | null; difference: number | null };
+  shift: {
+    id: number;
+    register: string;
+    openedAt: string;
+    closedAt: string | null;
+    status: string;
+    openingFloat: number;
+    countedCash: number | null;
+    difference: number | null;
+  };
   salesCount: number;
   cancelledCount: number;
   total: number;
