@@ -48,12 +48,14 @@ Estas pruebas encontraron y se corrigieron 7 errores más:
 Hoy viajan en base64 y se guardan como texto en `Delivery`/`Incident`. Propuesta: guardarlas en almacenamiento de objetos (S3, Cloudflare R2 o el disco del servidor) y dejar en la base solo la ruta. Requiere decidir el proveedor.
 
 ## 6. ESLint y Prettier
+
 - `npm run lint` (ESLint con typescript-eslint y reglas de hooks de React) y `npm run format` / `format:check` (Prettier, 160 columnas).
 - El CI falla si hay errores de lint o archivos sin formato.
 - El formateo inicial está en un commit aparte, listado en `.git-blame-ignore-revs` (`git config blame.ignoreRevsFile .git-blame-ignore-revs`).
 - Quedan ~30 avisos de `any` (sin bloquear) para ir tipando poco a poco.
 
 ## 7. Tipos compartidos
+
 `packages/shared` (`@forrajera/shared`): estados de ruta/parada/venta, formas de pago, motivos de no entrega, sus etiquetas y las clases `ApiError`/`NetworkError`. Las dos apps lo usan; `apps/api/src/common/shared.spec.ts` falla si un enum de `schema.prisma` cambia y el paquete no.
 
 ## 8. Operación (pendiente)

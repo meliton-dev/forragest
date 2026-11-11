@@ -2,11 +2,12 @@
 
 Monorepo: API (NestJS + Prisma + PostgreSQL) y app móvil del repartidor (PWA con React + Vite).
 
-| Carpeta       | Qué es                                                                                                                  |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `apps/api`    | API REST: autenticación con roles, inventario con PEPS y rutas/entregas del repartidor                                  |
-| `apps/driver` | App móvil del repartidor (PWA instalable, funciona sin conexión)                                                        |
-| `apps/web`    | Punto de venta táctil (React + Vite): ventas, descuentos autorizados, devoluciones, corte de caja y tickets de 58/80 mm |
+| Carpeta           | Qué es                                                                                                                  |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `apps/api`        | API REST: autenticación con roles, inventario con PEPS y rutas/entregas del repartidor                                  |
+| `apps/driver`     | App móvil del repartidor (PWA instalable, funciona sin conexión)                                                        |
+| `apps/web`        | Punto de venta táctil (React + Vite): ventas, descuentos autorizados, devoluciones, corte de caja y tickets de 58/80 mm |
+| `packages/shared` | Estados, etiquetas y errores que comparten la API y las apps                                                            |
 
 > **Publicar en un servidor y generar el reporte de consumo remoto:** ver [DEPLOY.md](DEPLOY.md).
 
@@ -89,5 +90,7 @@ npm run db:seed && npm run api:smoke   # flujo completo del repartidor contra la
 npm run pos:smoke        # flujo completo del POS contra la API en marcha (38 verificaciones; requiere el seed)
 npm run routes:smoke     # supervisor + repartidor: crear rutas, GPS, llegadas, monitoreo y eficiencia (25 verificaciones; requiere el seed)
 ```
+
+Antes de subir cambios: `npm run lint` y `npm run format`.
 
 El CI de GitHub (`.github/workflows/ci.yml`) corre todo lo anterior en cada push. Plan de mejoras pendientes: [PLAN-MEJORAS.md](PLAN-MEJORAS.md).
