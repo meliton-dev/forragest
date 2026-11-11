@@ -6,7 +6,7 @@ Resultado de la revisión del proyecto (noviembre 2026). Ordenado por prioridad:
 |---|---|---|
 | 1 | Existencias negativas con ventas simultáneas | ✅ Hecho |
 | 2 | CI en GitHub: compilar y probar en cada cambio | ✅ Hecho |
-| 3 | Más pruebas en la API (inventario, crédito, devoluciones) | 🟡 Inventario hecho; faltan crédito y devoluciones |
+| 3 | Más pruebas en la API (inventario, crédito, devoluciones) | ✅ Hecho |
 | 4 | Límite de intentos de login y cabeceras de seguridad | ✅ Hecho |
 | 5 | Fotos y firmas fuera de la base de datos | ⏳ Pendiente |
 | 6 | ESLint y Prettier | ⏳ Pendiente |
@@ -24,7 +24,14 @@ Resultado de la revisión del proyecto (noviembre 2026). Ordenado por prioridad:
 `.github/workflows/ci.yml`: con PostgreSQL de servicio, instala, aplica migraciones, compila las 3 apps y corre las pruebas unitarias y de integración.
 
 ## 3. Pruebas de la API
-Pruebas de integración contra PostgreSQL real (`apps/api/test/*.int-spec.ts`, `npm run api:test:int`). Primera tanda: PEPS y concurrencia del inventario. Siguientes: reglas de crédito, devoluciones y prorrateo de descuento.
+Pruebas de integración contra PostgreSQL real (`apps/api/test/*.int-spec.ts`, `npm run api:test:int`). Cubre PEPS y concurrencia del inventario, reglas de crédito, devoluciones (prorrateo de descuento y redondeo) y cancelaciones.
+
+Estas pruebas encontraron y se corrigieron 7 errores más:
+- Ventas a crédito simultáneas rebasaban el límite del cliente.
+- Se podía devolver más de lo vendido repitiendo la partida o con devoluciones simultáneas.
+- Por redondeo, la suma de notas de crédito podía superar el total cobrado (p. ej. $30.00 sobre $29.99).
+- Devoluciones simultáneas en una venta a crédito dejaban mal el saldo.
+- Cancelar dos veces, o cancelar y devolver a la vez, regresaba el producto dos veces al inventario.
 
 ## 4. Login y cabeceras
 - Máximo 5 intentos fallidos por usuario+IP cada 15 minutos (`429` después).

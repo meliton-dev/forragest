@@ -5,6 +5,10 @@ import { InventoryService } from '../inventory/inventory.service';
 import { LoginLimiter } from '../common/login-limiter';
 import { PrismaService } from '../prisma.service';
 
+type Tx = Prisma.TransactionClient;
+/** Bloquea la fila hasta el fin de la transacción: las operaciones simultáneas sobre la misma venta o cliente van en fila. */
+const lockRow = (tx: Tx, table: 'Sale' | 'Customer', id: number) => tx.$queryRawUnsafe(`SELECT id FROM "${table}" WHERE id = $1 FOR UPDATE`, id);
+
 const num = (d: Prisma.Decimal | number | null | undefined) => Number(d ?? 0);
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 const r3 = (n: number) => Math.round((n + Number.EPSILON) * 1000) / 1000;
@@ -129,10 +133,10 @@ export class PosService {
     return out;
   }
 
-  async creditOf(customerId: number) {
-    const c = await this.prisma.customer.findUnique({ where: { id: customerId } });
+  async creditOf(customerId: number, db: Tx | PrismaService = this.prisma) {
+    const c = await db.customer.findUnique({ where: { id: customerId } });
     if (!c) throw new NotFoundException('Cliente no encontrado');
-    const open = await this.prisma.sale.findMany({ where: { customerId, status: 'POR_COBRAR', balance: { gt: 0 } } });
+    const open = await db.sale.findMany({ where: { customerId, status: 'POR_COBRAR', balance: { gt: 0 } } });
     const today = dateOnly(new Date());
     const balance = r2(open.reduce((a, s) => a + num(s.balance), 0));
     const overdue = r2(open.filter((s) => s.dueDate && s.dueDate < today).reduce((a, s) => a + num(s.balance), 0));
@@ -230,6 +234,13 @@ export class PosService {
 
     const saleId = await this.prisma.$transaction(
       async (tx) => {
+        if (dto.paymentMethod === 'CREDITO') {
+          // Revalida con el cliente bloqueado: dos ventas a crédito simultáneas no pueden rebasar el límite.
+          await lockRow(tx, 'Customer', dto.customerId!);
+          const credit = await this.creditOf(dto.customerId!, tx);
+          if (credit.blocked) throw new BadRequestException(`Crédito bloqueado: ${credit.reason}`);
+          if (total > credit.available) throw new BadRequestException(`La venta excede el crédito disponible (${money(credit.available)})`);
+        }
         await this.inventory.lockProducts(lines.map((l) => l.productId), tx);
         const sale = await tx.sale.create({
           data: {
@@ -308,12 +319,18 @@ export class PosService {
   }
 
   async cancelSale(userId: number, saleId: number, dto: { reason: string; authorization?: Authorization }) {
-    const sale = await this.prisma.sale.findUnique({ where: { id: saleId }, include: { items: true, creditNotes: true } });
-    if (!sale) throw new NotFoundException('Venta no encontrada');
-    if (sale.status === 'CANCELADA') throw new BadRequestException('La venta ya está cancelada');
-    if (sale.creditNotes.length) throw new BadRequestException('La venta tiene devoluciones; no se puede cancelar');
+    const check = (sale: { status: string; creditNotes: unknown[] } | null) => {
+      if (!sale) throw new NotFoundException('Venta no encontrada');
+      if (sale.status === 'CANCELADA') throw new BadRequestException('La venta ya está cancelada');
+      if (sale.creditNotes.length) throw new BadRequestException('La venta tiene devoluciones; no se puede cancelar');
+    };
+    check(await this.prisma.sale.findUnique({ where: { id: saleId }, include: { creditNotes: true } }));
     const authId = await this.authorize(dto.authorization);
     await this.prisma.$transaction(async (tx) => {
+      // Se vuelve a validar con la venta bloqueada: dos cancelaciones (o cancelación y devolución) a la vez no duplican inventario.
+      await lockRow(tx, 'Sale', saleId);
+      const sale = (await tx.sale.findUnique({ where: { id: saleId }, include: { items: true, creditNotes: true } }))!;
+      check(sale);
       for (const i of sale.items) {
         const kg = r3(num(i.quantity) * num(i.factor));
         await this.inventory.addEntry(
@@ -332,26 +349,39 @@ export class PosService {
     dto: { saleId: number; items: { saleItemId: number; quantity: number }[]; reason: string; comments?: string; refundMethod?: RefundMethod },
   ) {
     const shift = await this.requireShift(userId);
-    const sale = await this.prisma.sale.findUnique({ where: { id: dto.saleId }, include: { items: true } });
-    if (!sale) throw new NotFoundException('Venta no encontrada');
-    if (sale.status === 'CANCELADA') throw new BadRequestException('La venta está cancelada');
-    const net = num(sale.subtotal) > 0 ? num(sale.total) / num(sale.subtotal) : 1;
+    // Junta las partidas repetidas para validar la cantidad total pedida de cada una.
+    const wanted = new Map<number, number>();
+    for (const x of dto.items) if (x.quantity > 0) wanted.set(x.saleItemId, r3((wanted.get(x.saleItemId) ?? 0) + x.quantity));
+    if (!wanted.size) throw new BadRequestException('Selecciona al menos una partida a devolver');
 
-    const picked = dto.items
-      .filter((x) => x.quantity > 0)
-      .map((x) => {
-        const it = sale.items.find((i) => i.id === x.saleItemId);
+    const { noteId, saleFolio } = await this.prisma.$transaction(async (tx) => {
+      // Con la venta bloqueada, las devoluciones y cancelaciones simultáneas leen las cantidades ya devueltas.
+      await lockRow(tx, 'Sale', dto.saleId);
+      const sale = await tx.sale.findUnique({ where: { id: dto.saleId }, include: { items: true, creditNotes: true } });
+      if (!sale) throw new NotFoundException('Venta no encontrada');
+      if (sale.status === 'CANCELADA') throw new BadRequestException('La venta está cancelada');
+      const net = num(sale.subtotal) > 0 ? num(sale.total) / num(sale.subtotal) : 1;
+
+      const picked = [...wanted].map(([saleItemId, qty]) => {
+        const it = sale.items.find((i) => i.id === saleItemId);
         if (!it) throw new BadRequestException('Partida inválida');
         const left = r3(num(it.quantity) - num(it.returnedQty));
-        if (x.quantity > left) throw new BadRequestException(`Solo se pueden devolver ${left} de esta partida`);
-        return { it, qty: x.quantity, amount: r2(x.quantity * num(it.unitPrice) * net) };
+        if (qty > left) throw new BadRequestException(`Solo se pueden devolver ${left} de esta partida`);
+        return { it, qty, amount: r2(qty * num(it.unitPrice) * net) };
       });
-    if (!picked.length) throw new BadRequestException('Selecciona al menos una partida a devolver');
-    const total = r2(picked.reduce((a, p) => a + p.amount, 0));
-    const onCredit = sale.paymentMethod === 'CREDITO';
-    const refundMethod: RefundMethod = onCredit ? 'SALDO_A_FAVOR' : dto.refundMethod ?? 'EFECTIVO';
+      // El redondeo por partida no puede devolver más de lo que se cobró: se ajusta la última partida.
+      const alreadyRefunded = sale.creditNotes.reduce((a, n) => a + num(n.total), 0);
+      const remaining = r2(num(sale.total) - alreadyRefunded);
+      const everythingBack = sale.items.every((i) => r3(num(i.quantity) - num(i.returnedQty) - (wanted.get(i.id) ?? 0)) <= 0);
+      let total = r2(picked.reduce((a, p) => a + p.amount, 0));
+      if (total > remaining || everythingBack) {
+        const last = picked[picked.length - 1];
+        last.amount = r2(Math.max(0, last.amount + (remaining - total)));
+        total = r2(picked.reduce((a, p) => a + p.amount, 0));
+      }
+      const onCredit = sale.paymentMethod === 'CREDITO';
+      const refundMethod: RefundMethod = onCredit ? 'SALDO_A_FAVOR' : dto.refundMethod ?? 'EFECTIVO';
 
-    const noteId = await this.prisma.$transaction(async (tx) => {
       const note = await tx.creditNote.create({ data: { saleId: sale.id, shiftId: shift.id, total, refundMethod, reason: dto.reason, comments: dto.comments, userId } });
       for (const p of picked) {
         await tx.creditNoteItem.create({ data: { creditNoteId: note.id, saleItemId: p.it.id, quantity: p.qty, amount: p.amount } });
@@ -366,12 +396,12 @@ export class PosService {
       if (onCredit) {
         await tx.sale.update({ where: { id: sale.id }, data: { balance: Math.max(0, r2(num(sale.balance) - total)) } });
       }
-      return note.id;
+      return { noteId: note.id, saleFolio: sale.folio };
     });
     const note = await this.prisma.creditNote.findUniqueOrThrow({ where: { id: noteId }, include: { items: { include: { saleItem: { include: { product: true } } } } } });
     return {
       id: note.id, folio: note.folio, total: num(note.total), refundMethod: note.refundMethod, reason: note.reason, createdAt: note.createdAt,
-      saleFolio: sale.folio, store: STORE,
+      saleFolio, store: STORE,
       items: note.items.map((i) => ({ name: i.saleItem.product.name, presentation: i.saleItem.presentation, quantity: num(i.quantity), amount: num(i.amount) })),
     };
   }
