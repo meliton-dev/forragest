@@ -104,6 +104,10 @@ export class DriverService {
         need.set(i.productId, cur);
       }
     await this.prisma.$transaction(async (tx) => {
+      // Si el repartidor toca "Cargar" dos veces a la vez, solo una carga descuenta el almacén.
+      const claimed = await tx.route.updateMany({ where: { id: routeId, status: 'PROGRAMADA' }, data: { status: 'EN_CURSO', departedAt: new Date() } });
+      if (claimed.count === 0) return;
+      await this.inventory.lockProducts([...need.keys()], tx);
       for (const [productId, n] of need) {
         try {
           await this.inventory.removeStock(
@@ -115,7 +119,6 @@ export class DriverService {
           throw e;
         }
       }
-      await tx.route.update({ where: { id: routeId }, data: { status: 'EN_CURSO', departedAt: new Date() } });
     });
     return this.mapRoute(await this.ownedRoute(routeId, userId));
   }

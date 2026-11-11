@@ -21,7 +21,8 @@
     "web:test": "npm test -w apps/web",
     "pos:smoke": "node apps/api/test/pos-flow.smoke.mjs",
     "routes:smoke": "node apps/api/test/routes-flow.smoke.mjs",
-    "reporte:remoto": "node scripts/reporte-remoto.mjs"
+    "reporte:remoto": "node scripts/reporte-remoto.mjs",
+    "api:test:int": "npm run test:int -w apps/api"
   },
   "devDependencies": {
     "playwright-core": "^1.48.2"

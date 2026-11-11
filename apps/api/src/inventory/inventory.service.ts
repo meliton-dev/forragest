@@ -48,10 +48,21 @@ export class InventoryService {
     return tx ? run(tx) : this.prisma.$transaction(run);
   }
 
+  /**
+   * Bloquea las filas de los productos hasta que termine la transacción, para que dos ventas
+   * simultáneas no lean la misma existencia. Siempre en orden de id: así dos transacciones con
+   * los mismos productos no se esperan mutuamente (deadlock).
+   */
+  async lockProducts(productIds: number[], tx: Tx) {
+    const ids = [...new Set(productIds)].sort((a, b) => a - b);
+    if (ids.length) await tx.$queryRaw`SELECT id FROM "Product" WHERE id IN (${Prisma.join(ids)}) ORDER BY id FOR UPDATE`;
+  }
+
   /** Descuenta PEPS (lote más antiguo primero). Falla si no hay existencia suficiente. */
   async removeStock(input: ExitInput, tx?: Tx) {
     if (input.quantity <= 0) throw new BadRequestException('La cantidad debe ser mayor a 0');
     const run = async (t: Tx) => {
+      await this.lockProducts([input.productId], t);
       const lots = await t.stockLot.findMany({
         where: { productId: input.productId, quantity: { gt: 0 } },
         orderBy: [{ receivedAt: 'asc' }, { id: 'asc' }],

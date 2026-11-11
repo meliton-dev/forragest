@@ -223,6 +223,7 @@ export class PosService {
 
     const saleId = await this.prisma.$transaction(
       async (tx) => {
+        await this.inventory.lockProducts(lines.map((l) => l.productId), tx);
         const sale = await tx.sale.create({
           data: {
             shiftId: shift.id, cashierId: userId, customerId: dto.customerId ?? null, status, paymentMethod: dto.paymentMethod, subtotal, discountAmount,
