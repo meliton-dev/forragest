@@ -1,0 +1,26 @@
+name: Revisar existencias negativas (temporal)
+
+# Revisión única antes de publicar la migración stock_no_negativo. Se borra después de usarse.
+on:
+  push:
+    branches: ['claude/quirky-meitner-90v0jz']
+    paths: ['.github/workflows/revisar-stock.yml']
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Consultar lotes con existencia negativa
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then echo "::error::Falta el secreto BACKUP_DATABASE_URL"; exit 1; fi
+          psql --version
+          echo "== Migraciones aplicadas (últimas 3)"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'SELECT migration_name FROM _prisma_migrations ORDER BY finished_at DESC NULLS LAST LIMIT 3'
+          echo "== Lotes con existencia negativa"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'SELECT p.code, l.id AS lote, l.quantity FROM "StockLot" l JOIN "Product" p ON p.id = l."productId" WHERE l.quantity < 0 ORDER BY p.code'
+          n=$(psql "$DATABASE_URL" -tAc 'SELECT count(*) FROM "StockLot" WHERE quantity < 0')
+          echo "RESULTADO: $n lotes con existencia negativa"
+          echo "### $n lotes con existencia negativa" >> "$GITHUB_STEP_SUMMARY"
