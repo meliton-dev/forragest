@@ -5,4 +5,5 @@
 backups
 apps/driver
 apps/web
-packages
+packages/*
+!packages/shared
