@@ -2,16 +2,16 @@
 
 Resultado de la revisión del proyecto (noviembre 2026). Ordenado por prioridad: primero lo que puede dañar datos de dinero o inventario.
 
-| #   | Mejora                                                    | Estado       |
-| --- | --------------------------------------------------------- | ------------ |
-| 1   | Existencias negativas con ventas simultáneas              | ✅ Hecho     |
-| 2   | CI en GitHub: compilar y probar en cada cambio            | ✅ Hecho     |
-| 3   | Más pruebas en la API (inventario, crédito, devoluciones) | ✅ Hecho     |
-| 4   | Límite de intentos de login y cabeceras de seguridad      | ✅ Hecho     |
-| 5   | Fotos y firmas fuera de la base de datos                  | ⏳ Pendiente |
-| 6   | ESLint y Prettier                                         | ✅ Hecho     |
-| 7   | Tipos compartidos entre API y apps (`packages/shared`)    | ✅ Hecho     |
-| 8   | Respaldos, monitoreo de errores y logs estructurados      | ⏳ Pendiente |
+| #   | Mejora                                                    | Estado               |
+| --- | --------------------------------------------------------- | -------------------- |
+| 1   | Existencias negativas con ventas simultáneas              | ✅ Hecho             |
+| 2   | CI en GitHub: compilar y probar en cada cambio            | ✅ Hecho             |
+| 3   | Más pruebas en la API (inventario, crédito, devoluciones) | ✅ Hecho             |
+| 4   | Límite de intentos de login y cabeceras de seguridad      | ✅ Hecho             |
+| 5   | Fotos y firmas fuera de la base de datos                  | ⏳ Pendiente         |
+| 6   | ESLint y Prettier                                         | ✅ Hecho             |
+| 7   | Tipos compartidos entre API y apps (`packages/shared`)    | ✅ Hecho             |
+| 8   | Respaldos, monitoreo de errores y logs estructurados      | ✅ Hecho (sin costo) |
 
 ## 1. Existencias negativas
 
@@ -58,8 +58,9 @@ Hoy viajan en base64 y se guardan como texto en `Delivery`/`Incident`. Propuesta
 
 `packages/shared` (`@forrajera/shared`): estados de ruta/parada/venta, formas de pago, motivos de no entrega, sus etiquetas y las clases `ApiError`/`NetworkError`. Las dos apps lo usan; `apps/api/src/common/shared.spec.ts` falla si un enum de `schema.prisma` cambia y el paquete no.
 
-## 8. Operación (pendiente)
+## 8. Operación (sin costo)
 
-- Respaldo diario de PostgreSQL (en Render viene con planes de pago; si no, `pg_dump` programado).
-- Monitoreo de errores (p. ej. Sentry) en API y apps.
-- Logs en JSON con `nestjs-pino`.
+- **Respaldos:** `.github/workflows/respaldo.yml` hace cada noche un `pg_dump` cifrado (AES-256) y lo guarda 30 días como artefacto de GitHub. Se activa con dos secretos; ver _Respaldos diarios_ en `DEPLOY.md`. Scripts: `scripts/respaldo.sh` y `scripts/restaurar.sh` (probados ida y vuelta).
+- **Logs estructurados:** `nestjs-pino`, una línea JSON por petición con id (`X-Request-Id`), usuario, estado y tiempo; tokens y contraseñas censurados.
+- **Errores inesperados:** se registran completos y el usuario ve un código de referencia para reportarlos.
+- **Pendiente con costo / cuenta externa:** monitoreo con alertas (p. ej. Sentry tiene plan gratuito pero requiere crear cuenta y poner `SENTRY_DSN`).

@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
+import { Logger } from 'nestjs-pino';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 
@@ -22,7 +23,11 @@ async function bootstrap() {
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { cors: origins.length ? { origin: origins } : true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    cors: origins.length ? { origin: origins } : true,
+    bufferLogs: true,
+  });
+  app.useLogger(app.get(Logger));
   app.use(helmet()); // cabeceras de seguridad HTTP
   app.set('trust proxy', 1); // detrás del balanceador del hosting (HTTPS termina allí)
   // firmas y fotografías de entrega viajan como imágenes en base64

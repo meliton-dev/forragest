@@ -79,3 +79,28 @@ Resultado: la carpeta `reporte-consumo-remoto/<fecha>/` con `reporte.html` (list
 - Solo lectura (no crea nada en el servidor): agrega `--solo-lectura`.
 - La prueba de escritura crea la ruta **"Ruta Reporte remoto (e2e)"** para el chofer `chofer2`; se identifica por ese nombre.
 - Si el reporte dice "No se pudo demostrar", cada punto fallido indica el motivo (por ejemplo, que la API sigue apuntando a `localhost`).
+
+## Respaldos diarios (gratis, con GitHub Actions)
+
+El flujo `.github/workflows/respaldo.yml` saca cada noche (3:17 a. m., hora del centro de México) una copia **cifrada** de la base y la guarda 30 días en GitHub, dentro de la pestaña _Actions → Respaldo diario → Artifacts_.
+
+Para activarlo, en GitHub: _Settings → Secrets and variables → Actions → New repository secret_:
+
+| Secreto               | Valor                                                                                                                       |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `BACKUP_DATABASE_URL` | En Render: tu base de datos → _Connect_ → **External Database URL**                                                         |
+| `BACKUP_PASSPHRASE`   | Una contraseña larga. **Guárdala aparte** (por ejemplo en tu gestor de contraseñas): sin ella el respaldo no se puede abrir |
+
+Para probarlo sin esperar a la noche: _Actions → Respaldo diario → Run workflow_.
+
+**Restaurar** (requiere PostgreSQL 16 instalado en tu computadora): descarga el artefacto, descomprime el `.zip` y ejecuta
+
+```bash
+DATABASE_URL="postgresql://..." BACKUP_PASSPHRASE="..." ./scripts/restaurar.sh forragest-AAAAMMDD-HHMM.dump.gpg
+```
+
+> Ojo: en el plan gratuito de Render la base de datos tiene vigencia limitada. Estos respaldos te permiten pasar los datos a una base nueva cuando eso ocurra.
+
+## Registros (logs) y errores
+
+La API escribe una línea JSON por petición, visible en el panel _Logs_ de Render. Cada respuesta trae la cabecera `X-Request-Id`; si algo falla, el usuario ve _“Código de referencia: 1a2b3c4d”_ y basta buscar ese código en los logs para ver el error completo. Los tokens y contraseñas nunca se escriben. Nivel de detalle: variable `LOG_LEVEL` (`info` por defecto; `debug`, `warn`, `error`).
