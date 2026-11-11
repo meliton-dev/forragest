@@ -29,9 +29,7 @@ jobs:
           fi
       - uses: actions/checkout@v4
         if: steps.cfg.outputs.ok == 'true'
-      - name: Cliente de PostgreSQL 16
-        if: steps.cfg.outputs.ok == 'true'
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-16
+      # pg_dump viene instalado en ubuntu-latest (v18); funciona con servidores de esa versión o anteriores
       - name: Respaldar
         if: steps.cfg.outputs.ok == 'true'
         env:

@@ -93,7 +93,7 @@ Para activarlo, en GitHub: _Settings → Secrets and variables → Actions → N
 
 Para probarlo sin esperar a la noche: _Actions → Respaldo diario → Run workflow_.
 
-**Restaurar** (requiere PostgreSQL 16 instalado en tu computadora): descarga el artefacto, descomprime el `.zip` y ejecuta
+**Restaurar** (requiere PostgreSQL 18 o más nuevo y `gpg` en tu computadora, porque los respaldos se generan con `pg_dump` 18): descarga el artefacto, descomprime el `.zip` y ejecuta
 
 ```bash
 DATABASE_URL="postgresql://..." BACKUP_PASSPHRASE="..." ./scripts/restaurar.sh forragest-AAAAMMDD-HHMM.dump.gpg
