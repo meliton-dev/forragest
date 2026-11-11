@@ -84,7 +84,10 @@ solo al volver la conexión (pantalla *Perfil → Sincronización*).
 ```bash
 npm run driver:test      # lógica de la cola sin conexión y del resumen (vitest)
 npm run web:test         # lógica del carrito del POS (vitest)
+npm run db:seed && npm run api:test:int   # inventario contra PostgreSQL: PEPS y ventas simultáneas
 npm run db:seed && npm run api:smoke   # flujo completo del repartidor contra la API en marcha (20 verificaciones)
 npm run pos:smoke        # flujo completo del POS contra la API en marcha (38 verificaciones; requiere el seed)
 npm run routes:smoke     # supervisor + repartidor: crear rutas, GPS, llegadas, monitoreo y eficiencia (25 verificaciones; requiere el seed)
 ```
+
+El CI de GitHub (`.github/workflows/ci.yml`) corre todo lo anterior en cada push. Plan de mejoras pendientes: [PLAN-MEJORAS.md](PLAN-MEJORAS.md).
