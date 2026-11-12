@@ -222,3 +222,56 @@ export function Empty({ icon, title, children }: { icon: string; title: string; 
     </div>
   );
 }
+
+const SPECIES: Record<string, ReactNode> = {
+  BOVINO: (
+    <>
+      <path d="M10 14c-3-1-5-4-5-7 4 0 7 2 8 5M38 14c3-1 5-4 5-7-4 0-7 2-8 5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      <rect x="11" y="11" width="26" height="24" rx="11" fill="currentColor" opacity="0.18" />
+      <rect x="11" y="11" width="26" height="24" rx="11" fill="none" stroke="currentColor" strokeWidth="2.5" />
+      <rect x="15" y="27" width="18" height="13" rx="6.5" fill="currentColor" opacity="0.35" />
+      <rect x="15" y="27" width="18" height="13" rx="6.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
+      <circle cx="19" cy="21" r="1.8" fill="currentColor" />
+      <circle cx="29" cy="21" r="1.8" fill="currentColor" />
+      <circle cx="21" cy="34" r="1.3" fill="currentColor" />
+      <circle cx="27" cy="34" r="1.3" fill="currentColor" />
+    </>
+  ),
+  OVINO: (
+    <>
+      <path
+        d="M14 20a6 6 0 0 1 5-9 7 7 0 0 1 10 0 6 6 0 0 1 5 9 6 6 0 0 1-2 10 7 7 0 0 1-16 0 6 6 0 0 1-2-10z"
+        fill="currentColor"
+        fillOpacity="0.18"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      />
+      <rect x="18" y="20" width="12" height="18" rx="6" fill="currentColor" opacity="0.4" />
+      <rect x="18" y="20" width="12" height="18" rx="6" fill="none" stroke="currentColor" strokeWidth="2.5" />
+      <circle cx="21.5" cy="27" r="1.5" fill="currentColor" />
+      <circle cx="26.5" cy="27" r="1.5" fill="currentColor" />
+    </>
+  ),
+  AVES: (
+    <>
+      <path d="M20 9c0-3 4-3 4 0 0-3 4-3 4 0" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M12 30c0-12 5-19 12-19s12 7 12 19a12 10 0 0 1-24 0z" fill="currentColor" fillOpacity="0.18" stroke="currentColor" strokeWidth="2.5" />
+      <path d="M21 24l3 4 3-4z" fill="currentColor" />
+      <circle cx="20" cy="20" r="1.6" fill="currentColor" />
+      <circle cx="28" cy="20" r="1.6" fill="currentColor" />
+    </>
+  ),
+};
+
+/** Ilustración de la especie a la que va dirigido el alimento (bovino, ovino o aves). */
+export function Species({ line, size = 34 }: { line: string; size?: number }) {
+  return (
+    <span className={`sp ${line.toLowerCase()}`}>
+      <i>
+        <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden>
+          {SPECIES[line.toUpperCase()] ?? SPECIES.BOVINO}
+        </svg>
+      </i>
+    </span>
+  );
+}

@@ -57,7 +57,6 @@ export function BackShell() {
             <small>Oficina</small>
           </div>
         </div>
-        <div className="stitch" />
         {groups.map(([title, items]) => (
           <div key={title} style={{ display: 'contents' }}>
             <div className="grp overline">{title}</div>

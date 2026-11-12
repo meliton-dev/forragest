@@ -4,7 +4,7 @@ import { quickAmounts, totalsOf } from '../lib/cart';
 import { folio, mxn } from '../lib/format';
 import type { CatalogItem, CreditInfo, PayMethod, Sale } from '../lib/types';
 import { usePos } from '../pos-context';
-import { Badge, Button, Empty, Field, Icon, Input, Modal, Notice, Segmented } from '../ui/kit';
+import { Badge, Button, Empty, Field, Icon, Input, Modal, Notice, Segmented, Species } from '../ui/kit';
 import { ReceiptModal, SaleReceipt } from '../ui/Receipt';
 
 const LINES: [string, string][] = [
@@ -119,7 +119,7 @@ export function Venta() {
                 onClick={() => pos.add(it)}
                 aria-label={`${it.name} ${it.presentation}`}
               >
-                <span className={`stripe ${it.line.toLowerCase()}`} />
+                <Species line={it.line} />
                 <span className="body">
                   <span className="row between">
                     <span className="caption muted">{it.code}</span>

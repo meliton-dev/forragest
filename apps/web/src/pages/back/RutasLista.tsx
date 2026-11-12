@@ -118,7 +118,7 @@ export function RutasLista() {
                   <th className="right" style={{ width: 110 }}>
                     Por cobrar
                   </th>
-                  <th style={{ width: 110 }}>Estado</th>
+                  <th style={{ width: 132 }}>Estado</th>
                 </tr>
               </thead>
               <tbody>

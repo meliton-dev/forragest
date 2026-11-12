@@ -6,7 +6,7 @@ import { DEPOT, type MonitorRoute } from '../../lib/routes-types';
 import { Badge, Empty, Icon, Notice, Segmented } from '../../ui/kit';
 import { MapView, type MapLine, type MapMarker } from '../../ui/MapView';
 
-const COLORS = ['#0b5fe0', '#1f5fa8', '#8e5a32', '#6e5aa8'];
+const COLORS = ['#b8482f', '#1f4d3a', '#8e5a32', '#94660a'];
 const SIGNAL_LOST_MIN = 3;
 
 function ago(now: number, iso: string) {

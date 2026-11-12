@@ -38,7 +38,7 @@ function ArtFlow() {
     <g>
       <rect x={x} y="70" width="78" height="78" rx="18" fill={S} stroke={B} />
       <g transform={`translate(${x + 39} 109)`}>{children}</g>
-      <text x={x + 39} y="172" textAnchor="middle" fontSize="12" fontWeight="600" fill="var(--text-2)" fontFamily="IBM Plex Sans, sans-serif">
+      <text x={x + 39} y="172" textAnchor="middle" fontSize="12" fontWeight="600" fill="var(--text-2)" fontFamily="Nunito Sans, sans-serif">
         {label}
       </text>
     </g>
@@ -60,7 +60,7 @@ function ArtFlow() {
       </Step>
       <path d="M96 109h20m-6-6 6 6-6 6M203 109h20m-6-6 6 6-6 6" stroke={B} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       <rect x="94" y="196" width="132" height="26" rx="13" fill={GS} />
-      <text x="160" y="213" textAnchor="middle" fontSize="12" fontWeight="600" fill="var(--accent-dark)" fontFamily="IBM Plex Sans, sans-serif">
+      <text x="160" y="213" textAnchor="middle" fontSize="12" fontWeight="600" fill="var(--accent-dark)" fontFamily="Nunito Sans, sans-serif">
         Todo en una sola pantalla
       </text>
     </svg>
@@ -97,7 +97,7 @@ function ArtPin() {
       <circle cx="169" cy="92" r="3" stroke={G} strokeWidth="2" />
       <rect x="82" y="190" width="156" height="30" rx="15" fill={S} stroke={B} />
       <circle cx="102" cy="205" r="5" fill="var(--ok)" />
-      <text x="116" y="209" fontSize="12" fontWeight="600" fill="var(--text-2)" fontFamily="IBM Plex Sans, sans-serif">
+      <text x="116" y="209" fontSize="12" fontWeight="600" fill="var(--text-2)" fontFamily="Nunito Sans, sans-serif">
         Solo con la ruta en curso
       </text>
     </svg>
@@ -198,7 +198,7 @@ export function Onboarding({ onClose }: { onClose: () => void }) {
           {STEPS.map((_, k) => (
             <motion.i
               key={k}
-              animate={{ width: k === i ? 28 : 8, backgroundColor: k === i ? '#0b5fe0' : '#c9cfdb' }}
+              animate={{ width: k === i ? 28 : 8, backgroundColor: k === i ? '#b8482f' : '#d2c5a6' }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
             />
           ))}

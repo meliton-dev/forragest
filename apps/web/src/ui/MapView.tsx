@@ -24,7 +24,7 @@ function iconFor(m: MapMarker) {
   if (m.kind === 'truck') {
     return L.divIcon({
       className: 'map-pin-wrap',
-      html: `<div class="map-truck" style="background:${m.color ?? '#0847b0'}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h13v11H1z"/><path d="M14 9h4l4 4v4h-8"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></div>`,
+      html: `<div class="map-truck" style="background:${m.color ?? '#1f4d3a'}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h13v11H1z"/><path d="M14 9h4l4 4v4h-8"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></div>`,
       iconSize: [34, 34],
       iconAnchor: [17, 17],
     });

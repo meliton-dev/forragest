@@ -41,12 +41,22 @@ export function Login({ onDone }: { onDone: () => void }) {
             <small>Reparto</small>
           </div>
         </div>
-        <div className="stitch" />
         <h1 className="lema">
           Buen camino,
           <br />
           <em>chofer</em>.
         </h1>
+        <svg className="art" viewBox="0 0 375 120" aria-hidden>
+          <circle cx="300" cy="40" r="26" fill="#e9b949" />
+          <path d="M0 78c60-26 120-28 190-12s120 10 185-14v68H0z" fill="#2f6a4f" />
+          <path d="M0 100c70-22 140-18 210-4s110 8 165-12v36H0z" fill="#3f7f5e" />
+          <g>
+            <rect x="196" y="66" width="50" height="22" rx="4" fill="#f4efe4" />
+            <rect x="232" y="56" width="24" height="32" rx="5" fill="#b8482f" />
+            <circle cx="210" cy="91" r="7" fill="#17382b" />
+            <circle cx="244" cy="91" r="7" fill="#17382b" />
+          </g>
+        </svg>
       </div>
       <div className="col login-body" style={{ gap: 16 }}>
         <Field label="Usuario">

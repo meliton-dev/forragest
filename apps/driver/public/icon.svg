@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Forragest">
   <defs>
-    <linearGradient id="bg"><stop offset="0" stop-color="#14203A"/></linearGradient>
-    <linearGradient id="gold"><stop offset="0" stop-color="#E0A82E"/></linearGradient>
+    <linearGradient id="bg"><stop offset="0" stop-color="#1F4D3A"/></linearGradient>
+    <linearGradient id="gold"><stop offset="0" stop-color="#E9B949"/></linearGradient>
     <radialGradient id="sun"><stop offset="0" stop-color="#fff" stop-opacity="0"/></radialGradient>
   </defs>
   <rect width="512" height="512" rx="128" fill="url(#bg)"/>
   <rect width="512" height="512" rx="128" fill="url(#sun)"/>
-  <path d="M0 438C120 400 250 392 512 430V512H0Z" fill="#0B5FE0" fill-opacity="1"/>
+  <path d="M0 438C120 400 250 392 512 430V512H0Z" fill="#3F7F5E" fill-opacity="1"/>
   <g id="espiga" fill="url(#gold)">
     <path d="M256 452V176" stroke="url(#gold)" stroke-width="16" stroke-linecap="round" fill="none"/>
     <ellipse cx="256" cy="120" rx="27" ry="52"/>

@@ -82,7 +82,7 @@ export function NuevaRuta() {
       line.push([c.lat, c.lng]);
     }
   });
-  const lines: MapLine[] = [{ points: line, color: '#0b5fe0', dashed: true }];
+  const lines: MapLine[] = [{ points: line, color: '#b8482f', dashed: true }];
 
   const valid =
     !!name.trim() &&
