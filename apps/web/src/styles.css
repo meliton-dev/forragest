@@ -1,11 +1,15 @@
 /* Tokens tomados del diseño en Figma */
 :root {
-  --bg: #f6f3ea;
-  --surface: #fff;
-  --surface-2: #fbfaf6;
-  --border: #e8e4d8;
-  --border-strong: #d2cdbd;
-  --text: #161922;
+  --bg: #f3eee1;
+  --surface: #fffdf7;
+  --surface-2: #f8f4e9;
+  --border: #e2dbc8;
+  --border-strong: #c7bea6;
+  --text: #1a2233;
+  --ink: #14203a;
+  --f-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --f-body: 'IBM Plex Sans', system-ui, 'Segoe UI', sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
   --text-2: #4a4f5c;
   --text-3: #5b5f6d;
   --accent: #0b5fe0;
@@ -26,10 +30,10 @@
   --ovino: #6e5aa8;
   --bovino: #8e5a32;
   --aves: #b8860b;
-  --r-sm: 6px;
-  --r-md: 10px;
-  --r-lg: 14px;
-  --r-xl: 20px;
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
+  --r-xl: 10px;
   --shadow: 0 1px 2px rgba(22, 25, 34, 0.04), 0 4px 14px rgba(22, 25, 34, 0.06);
   --shadow-modal: 0 16px 40px -8px rgba(22, 26, 21, 0.16), 0 2px 6px rgba(22, 26, 21, 0.08);
 }
@@ -46,13 +50,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font:
-    400 14px/20px 'Inter',
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font: 400 14px/20px var(--f-body);
   -webkit-font-smoothing: antialiased;
 }
 button,
@@ -784,7 +782,7 @@ table.t tr.sel td {
   color: #111;
   padding: 14px 14px 18px;
   font:
-    400 12px/16px 'Inter',
+    400 12px/16px 'IBM Plex Sans',
     system-ui,
     sans-serif;
   display: flex;
@@ -1050,7 +1048,7 @@ table.t tr.sel td {
   display: grid;
   place-items: center;
   font:
-    600 12px/1 'Inter',
+    600 12px/1 'IBM Plex Sans',
     sans-serif;
   background: #fff;
   color: #0847b0;
@@ -1083,44 +1081,524 @@ table.t tr.sel td {
   background: #161a15;
   color: #fff;
   font:
-    600 11px/24px 'Inter',
+    600 11px/24px 'IBM Plex Sans',
     sans-serif;
   text-align: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 .leaflet-container {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
 }
 
-/* ===== tema Forragest: transiciones suaves y cristal en barras superpuestas ===== */
+/* ===== Identidad Forragest: "costal y libreta" =====
+   Tipografía de etiqueta de costal (Barlow Condensed), texto de oficina (IBM Plex Sans)
+   y cifras de libreta (IBM Plex Mono). Color plano, reglas finas, sin degradados ni brillos. */
 button,
 a,
 .btn,
 input,
 select {
   transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.15s ease,
-    opacity 0.18s ease;
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.input input:focus-visible,
+.input select:focus-visible,
+.input textarea:focus-visible {
+  outline: 0;
+}
+
+/* tipografía */
+.h1 {
+  font-family: var(--f-display);
+  font-size: 32px;
+  line-height: 34px;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+}
+.h2 {
+  font-family: var(--f-display);
+  font-size: 21px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.overline,
+table.t th {
+  font-family: var(--f-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+}
+.num-lg {
+  font-family: var(--f-mono);
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+.num,
+table.t td.right,
+.stepper span,
+.stop-n,
+.pcard .qty {
+  font-family: var(--f-mono);
+  font-variant-numeric: tabular-nums;
+}
+.num {
+  font-size: 15px;
+  letter-spacing: -0.02em;
+}
+
+/* superficies: papel y regla, sin sombras flotantes */
+.card,
+.tw,
+.pcard,
+.stop-card {
+  box-shadow: none;
+  border-color: var(--border-strong);
+}
+.card-h {
+  height: 44px;
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+.card-h .title {
+  font-family: var(--f-display);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.divider {
+  background: none;
+  border-top: 1px dashed var(--border-strong);
+}
+.line {
+  border-bottom: 1px dashed var(--border-strong);
+}
+.tile {
+  border-style: dashed;
+  border-color: var(--border-strong);
+}
+
+/* botones: tecla plana con canto */
+.btn {
+  border-radius: var(--r-md);
+}
+.btn.primary {
+  background: var(--accent);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.22);
+}
+.btn.primary:hover {
+  background: var(--accent-dark);
+}
+.btn.secondary {
+  box-shadow: inset 0 -2px 0 var(--border);
+}
+.btn.secondary:hover {
+  border-color: var(--text);
+}
+.btn.danger {
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.22);
+}
+.btn.lg {
+  font-family: var(--f-display);
+  font-size: 19px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 .btn:active,
 button:active {
-  transform: scale(0.98);
+  transform: translateY(1px);
 }
-.btn.primary {
-  background: linear-gradient(180deg, #0b5fe0 0%, #0a54cc 100%);
-  box-shadow: 0 6px 16px rgba(11, 95, 224, 0.28);
+
+/* sellos: estado como sello de tinta, no como pastilla */
+.badge {
+  font-family: var(--f-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 0 7px;
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+  background: none !important;
 }
-input:focus,
-select:focus,
-textarea:focus {
-  box-shadow: 0 0 0 4px rgba(11, 95, 224, 0.16);
+.badge.neutral {
+  color: var(--text-3);
+}
+.badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+}
+
+/* campos */
+.input,
+.seg,
+.chip,
+.pay,
+.stepper {
+  border-radius: var(--r-md);
+}
+.input:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.seg button.on {
+  background: var(--ink);
+}
+.seg.soft button.on {
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+.pay.on,
+.chip.on {
+  background: var(--surface);
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.notice {
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  border-left: 3px solid currentColor;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+/* tablas de libreta */
+table.t th {
+  background: none;
+  border-bottom: 2px solid var(--text);
+  color: var(--text);
+  height: 38px;
+}
+table.t td {
+  border-bottom: 1px dashed var(--border-strong);
+}
+table.t tr:last-child td {
+  border-bottom: 0;
+}
+table.t tr.sel td {
+  background: var(--gold-soft);
+}
+table.t tr.sel td:first-child {
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+
+/* costura de costal */
+.stitch {
+  height: 7px;
+  border-top: 2px dashed var(--gold);
+  border-bottom: 2px dashed var(--gold);
+  opacity: 0.75;
+  flex: none;
+}
+.wordmark {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 22px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.wordmark small {
+  display: block;
+  font-family: var(--f-body);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  opacity: 0.7;
+}
+
+/* barra de caja y menú lateral: tinta azul marino con detalle dorado */
+.topbar,
+.side {
+  background: var(--ink);
+  color: #f3eee1;
+  border: 0;
+}
+.topbar .muted,
+.side .muted {
+  color: #a3acbf;
+}
+.topbar .btn.secondary,
+.side .btn.secondary {
+  background: none;
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+  box-shadow: none;
+}
+.topbar .btn.secondary:hover,
+.side .btn.secondary:hover {
+  border-color: #fff;
+}
+.topbar {
+  height: 60px;
+  padding: 0 20px;
+}
+.topbar .tabs {
+  align-self: stretch;
+  background: none;
+  padding: 0;
+  gap: 4px;
+  border-radius: 0;
+}
+.topbar .tabs a {
+  height: auto;
+  padding: 0 16px;
+  border-radius: 0;
+  font-family: var(--f-display);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #a3acbf;
+}
+.topbar .tabs a:hover {
+  color: #fff;
+}
+.topbar .tabs a.on {
+  background: none;
+  color: #fff;
+  box-shadow: inset 0 -4px 0 var(--gold);
+}
+.side {
+  width: 240px;
+  padding: 18px 0 14px;
+  gap: 0;
+}
+.side .brand-block {
+  padding: 0 18px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.side .stitch {
+  margin: 0 18px 6px;
+}
+.side .grp {
+  padding: 18px 18px 6px;
+  color: var(--gold);
+}
+.side a.item {
+  height: 36px;
+  padding: 0 18px;
+  border-radius: 0;
+  color: #c6ccda;
+  font-size: 14px;
+}
+.side a.item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+.side a.item.on {
+  background: rgba(255, 255, 255, 0.09);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: inset 4px 0 0 var(--gold);
+}
+.side a.item .badge {
+  color: var(--gold);
+  font-family: var(--f-mono);
+  letter-spacing: 0;
+}
+.side .user {
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  margin: auto 18px 0;
+  padding: 14px 0 0;
+}
+.avatar {
+  border-radius: var(--r-sm);
+  background: var(--gold);
+  color: var(--ink);
+  font-family: var(--f-display);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+.back-main {
+  padding: 28px 32px;
+}
+
+/* indicadores en una sola tira, como renglón de libreta */
+.kpis {
+  gap: 0;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+}
+.kpis > * {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  border-right: 1px dashed var(--border-strong);
+}
+.kpis > *:last-child {
+  border-right: 0;
+}
+.kpi {
+  padding: 14px 18px 16px;
+}
+
+/* punto de venta: producto como etiqueta de costal */
+.pcard {
+  border-radius: var(--r-md);
+  min-height: 112px;
+}
+.pcard:hover:not([disabled]) {
+  border-color: var(--text);
+}
+.pcard.sel {
+  border: 1px solid var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.pcard .stripe {
+  width: 8px;
+}
+.pcard .qty {
+  border-radius: 3px;
+  background: var(--ink);
+}
+.ticket {
+  border-left: 1px solid var(--border-strong);
+}
+.stop-n {
+  border-radius: 3px;
+  font-weight: 500;
+}
+.pbar i {
+  height: 6px;
+  border-radius: 1px;
+}
+.hbar,
+.hbar i,
+.bar-stack i {
+  border-radius: 2px;
+}
+
+/* diálogos */
+.overlay {
+  background: rgba(20, 32, 58, 0.55);
+}
+.modal {
+  border-radius: var(--r-xl);
+  border-color: var(--ink);
+}
+.modal-h {
+  padding: 16px 22px;
+}
+.modal-f {
+  border-top: 1px dashed var(--border-strong);
+}
+
+/* entrada: media página de marca, media de formulario */
+.login {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  place-items: stretch;
+  padding: 0;
+}
+.login-brand {
+  background: var(--ink);
+  color: #f3eee1;
+  padding: 48px 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+}
+.login-brand .lema {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: clamp(44px, 6vw, 84px);
+  line-height: 0.95;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  margin: 0;
+}
+.login-brand .lema em {
+  font-style: normal;
+  color: var(--gold);
+}
+.login-brand .ficha {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: start;
+  gap: 8px 36px;
+  font-size: 13px;
+  color: #c6ccda;
+}
+.login-brand .ficha b {
+  display: block;
+  font-family: var(--f-display);
+  font-size: 13px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.login-form {
+  display: grid;
+  place-items: center;
+  padding: 32px 24px;
+}
+.login-card {
+  max-width: 380px;
+  padding: 0;
+  gap: 18px;
+  border: 0;
+  background: none;
+  border-radius: 0;
+}
+@media (max-width: 860px) {
+  .login {
+    grid-template-columns: 1fr;
+  }
+  .login-brand {
+    padding: 28px 24px;
+  }
+  .login-brand .ficha {
+    display: none;
+  }
+}
+
+/* ticket impreso: letra de impresora térmica */
+.receipt {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  line-height: 15px;
+}
+.receipt.mm58 {
+  font-size: 10px;
+  line-height: 14px;
+}
+.receipt .total {
+  font-size: 13px;
+}
+.map-stop,
+.map-depot,
+.leaflet-container {
+  font-family: var(--f-mono);
+}
+.map-stop {
+  border-radius: 4px;
 }
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+.catalog > .input,
+.catalog > .seg {
+  flex: none;
+}
+table.t td.strong {
+  min-width: 150px;
 }

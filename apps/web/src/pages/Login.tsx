@@ -33,53 +33,79 @@ export function Login({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="login">
-      <form className="card login-card" onSubmit={submit}>
-        <div className="row">
-          <img src="/icon.svg" alt="" width={36} height={36} style={{ borderRadius: 10 }} />
-          <span className="h2">Forragest</span>
+      <section className="login-brand">
+        <div className="row gap12">
+          <img src="/icon.svg" alt="" width={44} height={44} style={{ borderRadius: 6 }} />
+          <div className="wordmark">
+            Forragest
+            <small>Sistema de la forrajera</small>
+          </div>
         </div>
-        <div>
-          <h1 className="h1">Iniciar sesión</h1>
-          <div className="small muted">Ingresa con tu usuario</div>
+        <div className="col gap16">
+          <div className="stitch" style={{ width: 120 }} />
+          <p className="lema">
+            Del almacén
+            <br />
+            al <em>corral</em>.
+          </p>
         </div>
-        <Field label="Usuario">
-          <Input
-            icon="user"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="ej. cajero"
-            autoCapitalize="none"
-            autoComplete="username"
-            required
-          />
-        </Field>
-        <Field
-          label="Contraseña"
-          link={
-            <button type="button" className="link" onClick={() => setShow(!show)}>
-              {show ? 'Ocultar' : 'Mostrar'}
-            </button>
-          }
-        >
-          <Input
-            icon="lock"
-            type={show ? 'text' : 'password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            autoComplete="current-password"
-            required
-          />
-        </Field>
-        {error && (
-          <Notice tone="danger" icon="alert">
-            {error}
-          </Notice>
-        )}
-        <Button variant="primary" size="lg" type="submit" disabled={busy || !username || !password}>
-          {busy ? 'Entrando…' : 'Entrar'}
-        </Button>
-      </form>
+        <div className="ficha">
+          <div>
+            <b>Mostrador</b>Ventas, crédito y corte de caja
+          </div>
+          <div>
+            <b>Reparto</b>Rutas, entregas y cobros
+          </div>
+          <div>
+            <b>Almacén</b>Compras y existencias por lote
+          </div>
+        </div>
+      </section>
+      <div className="login-form">
+        <form className="login-card" onSubmit={submit}>
+          <div>
+            <h1 className="h1">Entrar</h1>
+            <div className="small muted">Usa el usuario que te dio la administración.</div>
+          </div>
+          <Field label="Usuario">
+            <Input
+              icon="user"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="ej. cajero"
+              autoCapitalize="none"
+              autoComplete="username"
+              required
+            />
+          </Field>
+          <Field
+            label="Contraseña"
+            link={
+              <button type="button" className="link" onClick={() => setShow(!show)}>
+                {show ? 'Ocultar' : 'Mostrar'}
+              </button>
+            }
+          >
+            <Input
+              icon="lock"
+              type={show ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              autoComplete="current-password"
+              required
+            />
+          </Field>
+          {error && (
+            <Notice tone="danger" icon="alert">
+              {error}
+            </Notice>
+          )}
+          <Button variant="primary" size="lg" type="submit" disabled={busy || !username || !password}>
+            {busy ? 'Entrando…' : 'Entrar'}
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }

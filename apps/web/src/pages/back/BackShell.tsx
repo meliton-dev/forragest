@@ -50,10 +50,14 @@ export function BackShell() {
   return (
     <div className="back">
       <aside className="side">
-        <div className="row" style={{ padding: '4px 8px' }}>
-          <img src="/icon.svg" alt="" width={28} height={28} style={{ borderRadius: 8 }} />
-          <span className="title">Forragest</span>
+        <div className="brand-block">
+          <img src="/icon.svg" alt="" width={34} height={34} style={{ borderRadius: 5 }} />
+          <div className="wordmark">
+            Forragest
+            <small>Oficina</small>
+          </div>
         </div>
+        <div className="stitch" />
         {groups.map(([title, items]) => (
           <div key={title} style={{ display: 'contents' }}>
             <div className="grp overline">{title}</div>
@@ -73,11 +77,7 @@ export function BackShell() {
         {user.role === 'ADMINISTRADOR' && (
           <>
             <div className="grp overline">Operación</div>
-            <Link
-              to="/"
-              className="item"
-              style={{ display: 'flex', alignItems: 'center', gap: 10, height: 32, padding: '0 8px', fontSize: 13, color: 'var(--text-2)' }}
-            >
+            <Link to="/" className="item">
               <Icon name="receipt" size={16} />
               Punto de venta
             </Link>

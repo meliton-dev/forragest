@@ -33,14 +33,22 @@ export function Login({ onDone }: { onDone: () => void }) {
 
   return (
     <form className="screen login" onSubmit={submit}>
-      <div className="col gap12">
-        <img className="logo" src="/icon.svg" alt="Forragest" width={64} height={64} />
-        <div>
-          <h1 className="h1">Forragest</h1>
-          <div className="small muted">Repartos · ingresa con tu usuario de chofer</div>
+      <div className="login-top">
+        <div className="row gap12">
+          <img className="logo" src="/icon.svg" alt="" width={44} height={44} />
+          <div className="wordmark">
+            Forragest
+            <small>Reparto</small>
+          </div>
         </div>
+        <div className="stitch" />
+        <h1 className="lema">
+          Buen camino,
+          <br />
+          <em>chofer</em>.
+        </h1>
       </div>
-      <div className="col gap12" style={{ gap: 16 }}>
+      <div className="col login-body" style={{ gap: 16 }}>
         <Field label="Usuario">
           <Input
             icon="user"
@@ -79,8 +87,8 @@ export function Login({ onDone }: { onDone: () => void }) {
         <Button type="submit" loading={busy} disabled={!username || !password}>
           {busy ? 'Entrando…' : 'Entrar'}
         </Button>
+        <Notice tone="info">Después de iniciar sesión podrás trabajar sin conexión; tus registros se envían al recuperar señal.</Notice>
       </div>
-      <Notice tone="info">Después de iniciar sesión podrás trabajar sin conexión; tus registros se envían al recuperar señal.</Notice>
     </form>
   );
 }
