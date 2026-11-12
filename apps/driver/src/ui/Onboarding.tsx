@@ -38,7 +38,9 @@ function ArtFlow() {
     <g>
       <rect x={x} y="70" width="78" height="78" rx="18" fill={S} stroke={B} />
       <g transform={`translate(${x + 39} 109)`}>{children}</g>
-      <text x={x + 39} y="172" textAnchor="middle" fontSize="12" fontWeight="600" fill="var(--text-2)" fontFamily="Inter, sans-serif">{label}</text>
+      <text x={x + 39} y="172" textAnchor="middle" fontSize="12" fontWeight="600" fill="var(--text-2)" fontFamily="Inter, sans-serif">
+        {label}
+      </text>
     </g>
   );
   return (
@@ -58,7 +60,9 @@ function ArtFlow() {
       </Step>
       <path d="M96 109h20m-6-6 6 6-6 6M203 109h20m-6-6 6 6-6 6" stroke={B} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       <rect x="94" y="196" width="132" height="26" rx="13" fill={GS} />
-      <text x="160" y="213" textAnchor="middle" fontSize="12" fontWeight="600" fill="var(--accent-dark)" fontFamily="Inter, sans-serif">Todo en una sola pantalla</text>
+      <text x="160" y="213" textAnchor="middle" fontSize="12" fontWeight="600" fill="var(--accent-dark)" fontFamily="Inter, sans-serif">
+        Todo en una sola pantalla
+      </text>
     </svg>
   );
 }
@@ -93,16 +97,34 @@ function ArtPin() {
       <circle cx="169" cy="92" r="3" stroke={G} strokeWidth="2" />
       <rect x="82" y="190" width="156" height="30" rx="15" fill={S} stroke={B} />
       <circle cx="102" cy="205" r="5" fill="var(--ok)" />
-      <text x="116" y="209" fontSize="12" fontWeight="600" fill="var(--text-2)" fontFamily="Inter, sans-serif">Solo con la ruta en curso</text>
+      <text x="116" y="209" fontSize="12" fontWeight="600" fill="var(--text-2)" fontFamily="Inter, sans-serif">
+        Solo con la ruta en curso
+      </text>
     </svg>
   );
 }
 
 export const STEPS: { title: string; text: string; art: ReactNode }[] = [
-  { title: 'Tu ruta del día', text: 'Verás tus paradas en orden. La siguiente aparece destacada con la dirección, lo que llevas y cuánto cobrar. Toca “Navegar” para abrir el mapa.', art: <ArtRoute /> },
-  { title: 'Cargar, llegar, entregar', text: 'Primero confirma la carga del camión. Al llegar a cada parada toca “Entregar”: pide la firma (o toma una foto) y registra el cobro, todo en la misma pantalla.', art: <ArtFlow /> },
-  { title: 'Sin señal, sin problema', text: 'Si pierdes la conexión sigue trabajando: tus entregas y cobros se guardan en el teléfono y se envían solos al volver la señal. Lo ves en “Perfil › Sincronización”.', art: <ArtOffline /> },
-  { title: 'Puedes deshacer', text: 'Si te equivocas, después de registrar una entrega o un cobro tienes unos segundos para tocar “Deshacer”. Tu ubicación solo se comparte mientras la ruta está en curso.', art: <ArtPin /> },
+  {
+    title: 'Tu ruta del día',
+    text: 'Verás tus paradas en orden. La siguiente aparece destacada con la dirección, lo que llevas y cuánto cobrar. Toca “Navegar” para abrir el mapa.',
+    art: <ArtRoute />,
+  },
+  {
+    title: 'Cargar, llegar, entregar',
+    text: 'Primero confirma la carga del camión. Al llegar a cada parada toca “Entregar”: pide la firma (o toma una foto) y registra el cobro, todo en la misma pantalla.',
+    art: <ArtFlow />,
+  },
+  {
+    title: 'Sin señal, sin problema',
+    text: 'Si pierdes la conexión sigue trabajando: tus entregas y cobros se guardan en el teléfono y se envían solos al volver la señal. Lo ves en “Perfil › Sincronización”.',
+    art: <ArtOffline />,
+  },
+  {
+    title: 'Puedes deshacer',
+    text: 'Si te equivocas, después de registrar una entrega o un cobro tienes unos segundos para tocar “Deshacer”. Tu ubicación solo se comparte mientras la ruta está en curso.',
+    art: <ArtPin />,
+  },
 ];
 
 /** Tutorial de bienvenida: 4 pasos cortos, se puede omitir y volver a ver desde Ayuda. */
@@ -138,8 +160,12 @@ export function Onboarding({ onClose }: { onClose: () => void }) {
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
     >
       <div className="onb-top">
-        <span className="caption muted2" aria-live="polite">Paso {i + 1} de {STEPS.length}</span>
-        <button className="link" onClick={onClose}>Omitir</button>
+        <span className="caption muted2" aria-live="polite">
+          Paso {i + 1} de {STEPS.length}
+        </span>
+        <button className="link" onClick={onClose}>
+          Omitir
+        </button>
       </div>
       <AnimatePresence mode="wait" custom={dir} initial={false}>
         <motion.div
@@ -150,10 +176,14 @@ export function Onboarding({ onClose }: { onClose: () => void }) {
           initial="enter"
           animate="center"
           exit="exit"
-          transition={{ type: "spring", stiffness: 340, damping: 32 }}
+          transition={{ type: 'spring', stiffness: 340, damping: 32 }}
         >
           <div className="onb-art">
-            <motion.div animate={{ y: [0, -7, 0] }} transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut" }} style={{ width: "100%", display: "grid", placeItems: "center" }}>
+            <motion.div
+              animate={{ y: [0, -7, 0] }}
+              transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
+              style={{ width: '100%', display: 'grid', placeItems: 'center' }}
+            >
               {step.art}
             </motion.div>
           </div>
@@ -165,12 +195,22 @@ export function Onboarding({ onClose }: { onClose: () => void }) {
       </AnimatePresence>
       <div className="onb-foot">
         <div className="dots" aria-hidden>
-          {STEPS.map((_, k) => <motion.i key={k} animate={{ width: k === i ? 28 : 8, backgroundColor: k === i ? "#0b5fe0" : "#c9cfdb" }} transition={{ type: "spring", stiffness: 400, damping: 30 }} />)}
+          {STEPS.map((_, k) => (
+            <motion.i
+              key={k}
+              animate={{ width: k === i ? 28 : 8, backgroundColor: k === i ? '#0b5fe0' : '#c9cfdb' }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            />
+          ))}
         </div>
         <div className="btn-row">
-          {i > 0 && <motion.button className="btn secondary" style={{ flex: "0 0 110px" }} whileTap={{ scale: 0.96 }} onClick={() => go(i - 1)}>Atrás</motion.button>}
+          {i > 0 && (
+            <motion.button className="btn secondary" style={{ flex: '0 0 110px' }} whileTap={{ scale: 0.96 }} onClick={() => go(i - 1)}>
+              Atrás
+            </motion.button>
+          )}
           <motion.button ref={next} className="btn primary" whileTap={{ scale: 0.96 }} onClick={() => (last ? onClose() : go(i + 1))}>
-            {last ? "Empezar" : "Siguiente"}
+            {last ? 'Empezar' : 'Siguiente'}
             {!last && <Icon name="right" size={18} sw={2.5} />}
           </motion.button>
         </div>

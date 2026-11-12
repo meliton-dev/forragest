@@ -66,13 +66,32 @@ export function Devoluciones() {
         <div className="row">
           <div className="input grow" style={{ height: 48 }}>
             <Icon name="search" size={18} color="var(--text-3)" />
-            <input placeholder="Folio de la venta (ej. 000124)" inputMode="numeric" value={input} onChange={(e) => setInput(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && input && void search()} aria-label="Folio de la venta" />
+            <input
+              placeholder="Folio de la venta (ej. 000124)"
+              inputMode="numeric"
+              value={input}
+              onChange={(e) => setInput(e.target.value.replace(/\D/g, ''))}
+              onKeyDown={(e) => e.key === 'Enter' && input && void search()}
+              aria-label="Folio de la venta"
+            />
           </div>
-          <Button variant="primary" disabled={!input} onClick={search} style={{ height: 48 }}>Buscar venta</Button>
+          <Button variant="primary" disabled={!input} onClick={search} style={{ height: 48 }}>
+            Buscar venta
+          </Button>
         </div>
-        {error && <Notice tone="danger" icon="alert">{error}</Notice>}
+        {error && (
+          <Notice tone="danger" icon="alert">
+            {error}
+          </Notice>
+        )}
         {!sale && !error && (
-          <div className="card"><div className="empty"><Icon name="undo" size={32} color="var(--border-strong)" /><div className="title muted2">Busca la venta a devolver</div><div className="small">Captura el folio impreso en el ticket del cliente.</div></div></div>
+          <div className="card">
+            <div className="empty">
+              <Icon name="undo" size={32} color="var(--border-strong)" />
+              <div className="title muted2">Busca la venta a devolver</div>
+              <div className="small">Captura el folio impreso en el ticket del cliente.</div>
+            </div>
+          </div>
         )}
         {sale && (
           <div className="card">
@@ -81,27 +100,60 @@ export function Devoluciones() {
               <span className="caption muted">{new Date(sale.createdAt).toLocaleString('es-MX')}</span>
             </div>
             <div className="row" style={{ padding: '12px 16px', gap: 28, borderBottom: '1px solid var(--border)' }}>
-              {[['Cliente', sale.customer?.name ?? 'Público general'], ['Pago', PAY_LABEL[sale.paymentMethod]], ['Cajero', sale.cashier], ['Total', mxn(sale.total)]].map(([k, v]) => (
-                <div key={k}><div className="caption muted">{k}</div><div className="small strong">{v}</div></div>
+              {[
+                ['Cliente', sale.customer?.name ?? 'Público general'],
+                ['Pago', PAY_LABEL[sale.paymentMethod]],
+                ['Cajero', sale.cashier],
+                ['Total', mxn(sale.total)],
+              ].map(([k, v]) => (
+                <div key={k}>
+                  <div className="caption muted">{k}</div>
+                  <div className="small strong">{v}</div>
+                </div>
               ))}
               {sale.status === 'CANCELADA' && <Badge tone="danger">Cancelada</Badge>}
             </div>
             <table className="t">
-              <thead><tr><th>Producto</th><th className="right" style={{ width: 80 }}>Vendido</th><th className="right" style={{ width: 90 }}>Devuelto</th><th style={{ width: 150 }} className="right">Devolver</th><th className="right" style={{ width: 100 }}>Importe</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th className="right" style={{ width: 80 }}>
+                    Vendido
+                  </th>
+                  <th className="right" style={{ width: 90 }}>
+                    Devuelto
+                  </th>
+                  <th style={{ width: 150 }} className="right">
+                    Devolver
+                  </th>
+                  <th className="right" style={{ width: 100 }}>
+                    Importe
+                  </th>
+                </tr>
+              </thead>
               <tbody>
                 {sale.items.map((i) => {
                   const left = i.quantity - i.returnedQty;
                   const q = qty[i.id] ?? 0;
                   return (
                     <tr key={i.id}>
-                      <td><div className="strong">{i.name}</div><div className="caption muted">{i.presentation} · {mxn(i.unitPrice)}</div></td>
+                      <td>
+                        <div className="strong">{i.name}</div>
+                        <div className="caption muted">
+                          {i.presentation} · {mxn(i.unitPrice)}
+                        </div>
+                      </td>
                       <td className="right">{i.quantity}</td>
                       <td className="right muted">{i.returnedQty}</td>
                       <td className="right">
                         <span className="stepper" style={{ display: 'inline-flex' }}>
-                          <button aria-label={`Quitar ${i.name}`} disabled={q <= 0 || blocked} onClick={() => setQty({ ...qty, [i.id]: q - 1 })}><Icon name="minus" size={15} color="var(--text-2)" /></button>
+                          <button aria-label={`Quitar ${i.name}`} disabled={q <= 0 || blocked} onClick={() => setQty({ ...qty, [i.id]: q - 1 })}>
+                            <Icon name="minus" size={15} color="var(--text-2)" />
+                          </button>
                           <span>{q}</span>
-                          <button aria-label={`Devolver ${i.name}`} disabled={q >= left || blocked} onClick={() => setQty({ ...qty, [i.id]: q + 1 })}><Icon name="plus" size={15} color="var(--text-2)" /></button>
+                          <button aria-label={`Devolver ${i.name}`} disabled={q >= left || blocked} onClick={() => setQty({ ...qty, [i.id]: q + 1 })}>
+                            <Icon name="plus" size={15} color="var(--text-2)" />
+                          </button>
                         </span>
                       </td>
                       <td className="right strong">{q ? mxn(r2(q * i.unitPrice * net)) : '—'}</td>
@@ -114,11 +166,25 @@ export function Devoluciones() {
         )}
         {sale && (
           <div className="card">
-            <div className="card-h"><span className="title">Motivo de la devolución</span></div>
+            <div className="card-h">
+              <span className="title">Motivo de la devolución</span>
+            </div>
             <div className="card-b">
               <div className="row gap16" style={{ alignItems: 'flex-start' }}>
-                <div className="grow"><Field label="Motivo"><Select value={reason} onChange={setReason}>{REASONS.map((r) => <option key={r}>{r}</option>)}</Select></Field></div>
-                <div className="grow"><Field label="Comentarios"><TextArea value={comments} onChange={(e) => setComments(e.target.value)} placeholder="Opcional" maxLength={300} /></Field></div>
+                <div className="grow">
+                  <Field label="Motivo">
+                    <Select value={reason} onChange={setReason}>
+                      {REASONS.map((r) => (
+                        <option key={r}>{r}</option>
+                      ))}
+                    </Select>
+                  </Field>
+                </div>
+                <div className="grow">
+                  <Field label="Comentarios">
+                    <TextArea value={comments} onChange={(e) => setComments(e.target.value)} placeholder="Opcional" maxLength={300} />
+                  </Field>
+                </div>
               </div>
             </div>
           </div>
@@ -126,7 +192,9 @@ export function Devoluciones() {
       </div>
 
       <aside className="card" style={{ width: 360, flex: 'none' }}>
-        <div className="card-h"><span className="title">Nota de crédito</span></div>
+        <div className="card-h">
+          <span className="title">Nota de crédito</span>
+        </div>
         <div className="card-b">
           <Kv k="Subtotal devuelto" v={mxn(total)} />
           {sale && sale.discountAmount > 0 && <Kv k="Incluye prorrateo del descuento" v={`${(net * 100).toFixed(1)} %`} />}
@@ -137,7 +205,16 @@ export function Devoluciones() {
           ) : (
             <>
               <span className="overline">Forma de reembolso</span>
-              <Segmented soft value={refund} onChange={setRefund} options={[['EFECTIVO', 'Efectivo'], ['TARJETA', 'A tarjeta'], ['SALDO_A_FAVOR', 'Saldo']]} />
+              <Segmented
+                soft
+                value={refund}
+                onChange={setRefund}
+                options={[
+                  ['EFECTIVO', 'Efectivo'],
+                  ['TARJETA', 'A tarjeta'],
+                  ['SALDO_A_FAVOR', 'Saldo'],
+                ]}
+              />
             </>
           )}
           <Notice tone="info">El producto regresa al inventario como entrada de devolución y se genera un folio de nota de crédito.</Notice>

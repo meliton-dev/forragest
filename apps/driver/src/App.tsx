@@ -31,7 +31,11 @@ function Tracker() {
     else stopTracking();
   }, [id, allowed]);
   // se explica para qué sirve antes de que el sistema pida el permiso (que solo se muestra una vez)
-  return <AnimatePresence>{id && gps === null && <GpsPrimer key="primer" onAccept={() => writePref('gps', '1')} onDecline={() => writePref('gps', '0')} />}</AnimatePresence>;
+  return (
+    <AnimatePresence>
+      {id && gps === null && <GpsPrimer key="primer" onAccept={() => writePref('gps', '1')} onDecline={() => writePref('gps', '0')} />}
+    </AnimatePresence>
+  );
 }
 
 /** Tutorial de bienvenida: solo la primera vez que entra cada usuario. */
@@ -44,7 +48,13 @@ function FirstRun() {
 function AnimatedRoutes() {
   const loc = useLocation();
   return (
-    <motion.div key={loc.pathname} className="page" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}>
+    <motion.div
+      key={loc.pathname}
+      className="page"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+    >
       <Routes location={loc}>
         <Route path="/" element={<RouteHome />} />
         <Route path="/carga" element={<Carga />} />
@@ -88,14 +98,14 @@ export default function App() {
   }
   return (
     <MotionConfig reducedMotion="user">
-    <div className="app">
-      <Tracker />
-      <Toaster />
-      <FirstRun />
-      <BrowserRouter>
-        <AnimatedRoutes />
-      </BrowserRouter>
-    </div>
+      <div className="app">
+        <Tracker />
+        <Toaster />
+        <FirstRun />
+        <BrowserRouter>
+          <AnimatedRoutes />
+        </BrowserRouter>
+      </div>
     </MotionConfig>
   );
 }

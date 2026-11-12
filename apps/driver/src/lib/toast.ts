@@ -28,4 +28,8 @@ export function dismissToast() {
   emit();
 }
 
-export const useToast = () => useSyncExternalStore((cb) => (listeners.add(cb), () => listeners.delete(cb)), () => current);
+export const useToast = () =>
+  useSyncExternalStore(
+    (cb) => (listeners.add(cb), () => listeners.delete(cb)),
+    () => current,
+  );

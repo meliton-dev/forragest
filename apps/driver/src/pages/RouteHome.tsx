@@ -4,7 +4,7 @@ import { summarize } from '../lib/logic';
 import { useStore } from '../lib/store';
 import { useTracking } from '../lib/tracking';
 import type { Stop } from '../lib/types';
-import { Hint } from "../ui/Hint";
+import { Hint } from '../ui/Hint';
 import { Badge, Header, Icon, Notice, SyncBanner, TabBar } from '../ui/kit';
 import { mapsUrl, RouteGate } from './common';
 
@@ -23,11 +23,27 @@ function Inner({ route }: { route: import('../lib/types').Route }) {
   const current = route.status === 'EN_CURSO' ? route.stops.find((x) => x.status === 'PENDIENTE') : undefined;
   const allDone = route.status === 'EN_CURSO' && sum.pending === 0;
   const tag =
-    route.status === 'EN_CURSO' ? <Badge tone="info" dot>En curso</Badge> : route.status === 'FINALIZADA' ? <Badge tone="ok" dot>Finalizada</Badge> : <Badge tone="neutral" dot>Por iniciar</Badge>;
+    route.status === 'EN_CURSO' ? (
+      <Badge tone="info" dot>
+        En curso
+      </Badge>
+    ) : route.status === 'FINALIZADA' ? (
+      <Badge tone="ok" dot>
+        Finalizada
+      </Badge>
+    ) : (
+      <Badge tone="neutral" dot>
+        Por iniciar
+      </Badge>
+    );
 
   return (
     <div className="screen">
-      <Header title={route.name} sub={`${route.vehicle.plate} · ${longDay(route.date)}${route.departedAt ? ' · Salida ' + hhmm(route.departedAt) : ''}`} right={tag} />
+      <Header
+        title={route.name}
+        sub={`${route.vehicle.plate} · ${longDay(route.date)}${route.departedAt ? ' · Salida ' + hhmm(route.departedAt) : ''}`}
+        right={tag}
+      />
       <div className="content">
         <div className="col gap8">
           <div className="row between">
@@ -38,13 +54,24 @@ function Inner({ route }: { route: import('../lib/types').Route }) {
           </div>
           <div className="progress">
             {route.stops.map((x, i) => (
-              <i key={x.id} className={x.status === 'ENTREGADA' ? 'on' : x.status === 'NO_ENTREGADA' ? 'bad' : x.id === current?.id || (i === 0 && route.status === 'PROGRAMADA') ? 'cur' : ''} />
+              <i
+                key={x.id}
+                className={
+                  x.status === 'ENTREGADA'
+                    ? 'on'
+                    : x.status === 'NO_ENTREGADA'
+                      ? 'bad'
+                      : x.id === current?.id || (i === 0 && route.status === 'PROGRAMADA')
+                        ? 'cur'
+                        : ''
+                }
+              />
             ))}
           </div>
         </div>
 
         <SyncBanner />
-        {route.status === "EN_CURSO" && (
+        {route.status === 'EN_CURSO' && (
           <Hint id="ruta">
             Toca la <b>parada destacada</b> para ver qué entregar y cuánto cobrar. Tu avance se guarda aunque no tengas señal.
           </Hint>
@@ -123,7 +150,9 @@ function StopRow({ stop, current, last, started }: { stop: Stop; current: boolea
         {current ? (
           <div className="card accent" style={{ gap: 12 }}>
             <div className="row between">
-              <span className="overline" style={{ color: 'var(--accent)' }}>Siguiente parada</span>
+              <span className="overline" style={{ color: 'var(--accent)' }}>
+                Siguiente parada
+              </span>
               <span className="caption muted2 row gap4">
                 <Icon name="clock" size={13} color="var(--text-3)" /> ETA {stop.eta}
               </span>
@@ -143,7 +172,9 @@ function StopRow({ stop, current, last, started }: { stop: Stop; current: boolea
               ))}
               <div className="kv">
                 <span className="caption muted">{stop.paymentTerms === 'Contado' ? 'Por cobrar (contado)' : stop.paymentTerms}</span>
-                <span className="title" style={{ color: 'var(--accent-dark)' }}>{mxn(stop.total)}</span>
+                <span className="title" style={{ color: 'var(--accent-dark)' }}>
+                  {mxn(stop.total)}
+                </span>
               </div>
             </div>
             <div className="btn-row">
@@ -161,7 +192,13 @@ function StopRow({ stop, current, last, started }: { stop: Stop; current: boolea
               <div className="grow">
                 <div className="small strong">{stop.customer.name}</div>
                 <div className="caption muted">
-                  {done ? `Entregada ${hhmm(stop.deliveredAt)}` : bad ? 'No entregada' : started ? `Programada ${stop.eta}` : `${stop.eta} · ${stop.items.reduce((a, x) => a + x.quantity, 0)} sacos`}
+                  {done
+                    ? `Entregada ${hhmm(stop.deliveredAt)}`
+                    : bad
+                      ? 'No entregada'
+                      : started
+                        ? `Programada ${stop.eta}`
+                        : `${stop.eta} · ${stop.items.reduce((a, x) => a + x.quantity, 0)} sacos`}
                 </div>
               </div>
               {bad && <Badge tone="danger">No entregada</Badge>}

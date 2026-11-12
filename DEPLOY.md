@@ -10,13 +10,13 @@ Además de cumplir con el reporte, con HTTPS la app **ya puede instalarse en el 
 
 ## Qué hay preparado en el repositorio
 
-| Archivo | Para qué sirve |
-|---|---|
-| `apps/api/Dockerfile` | Imagen de la API. Al arrancar aplica las migraciones y levanta el servicio. Probada: construye, arranca y responde en `/health`. |
-| `render.yaml` | "Blueprint" de Render: crea la base de datos, la API y la app móvil con un clic. |
-| `.env.example` | Variables que necesita la API (`DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS`…). |
-| `GET /health` | Estado público del servicio y de la base de datos. |
-| `scripts/reporte-remoto.mjs` | Genera el reporte con evidencia (ver abajo). |
+| Archivo                      | Para qué sirve                                                                                                                   |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/api/Dockerfile`        | Imagen de la API. Al arrancar aplica las migraciones y levanta el servicio. Probada: construye, arranca y responde en `/health`. |
+| `render.yaml`                | "Blueprint" de Render: crea la base de datos, la API y la app móvil con un clic.                                                 |
+| `.env.example`               | Variables que necesita la API (`DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS`…).                                                   |
+| `GET /health`                | Estado público del servicio y de la base de datos.                                                                               |
+| `scripts/reporte-remoto.mjs` | Genera el reporte con evidencia (ver abajo).                                                                                     |
 
 Seguridad ya incluida: en producción la API **no arranca** si `JWT_SECRET` falta o es débil, y con `CORS_ORIGINS` solo acepta peticiones de tus apps.
 
@@ -29,13 +29,13 @@ Necesitas una cuenta en [GitHub](https://github.com) y otra en [Render](https://
    git remote add origin https://github.com/TU_USUARIO/forragest.git
    git push -u origin master
    ```
-2. En Render: **New › Blueprint** y elige el repositorio. Detecta `render.yaml` y crea tres cosas: `forragest-db`, `forragest-api` y `forragest-repartos` (la app móvil).
+2. En Render: **New › Blueprint** y elige el repositorio. Detecta `render.yaml` y crea cuatro cosas: `forragest-db`, `forragest-api`, `forragest-repartos` (la app móvil) y `forragest-web` (punto de venta, rutas y compras; no necesita variables: reenvía `/api` a la API).
 3. Cuando pida valores, déjalos vacíos por ahora: `CORS_ORIGINS`, `SEED_PASSWORD` y `VITE_API_URL`.
 4. Al terminar, copia las dos direcciones que Render asignó (por ejemplo `https://forragest-api.onrender.com` y `https://forragest-repartos.onrender.com`) y completa:
    - En la API: `CORS_ORIGINS` = dirección de la app móvil, y `SEED_PASSWORD` = una contraseña propia (no uses `cambiar123`).
    - En la app móvil: `VITE_API_URL` = dirección de la API.
-   Guarda y pulsa **Manual Deploy** en la app móvil (el valor se incorpora al compilar).
-5. **Carga los datos de demostración** desde tu computadora, apuntando a la base remota (copia la *External Database URL* desde Render):
+     Guarda y pulsa **Manual Deploy** en la app móvil (el valor se incorpora al compilar).
+5. **Carga los datos de demostración** desde tu computadora, apuntando a la base remota (copia la _External Database URL_ desde Render):
    ```bash
    DATABASE_URL="postgresql://…externa…" SEED_PASSWORD="tu-contraseña" npm run db:seed
    ```
@@ -51,6 +51,7 @@ docker run -d -p 3000:3000 \
   -e DATABASE_URL=postgresql://usuario:clave@host:5432/forragest \
   -e CORS_ORIGINS=https://tu-app.ejemplo.com forragest-api
 ```
+
 Pon delante un proxy con HTTPS (Caddy, Nginx o el del proveedor). La app móvil se compila con `VITE_API_URL=https://tu-api.ejemplo.com npm run build -w apps/driver` y la carpeta `apps/driver/dist` se publica en cualquier hosting estático (Netlify, Cloudflare Pages, Vercel…); ya incluye el archivo `_redirects` para las rutas internas.
 
 Genera un secreto así: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
@@ -78,3 +79,28 @@ Resultado: la carpeta `reporte-consumo-remoto/<fecha>/` con `reporte.html` (list
 - Solo lectura (no crea nada en el servidor): agrega `--solo-lectura`.
 - La prueba de escritura crea la ruta **"Ruta Reporte remoto (e2e)"** para el chofer `chofer2`; se identifica por ese nombre.
 - Si el reporte dice "No se pudo demostrar", cada punto fallido indica el motivo (por ejemplo, que la API sigue apuntando a `localhost`).
+
+## Respaldos diarios (gratis, con GitHub Actions)
+
+El flujo `.github/workflows/respaldo.yml` saca cada noche (3:17 a. m., hora del centro de México) una copia **cifrada** de la base y la guarda 30 días en GitHub, dentro de la pestaña _Actions → Respaldo diario → Artifacts_.
+
+Para activarlo, en GitHub: _Settings → Secrets and variables → Actions → New repository secret_:
+
+| Secreto               | Valor                                                                                                                       |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `BACKUP_DATABASE_URL` | En Render: tu base de datos → _Connect_ → **External Database URL**                                                         |
+| `BACKUP_PASSPHRASE`   | Una contraseña larga. **Guárdala aparte** (por ejemplo en tu gestor de contraseñas): sin ella el respaldo no se puede abrir |
+
+Para probarlo sin esperar a la noche: _Actions → Respaldo diario → Run workflow_.
+
+**Restaurar** (requiere PostgreSQL 18 o más nuevo y `gpg` en tu computadora, porque los respaldos se generan con `pg_dump` 18): descarga el artefacto, descomprime el `.zip` y ejecuta
+
+```bash
+DATABASE_URL="postgresql://..." BACKUP_PASSPHRASE="..." ./scripts/restaurar.sh forragest-AAAAMMDD-HHMM.dump.gpg
+```
+
+> Ojo: en el plan gratuito de Render la base de datos tiene vigencia limitada. Estos respaldos te permiten pasar los datos a una base nueva cuando eso ocurra.
+
+## Registros (logs) y errores
+
+La API escribe una línea JSON por petición, visible en el panel _Logs_ de Render. Cada respuesta trae la cabecera `X-Request-Id`; si algo falla, el usuario ve _“Código de referencia: 1a2b3c4d”_ y basta buscar ese código en los logs para ver el error completo. Los tokens y contraseñas nunca se escriben. Nivel de detalle: variable `LOG_LEVEL` (`info` por defecto; `debug`, `warn`, `error`).

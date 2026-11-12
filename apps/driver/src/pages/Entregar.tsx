@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Hint } from "../ui/Hint";
+import { Hint } from '../ui/Hint';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { compressImage } from '../lib/image';
 import { mxn } from '../lib/format';
@@ -70,21 +70,40 @@ function Inner({ route }: { route: Route }) {
           {stop.items.map((it) => (
             <div key={it.id} className="row" style={{ justifyContent: 'space-between' }}>
               <div className="grow">
-                <div className="small strong">{it.name} {it.presentation.replace('Saco ', '')}</div>
-                <div className="caption muted">Pedido: {it.quantity} · {mxn(given(it) * it.unitPrice)}</div>
+                <div className="small strong">
+                  {it.name} {it.presentation.replace('Saco ', '')}
+                </div>
+                <div className="caption muted">
+                  Pedido: {it.quantity} · {mxn(given(it) * it.unitPrice)}
+                </div>
               </div>
               <div className="qty-step">
-                <button type="button" aria-label={`Quitar uno de ${it.name}`} disabled={given(it) <= 0} onClick={() => step(it, -1)}>−</button>
-                <span className={given(it) < it.quantity ? 'warn' : ''} aria-live="polite">{given(it)}</span>
-                <button type="button" aria-label={`Agregar uno de ${it.name}`} disabled={given(it) >= it.quantity} onClick={() => step(it, 1)}>+</button>
+                <button type="button" aria-label={`Quitar uno de ${it.name}`} disabled={given(it) <= 0} onClick={() => step(it, -1)}>
+                  −
+                </button>
+                <span className={given(it) < it.quantity ? 'warn' : ''} aria-live="polite">
+                  {given(it)}
+                </span>
+                <button type="button" aria-label={`Agregar uno de ${it.name}`} disabled={given(it) >= it.quantity} onClick={() => step(it, 1)}>
+                  +
+                </button>
               </div>
             </div>
           ))}
           <div className="row caption muted">
-            <Icon name="box" size={14} color="var(--text-3)" /> Se descargan {stop.items.reduce((a, i) => a + given(i) * i.factor, 0)} kg del inventario del camión.
+            <Icon name="box" size={14} color="var(--text-3)" /> Se descargan {stop.items.reduce((a, i) => a + given(i) * i.factor, 0)} kg del inventario del
+            camión.
           </div>
-          {partial && !nothing && <Notice tone="warn" icon="alert">Entrega parcial: lo que no dejes regresa al almacén al cerrar la ruta.</Notice>}
-          {nothing && <Notice tone="danger" icon="alert">Si no se entregó nada, usa «Registrar no entrega».</Notice>}
+          {partial && !nothing && (
+            <Notice tone="warn" icon="alert">
+              Entrega parcial: lo que no dejes regresa al almacén al cerrar la ruta.
+            </Notice>
+          )}
+          {nothing && (
+            <Notice tone="danger" icon="alert">
+              Si no se entregó nada, usa «Registrar no entrega».
+            </Notice>
+          )}
         </div>
 
         <Hint id="entregar">
@@ -109,21 +128,47 @@ function Inner({ route }: { route: Route }) {
           <span className="overline">Cobro en ruta</span>
           <div className="row">
             <div className="grow">
-              <Input prefix="$" inputMode="decimal" value={amount} onChange={(e) => setEdited(e.target.value.replace(/[^\d.]/g, ''))} placeholder="0.00" aria-label="Monto cobrado" />
+              <Input
+                prefix="$"
+                inputMode="decimal"
+                value={amount}
+                onChange={(e) => setEdited(e.target.value.replace(/[^\d.]/g, ''))}
+                placeholder="0.00"
+                aria-label="Monto cobrado"
+              />
             </div>
             <div style={{ width: 188 }}>
-              <Segmented value={method} onChange={setMethod} options={[['EFECTIVO', 'Efectivo'], ['TRANSFERENCIA', 'Transf.']]} />
+              <Segmented
+                value={method}
+                onChange={setMethod}
+                options={[
+                  ['EFECTIVO', 'Efectivo'],
+                  ['TRANSFERENCIA', 'Transf.'],
+                ]}
+              />
             </div>
           </div>
-          <Kv k={stop.paymentTerms === 'Contado' ? 'Saldo pendiente tras el cobro' : `Venta a ${stop.paymentTerms.toLowerCase()}`} v={mxn(rest)} tone={rest > 0 ? 'var(--warn)' : 'var(--ok)'} />
+          <Kv
+            k={stop.paymentTerms === 'Contado' ? 'Saldo pendiente tras el cobro' : `Venta a ${stop.paymentTerms.toLowerCase()}`}
+            v={mxn(rest)}
+            tone={rest > 0 ? 'var(--warn)' : 'var(--ok)'}
+          />
         </div>
-        {error && <Notice tone="danger" icon="alert">{error}</Notice>}
+        {error && (
+          <Notice tone="danger" icon="alert">
+            {error}
+          </Notice>
+        )}
       </div>
       <div className="bar">
         <Button icon="check" disabled={!ready || busy} onClick={confirm}>
           Confirmar entrega
         </Button>
-        {!ready && <div className="caption muted" style={{ textAlign: 'center' }}>Pide la firma del cliente o toma una fotografía.</div>}
+        {!ready && (
+          <div className="caption muted" style={{ textAlign: 'center' }}>
+            Pide la firma del cliente o toma una fotografía.
+          </div>
+        )}
         <button className="btn ghost" style={{ color: 'var(--danger)' }} onClick={() => nav(`/parada/${stop.id}/no-entrega`, { replace: true })}>
           <Icon name="alert" size={15} /> Registrar no entrega
         </button>

@@ -6,6 +6,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json package-lock.json ./
 COPY apps/api ./apps/api
+COPY packages/shared ./packages/shared
 # se instalan también las dependencias de desarrollo: hacen falta para compilar y para el seed inicial
 RUN npm ci --workspace=apps/api --include-workspace-root --include=dev
 RUN npx prisma generate --schema apps/api/prisma/schema.prisma && npm run build -w apps/api

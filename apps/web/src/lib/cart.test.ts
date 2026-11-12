@@ -3,14 +3,28 @@ import { emptyCart, quickAmounts, totalsOf } from './cart';
 import type { CatalogItem } from './types';
 
 const item = (price: number): CatalogItem => ({
-  key: `k${price}`, productId: 1, presentationId: 1, code: 'X', name: 'X', line: 'BOVINO', presentation: 'Saco', factor: 40, price, stockKg: 100, stockUnits: 2, low: false,
+  key: `k${price}`,
+  productId: 1,
+  presentationId: 1,
+  code: 'X',
+  name: 'X',
+  line: 'BOVINO',
+  presentation: 'Saco',
+  factor: 40,
+  price,
+  stockKg: 100,
+  stockUnits: 2,
+  low: false,
 });
 
 describe('totalsOf', () => {
   it('suma partidas, aplica descuento porcentual y calcula el cambio', () => {
     const c = {
       ...emptyCart(),
-      lines: [{ item: item(430), qty: 2 }, { item: item(380), qty: 1 }],
+      lines: [
+        { item: item(430), qty: 2 },
+        { item: item(380), qty: 1 },
+      ],
       received: '1200',
       discount: { mode: 'PERCENT' as const, value: 5, authorization: { username: 'a', password: 'b' } },
     };
@@ -18,7 +32,11 @@ describe('totalsOf', () => {
   });
 
   it('el descuento por monto nunca supera el subtotal', () => {
-    const c = { ...emptyCart(), lines: [{ item: item(100), qty: 1 }], discount: { mode: 'AMOUNT' as const, value: 500, authorization: { username: 'a', password: 'b' } } };
+    const c = {
+      ...emptyCart(),
+      lines: [{ item: item(100), qty: 1 }],
+      discount: { mode: 'AMOUNT' as const, value: 500, authorization: { username: 'a', password: 'b' } },
+    };
     expect(totalsOf(c).total).toBe(0);
   });
 

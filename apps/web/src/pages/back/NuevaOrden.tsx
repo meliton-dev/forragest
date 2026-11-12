@@ -24,13 +24,17 @@ export function NuevaOrden() {
   const [expectedAt, setExpectedAt] = useState('');
   const [notes, setNotes] = useState('');
   const [lines, setLines] = useState<Line[]>(() =>
-    preset?.items?.length ? preset.items.map((i) => ({ key: ++keySeq, productId: i.productId, quantity: String(i.quantity), unitCost: String(i.unitCost) })) : [blankLine()],
+    preset?.items?.length
+      ? preset.items.map((i) => ({ key: ++keySeq, productId: i.productId, quantity: String(i.quantity), unitCost: String(i.unitCost) }))
+      : [blankLine()],
   );
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    api<PurchaseOptions>('GET', '/purchasing/options').then(setOptions).catch((e) => setError(errMsg(e)));
+    api<PurchaseOptions>('GET', '/purchasing/options')
+      .then(setOptions)
+      .catch((e) => setError(errMsg(e)));
   }, []);
 
   const supplier = options?.suppliers.find((s) => s.id === supplierId);
@@ -53,7 +57,9 @@ export function NuevaOrden() {
     setBusy(true);
     try {
       const o = await api<OrderDetail>('POST', '/purchasing/orders', {
-        supplierId, expectedAt: expectedAt || undefined, notes: notes.trim() || undefined,
+        supplierId,
+        expectedAt: expectedAt || undefined,
+        notes: notes.trim() || undefined,
         items: items.map((l) => ({ productId: l.productId, quantity: Number(l.quantity), unitCost: Number(l.unitCost) })),
       });
       nav('/compras', { state: { selectId: o.id } });
@@ -70,30 +76,62 @@ export function NuevaOrden() {
           <h1 className="h1">Nueva orden de compra</h1>
           <div className="small muted">Se guarda como borrador; envíala al proveedor cuando esté lista.</div>
         </div>
-        <Link to="/compras" className="btn secondary">Cancelar</Link>
+        <Link to="/compras" className="btn secondary">
+          Cancelar
+        </Link>
       </div>
-      {error && <Notice tone="danger" icon="alert">{error}</Notice>}
+      {error && (
+        <Notice tone="danger" icon="alert">
+          {error}
+        </Notice>
+      )}
       <div className="split">
         <div className="grow" style={{ flex: 1 }}>
-          <div className="card"><div className="card-b">
-            <div className="row gap12">
-              <div className="grow">
-                <Field label="Proveedor">
-                  <Select value={supplierId ?? ''} onChange={(v) => setSupplierId(v ? Number(v) : null)}>
-                    <option value="">Elige un proveedor…</option>
-                    {(options?.suppliers ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </Select>
-                </Field>
+          <div className="card">
+            <div className="card-b">
+              <div className="row gap12">
+                <div className="grow">
+                  <Field label="Proveedor">
+                    <Select value={supplierId ?? ''} onChange={(v) => setSupplierId(v ? Number(v) : null)}>
+                      <option value="">Elige un proveedor…</option>
+                      {(options?.suppliers ?? []).map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                </div>
+                <div style={{ width: 200 }}>
+                  <Field label="Entrega esperada">
+                    <Input type="date" value={expectedAt} onChange={(e) => setExpectedAt(e.target.value)} />
+                  </Field>
+                </div>
               </div>
-              <div style={{ width: 200 }}><Field label="Entrega esperada"><Input type="date" value={expectedAt} onChange={(e) => setExpectedAt(e.target.value)} /></Field></div>
+              {supplier && (
+                <div className="caption muted">
+                  {supplier.paymentDays === 0 ? 'Pago de contado' : `Crédito a ${supplier.paymentDays} días`}
+                  {supplier.lines.length ? ` · Surte ${supplier.lines.map((l) => l.name).join(', ')}` : ''}
+                </div>
+              )}
             </div>
-            {supplier && <div className="caption muted">{supplier.paymentDays === 0 ? 'Pago de contado' : `Crédito a ${supplier.paymentDays} días`}{supplier.lines.length ? ` · Surte ${supplier.lines.map((l) => l.name).join(', ')}` : ''}</div>}
-          </div></div>
+          </div>
 
           <div className="tw">
             <table className="t">
               <thead>
-                <tr><th>Producto</th><th style={{ width: 110 }} className="right">Existencia</th><th style={{ width: 130 }}>Cantidad (kg)</th><th style={{ width: 130 }}>Precio por kg</th><th style={{ width: 110 }} className="right">Importe</th><th style={{ width: 44 }} /></tr>
+                <tr>
+                  <th>Producto</th>
+                  <th style={{ width: 110 }} className="right">
+                    Existencia
+                  </th>
+                  <th style={{ width: 130 }}>Cantidad (kg)</th>
+                  <th style={{ width: 130 }}>Precio por kg</th>
+                  <th style={{ width: 110 }} className="right">
+                    Importe
+                  </th>
+                  <th style={{ width: 44 }} />
+                </tr>
               </thead>
               <tbody>
                 {lines.map((l) => {
@@ -103,29 +141,69 @@ export function NuevaOrden() {
                       <td>
                         <Select value={l.productId ?? ''} onChange={(v) => pick(l.key, v)}>
                           <option value="">Elige un producto…</option>
-                          {products.map((p) => <option key={p.id} value={p.id}>{p.code} · {p.name}</option>)}
+                          {products.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.code} · {p.name}
+                            </option>
+                          ))}
                         </Select>
                       </td>
                       <td className="right muted">{prod ? `${prod.stock.toLocaleString('es-MX')} / mín. ${prod.minStock}` : '—'}</td>
-                      <td><Input inputMode="decimal" value={l.quantity} onChange={(e) => patch(l.key, { quantity: e.target.value.replace(/[^\d.]/g, '') })} aria-label="Cantidad" /></td>
-                      <td><Input prefix="$" inputMode="decimal" value={l.unitCost} onChange={(e) => patch(l.key, { unitCost: e.target.value.replace(/[^\d.]/g, '') })} aria-label="Precio por kg" /></td>
+                      <td>
+                        <Input
+                          inputMode="decimal"
+                          value={l.quantity}
+                          onChange={(e) => patch(l.key, { quantity: e.target.value.replace(/[^\d.]/g, '') })}
+                          aria-label="Cantidad"
+                        />
+                      </td>
+                      <td>
+                        <Input
+                          prefix="$"
+                          inputMode="decimal"
+                          value={l.unitCost}
+                          onChange={(e) => patch(l.key, { unitCost: e.target.value.replace(/[^\d.]/g, '') })}
+                          aria-label="Precio por kg"
+                        />
+                      </td>
                       <td className="right strong">{mxn((Number(l.quantity) || 0) * (Number(l.unitCost) || 0))}</td>
-                      <td><button className="icon-btn" aria-label="Quitar renglón" onClick={() => setLines((ls) => (ls.length > 1 ? ls.filter((x) => x.key !== l.key) : [blankLine()]))}><Icon name="trash" size={16} color="var(--text-3)" /></button></td>
+                      <td>
+                        <button
+                          className="icon-btn"
+                          aria-label="Quitar renglón"
+                          onClick={() => setLines((ls) => (ls.length > 1 ? ls.filter((x) => x.key !== l.key) : [blankLine()]))}
+                        >
+                          <Icon name="trash" size={16} color="var(--text-3)" />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-          <div><Button icon="plus" onClick={() => setLines((ls) => [...ls, blankLine()])}>Agregar producto</Button></div>
+          <div>
+            <Button icon="plus" onClick={() => setLines((ls) => [...ls, blankLine()])}>
+              Agregar producto
+            </Button>
+          </div>
         </div>
 
         <aside className="card" style={{ width: 320, flex: 'none' }}>
-          <div className="card-h"><span className="title">Resumen</span></div>
+          <div className="card-h">
+            <span className="title">Resumen</span>
+          </div>
           <div className="card-b">
-            <Field label="Notas para el proveedor"><TextArea value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={500} /></Field>
-            <div className="kv"><span className="title">Total</span><span className="num">{mxn(total)}</span></div>
-            <Button variant="primary" size="lg" icon="check" disabled={busy || !options} onClick={save}>Guardar orden</Button>
+            <Field label="Notas para el proveedor">
+              <TextArea value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={500} />
+            </Field>
+            <div className="kv">
+              <span className="title">Total</span>
+              <span className="num">{mxn(total)}</span>
+            </div>
+            <Button variant="primary" size="lg" icon="check" disabled={busy || !options} onClick={save}>
+              Guardar orden
+            </Button>
           </div>
         </aside>
       </div>

@@ -1,4 +1,4 @@
-import { ApiError, NetworkError } from './errors';
+import { ApiError, NetworkError } from '@forrajera/shared';
 import type { LocalPayment, Op, Route, Summary } from './types';
 
 /** Resumen de la ruta calculado en el teléfono (funciona sin conexión). */
@@ -13,7 +13,7 @@ export function summarize(route: Route, payments: LocalPayment[]): Summary {
   const left = new Map<number, Summary['leftover'][number]>();
   for (const s of route.stops) {
     for (const i of s.items) {
-      const rest = i.quantity - (s.status === 'ENTREGADA' ? i.deliveredQty ?? i.quantity : 0);
+      const rest = i.quantity - (s.status === 'ENTREGADA' ? (i.deliveredQty ?? i.quantity) : 0);
       if (rest <= 0) continue;
       const cur = left.get(i.productId) ?? { code: i.code, name: i.name, presentation: i.presentation, quantity: 0 };
       cur.quantity += rest;

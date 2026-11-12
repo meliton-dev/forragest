@@ -22,7 +22,10 @@ export interface PaymentInput {
 
 @Injectable()
 export class DriverService {
-  constructor(private prisma: PrismaService, private inventory: InventoryService) {}
+  constructor(
+    private prisma: PrismaService,
+    private inventory: InventoryService,
+  ) {}
 
   private mapRoute(r: RouteFull) {
     return {
@@ -57,7 +60,15 @@ export class DriverService {
           arrivedAt: s.arrivedAt,
           deliveredAt: s.deliveredAt,
           failReason: s.failReason,
-          customer: { id: s.customer.id, name: s.customer.name, address: s.customer.address, phone: s.customer.phone, contact: s.customer.contact, lat: s.customer.lat, lng: s.customer.lng },
+          customer: {
+            id: s.customer.id,
+            name: s.customer.name,
+            address: s.customer.address,
+            phone: s.customer.phone,
+            contact: s.customer.contact,
+            lat: s.customer.lat,
+            lng: s.customer.lng,
+          },
           items,
           total: items.reduce((a, i) => a + i.total, 0),
         };
@@ -105,6 +116,10 @@ export class DriverService {
         need.set(i.productId, cur);
       }
     await this.prisma.$transaction(async (tx) => {
+      // Si el repartidor toca "Cargar" dos veces a la vez, solo una carga descuenta el almacén.
+      const claimed = await tx.route.updateMany({ where: { id: routeId, status: 'PROGRAMADA' }, data: { status: 'EN_CURSO', departedAt: new Date() } });
+      if (claimed.count === 0) return;
+      await this.inventory.lockProducts([...need.keys()], tx);
       for (const [productId, n] of need) {
         try {
           await this.inventory.removeStock(
@@ -116,7 +131,6 @@ export class DriverService {
           throw e;
         }
       }
-      await tx.route.update({ where: { id: routeId }, data: { status: 'EN_CURSO', departedAt: new Date() } });
     });
     return this.mapRoute(await this.ownedRoute(routeId, userId));
   }
@@ -157,15 +171,22 @@ export class DriverService {
     for (const id of given.keys()) if (!stop.items.some((i) => i.id === id)) throw new BadRequestException('Hay un producto que no pertenece a esta parada');
     const delivered = stop.items.map((i) => ({ id: i.id, qty: given.has(i.id) ? given.get(i.id)! : num(i.quantity), ordered: num(i.quantity) }));
     if (delivered.some((d) => d.qty > d.ordered)) throw new BadRequestException('No puedes entregar más de lo pedido');
-    if (stop.items.length && delivered.every((d) => d.qty <= 0)) throw new BadRequestException('Entrega al menos un producto; si no se entregó nada, registra una no entrega');
+    if (stop.items.length && delivered.every((d) => d.qty <= 0))
+      throw new BadRequestException('Entrega al menos un producto; si no se entregó nada, registra una no entrega');
     await this.prisma.$transaction(async (tx) => {
       await tx.routeStop.update({ where: { id: stopId }, data: { status: 'ENTREGADA', deliveredAt: at, signature: dto.signature, photo: dto.photo } });
       for (const d of delivered) await tx.stopItem.update({ where: { id: d.id }, data: { deliveredQty: d.qty } });
       if (dto.payment && dto.payment.amount > 0) {
         await tx.payment.create({
           data: {
-            routeId: stop.routeId, stopId, customerId: stop.customerId, amount: dto.payment.amount, method: dto.payment.method,
-            receivedAt: at, clientOpId: `${dto.clientOpId}:pay`, userId,
+            routeId: stop.routeId,
+            stopId,
+            customerId: stop.customerId,
+            amount: dto.payment.amount,
+            method: dto.payment.method,
+            receivedAt: at,
+            clientOpId: `${dto.clientOpId}:pay`,
+            userId,
           },
         });
       }
@@ -183,8 +204,14 @@ export class DriverService {
       await tx.routeStop.update({ where: { id: stopId }, data: { status: 'NO_ENTREGADA', failReason: dto.reason, failNotes: dto.notes, photo: dto.photo } });
       await tx.incident.create({
         data: {
-          routeId: stop.routeId, stopId, type, description: `No entrega: ${dto.reason}${dto.notes ? ' · ' + dto.notes : ''}`,
-          photo: dto.photo, createdAt: at, clientOpId: `${dto.clientOpId}:inc`, userId,
+          routeId: stop.routeId,
+          stopId,
+          type,
+          description: `No entrega: ${dto.reason}${dto.notes ? ' · ' + dto.notes : ''}`,
+          photo: dto.photo,
+          createdAt: at,
+          clientOpId: `${dto.clientOpId}:inc`,
+          userId,
         },
       });
     });
@@ -201,8 +228,14 @@ export class DriverService {
     if (dto.amount <= 0) throw new BadRequestException('El monto debe ser mayor a 0');
     await this.prisma.payment.create({
       data: {
-        routeId: dto.routeId, stopId: dto.stopId, customerId: dto.customerId, amount: dto.amount, method: dto.method,
-        receivedAt: dto.receivedAt ? new Date(dto.receivedAt) : new Date(), clientOpId: dto.clientOpId, userId,
+        routeId: dto.routeId,
+        stopId: dto.stopId,
+        customerId: dto.customerId,
+        amount: dto.amount,
+        method: dto.method,
+        receivedAt: dto.receivedAt ? new Date(dto.receivedAt) : new Date(),
+        clientOpId: dto.clientOpId,
+        userId,
       },
     });
     return { ok: true };
@@ -233,8 +266,14 @@ export class DriverService {
     if (dup) return { ok: true, duplicate: true };
     await this.prisma.incident.create({
       data: {
-        routeId: dto.routeId, stopId: dto.stopId, type: dto.type, description: dto.description, photo: dto.photo,
-        createdAt: dto.createdAt ? new Date(dto.createdAt) : new Date(), clientOpId: dto.clientOpId, userId,
+        routeId: dto.routeId,
+        stopId: dto.stopId,
+        type: dto.type,
+        description: dto.description,
+        photo: dto.photo,
+        createdAt: dto.createdAt ? new Date(dto.createdAt) : new Date(),
+        clientOpId: dto.clientOpId,
+        userId,
       },
     });
     return { ok: true };
@@ -266,7 +305,9 @@ export class DriverService {
       pending: count('PENDIENTE'),
       collected: pay.total,
       byMethod: pay.byMethod,
-      pendingToCollect: route.stops.filter((s) => s.status === 'PENDIENTE').reduce((a, s) => a + (s.paymentTerms === 'Contado' ? s.items.reduce((x, i) => x + num(i.quantity) * num(i.unitPrice), 0) : 0), 0),
+      pendingToCollect: route.stops
+        .filter((s) => s.status === 'PENDIENTE')
+        .reduce((a, s) => a + (s.paymentTerms === 'Contado' ? s.items.reduce((x, i) => x + num(i.quantity) * num(i.unitPrice), 0) : 0), 0),
       leftover: [...left.values()],
       departedAt: route.departedAt,
       returnedAt: route.returnedAt,

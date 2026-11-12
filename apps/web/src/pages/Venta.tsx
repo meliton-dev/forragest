@@ -7,8 +7,18 @@ import { usePos } from '../pos-context';
 import { Badge, Button, Empty, Field, Icon, Input, Modal, Notice, Segmented } from '../ui/kit';
 import { ReceiptModal, SaleReceipt } from '../ui/Receipt';
 
-const LINES: [string, string][] = [['', 'Todas'], ['OVINO', 'Ovino'], ['BOVINO', 'Bovino'], ['AVES', 'Aves']];
-const METHODS: [PayMethod, string, string][] = [['EFECTIVO', 'Efectivo', 'cash'], ['TRANSFERENCIA', 'Transfer.', 'transfer'], ['TARJETA', 'Tarjeta', 'card'], ['CREDITO', 'Crédito', 'clock']];
+const LINES: [string, string][] = [
+  ['', 'Todas'],
+  ['OVINO', 'Ovino'],
+  ['BOVINO', 'Bovino'],
+  ['AVES', 'Aves'],
+];
+const METHODS: [PayMethod, string, string][] = [
+  ['EFECTIVO', 'Efectivo', 'cash'],
+  ['TRANSFERENCIA', 'Transfer.', 'transfer'],
+  ['TARJETA', 'Tarjeta', 'card'],
+  ['CREDITO', 'Crédito', 'clock'],
+];
 
 export function Venta() {
   const pos = usePos();
@@ -86,15 +96,29 @@ export function Venta() {
         <div style={{ alignSelf: 'flex-start' }}>
           <Segmented value={line} onChange={setLine} options={LINES} />
         </div>
-        {loadErr && <Notice tone="danger" icon="alert">{loadErr}</Notice>}
-        {loaded && items.length === 0 && !loadErr && <Empty icon="search" title="Sin resultados">Prueba con otro nombre o código.</Empty>}
+        {loadErr && (
+          <Notice tone="danger" icon="alert">
+            {loadErr}
+          </Notice>
+        )}
+        {loaded && items.length === 0 && !loadErr && (
+          <Empty icon="search" title="Sin resultados">
+            Prueba con otro nombre o código.
+          </Empty>
+        )}
         <div className="products">
           {items.map((it) => {
             const qty = inCart(it.key);
             const out = it.stockUnits <= 0;
             const maxed = qty >= it.stockUnits;
             return (
-              <button key={it.key} className={`pcard ${qty ? 'sel' : ''} ${out ? 'off' : ''}`} disabled={out || maxed} onClick={() => pos.add(it)} aria-label={`${it.name} ${it.presentation}`}>
+              <button
+                key={it.key}
+                className={`pcard ${qty ? 'sel' : ''} ${out ? 'off' : ''}`}
+                disabled={out || maxed}
+                onClick={() => pos.add(it)}
+                aria-label={`${it.name} ${it.presentation}`}
+              >
                 <span className={`stripe ${it.line.toLowerCase()}`} />
                 <span className="body">
                   <span className="row between">
@@ -125,53 +149,94 @@ export function Venta() {
               </button>
             )}
           </div>
-          <button className="row" style={{ height: 40, padding: '0 12px', background: 'var(--bg)', border: 0, borderRadius: 6, textAlign: 'left' }} onClick={() => setModal('customer')}>
+          <button
+            className="row"
+            style={{ height: 40, padding: '0 12px', background: 'var(--bg)', border: 0, borderRadius: 6, textAlign: 'left' }}
+            onClick={() => setModal('customer')}
+          >
             <Icon name="user" size={16} color="var(--text-2)" />
             <span className="grow small strong">{cart.customer?.name ?? 'Público general'}</span>
-            <span className="small strong" style={{ color: 'var(--accent)' }}>{cart.customer ? 'Cambiar' : 'Elegir cliente'}</span>
+            <span className="small strong" style={{ color: 'var(--accent)' }}>
+              {cart.customer ? 'Cambiar' : 'Elegir cliente'}
+            </span>
           </button>
-          {cart.customer?.blocked && <Notice tone="danger" icon="lock">Crédito bloqueado: {cart.customer.reason}.</Notice>}
+          {cart.customer?.blocked && (
+            <Notice tone="danger" icon="lock">
+              Crédito bloqueado: {cart.customer.reason}.
+            </Notice>
+          )}
         </div>
 
         <div className="ticket-scroll" style={{ padding: '0 20px' }}>
-          {cart.lines.length === 0 && <Empty icon="receipt" title="Aún no hay productos">Toca un producto para agregarlo.</Empty>}
+          {cart.lines.length === 0 && (
+            <Empty icon="receipt" title="Aún no hay productos">
+              Toca un producto para agregarlo.
+            </Empty>
+          )}
           {cart.lines.map((l) => (
             <div key={l.item.key} className="line">
               <div className="grow">
                 <div className="small strong">{l.item.name}</div>
-                <div className="caption muted">{l.item.presentation} · {mxn(l.item.price)}</div>
+                <div className="caption muted">
+                  {l.item.presentation} · {mxn(l.item.price)}
+                </div>
               </div>
               <div className="stepper">
-                <button aria-label="Quitar uno" onClick={() => pos.setQty(l.item.key, l.qty - 1)}><Icon name="minus" size={16} color="var(--text-2)" /></button>
+                <button aria-label="Quitar uno" onClick={() => pos.setQty(l.item.key, l.qty - 1)}>
+                  <Icon name="minus" size={16} color="var(--text-2)" />
+                </button>
                 <span>{l.qty}</span>
-                <button aria-label="Agregar uno" disabled={l.qty >= l.item.stockUnits} onClick={() => pos.setQty(l.item.key, l.qty + 1)}><Icon name="plus" size={16} color="var(--text-2)" /></button>
+                <button aria-label="Agregar uno" disabled={l.qty >= l.item.stockUnits} onClick={() => pos.setQty(l.item.key, l.qty + 1)}>
+                  <Icon name="plus" size={16} color="var(--text-2)" />
+                </button>
               </div>
-              <span className="title right" style={{ width: 76 }}>{mxn(l.qty * l.item.price)}</span>
+              <span className="title right" style={{ width: 76 }}>
+                {mxn(l.qty * l.item.price)}
+              </span>
             </div>
           ))}
         </div>
 
         <div style={{ padding: '14px 20px', background: 'var(--surface-2)', borderTop: '1px solid var(--border)' }} className="col gap8">
-          <div className="kv"><span className="small muted2">Subtotal</span><span className="small">{mxn(totals.subtotal)}</span></div>
+          <div className="kv">
+            <span className="small muted2">Subtotal</span>
+            <span className="small">{mxn(totals.subtotal)}</span>
+          </div>
           <div className="kv">
             <span className="small muted2">Descuento{cart.discount ? (cart.discount.mode === 'PERCENT' ? ` (${cart.discount.value} %)` : '') : ''}</span>
             {cart.discount ? (
               <span className="row gap8">
-                <span className="small" style={{ color: 'var(--ok)' }}>− {mxn(totals.discount)}</span>
-                <button className="link" style={{ color: 'var(--danger)' }} onClick={() => setCart((c) => ({ ...c, discount: null }))}>Quitar</button>
+                <span className="small" style={{ color: 'var(--ok)' }}>
+                  − {mxn(totals.discount)}
+                </span>
+                <button className="link" style={{ color: 'var(--danger)' }} onClick={() => setCart((c) => ({ ...c, discount: null }))}>
+                  Quitar
+                </button>
               </span>
             ) : (
-              <button className="link" disabled={cart.lines.length === 0} onClick={() => setModal('discount')}>Aplicar</button>
+              <button className="link" disabled={cart.lines.length === 0} onClick={() => setModal('discount')}>
+                Aplicar
+              </button>
             )}
           </div>
-          <div className="kv"><span className="h2">Total</span><span className="num-lg" data-testid="total">{mxn(totals.total)}</span></div>
+          <div className="kv">
+            <span className="h2">Total</span>
+            <span className="num-lg" data-testid="total">
+              {mxn(totals.total)}
+            </span>
+          </div>
         </div>
 
         <div style={{ padding: '14px 20px 0' }} className="col gap12">
           <span className="overline">Forma de pago</span>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
             {METHODS.map(([m, label, icon]) => (
-              <button key={m} className={`pay ${cart.payment === m ? 'on' : ''}`} disabled={m === 'CREDITO' && !!cart.customer?.blocked} onClick={() => choosePayment(m)}>
+              <button
+                key={m}
+                className={`pay ${cart.payment === m ? 'on' : ''}`}
+                disabled={m === 'CREDITO' && !!cart.customer?.blocked}
+                onClick={() => choosePayment(m)}
+              >
                 <Icon name={icon} size={18} />
                 {label}
               </button>
@@ -182,7 +247,14 @@ export function Venta() {
               <div className="input" style={{ height: 44 }}>
                 <span className="small muted grow">Recibido</span>
                 <span className="affix">$</span>
-                <input style={{ flex: 'none', width: 110, textAlign: 'right', fontWeight: 600, fontSize: 18 }} inputMode="decimal" value={cart.received} aria-label="Efectivo recibido" onChange={(e) => setCart((c) => ({ ...c, received: e.target.value.replace(/[^\d.]/g, '') }))} placeholder="0.00" />
+                <input
+                  style={{ flex: 'none', width: 110, textAlign: 'right', fontWeight: 600, fontSize: 18 }}
+                  inputMode="decimal"
+                  value={cart.received}
+                  aria-label="Efectivo recibido"
+                  onChange={(e) => setCart((c) => ({ ...c, received: e.target.value.replace(/[^\d.]/g, '') }))}
+                  placeholder="0.00"
+                />
               </div>
               <div className="row gap8">
                 {quickAmounts(totals.total).map((a, i) => (
@@ -192,8 +264,12 @@ export function Venta() {
                 ))}
               </div>
               <div className="row between" style={{ height: 40, padding: '0 12px', borderRadius: 6, background: 'var(--ok-soft)' }}>
-                <span className="small strong" style={{ color: 'var(--ok)' }}>Cambio a entregar</span>
-                <span className="num" style={{ color: 'var(--ok)' }} data-testid="change">{mxn(totals.change)}</span>
+                <span className="small strong" style={{ color: 'var(--ok)' }}>
+                  Cambio a entregar
+                </span>
+                <span className="num" style={{ color: 'var(--ok)' }} data-testid="change">
+                  {mxn(totals.change)}
+                </span>
               </div>
             </>
           )}
@@ -203,11 +279,17 @@ export function Venta() {
               {totals.total > cart.customer.available ? ' La venta excede el crédito disponible.' : ''}
             </Notice>
           )}
-          {payErr && <Notice tone="danger" icon="alert">{payErr}</Notice>}
+          {payErr && (
+            <Notice tone="danger" icon="alert">
+              {payErr}
+            </Notice>
+          )}
         </div>
 
         <div className="row" style={{ padding: 20, gap: 10 }}>
-          <Button size="lg" style={{ width: 110 }} onClick={pos.clearCart} disabled={cart.lines.length === 0}>Cancelar</Button>
+          <Button size="lg" style={{ width: 110 }} onClick={pos.clearCart} disabled={cart.lines.length === 0}>
+            Cancelar
+          </Button>
           <Button variant="primary" size="lg" icon="printer" disabled={!canPay} onClick={pay}>
             {busy ? 'Cobrando…' : 'Cobrar e imprimir ticket'}
           </Button>
@@ -252,25 +334,47 @@ function CustomerModal({ current, onPick, onClose }: { current: CreditInfo | nul
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
     const t = setTimeout(() => {
-      api<CreditInfo[]>('GET', `/pos/customers?q=${encodeURIComponent(q)}`).then(setRows).catch((e) => setErr(errMsg(e)));
+      api<CreditInfo[]>('GET', `/pos/customers?q=${encodeURIComponent(q)}`)
+        .then(setRows)
+        .catch((e) => setErr(errMsg(e)));
     }, 200);
     return () => clearTimeout(t);
   }, [q]);
   return (
     <Modal title="Cliente" sub="Elige un cliente para vender a crédito" onClose={onClose}>
       <Input icon="search" placeholder="Buscar cliente" value={q} onChange={(e) => setQ(e.target.value)} autoFocus aria-label="Buscar cliente" />
-      {err && <Notice tone="danger" icon="alert">{err}</Notice>}
+      {err && (
+        <Notice tone="danger" icon="alert">
+          {err}
+        </Notice>
+      )}
       <div className="col" style={{ gap: 8 }}>
-        <button className="row card" style={{ padding: '10px 14px', textAlign: 'left', borderColor: !current ? 'var(--accent)' : undefined }} onClick={() => onPick(null)}>
+        <button
+          className="row card"
+          style={{ padding: '10px 14px', textAlign: 'left', borderColor: !current ? 'var(--accent)' : undefined }}
+          onClick={() => onPick(null)}
+        >
           <Icon name="user" size={16} color="var(--text-2)" />
           <span className="grow small strong">Público general</span>
           <span className="caption muted">Sin crédito</span>
         </button>
         {rows.map((c) => (
-          <button key={c.id} className="card" style={{ padding: '10px 14px', textAlign: 'left', borderColor: current?.id === c.id ? 'var(--accent)' : undefined }} onClick={() => onPick(c)} aria-label={`Cliente ${c.name}`}>
+          <button
+            key={c.id}
+            className="card"
+            style={{ padding: '10px 14px', textAlign: 'left', borderColor: current?.id === c.id ? 'var(--accent)' : undefined }}
+            onClick={() => onPick(c)}
+            aria-label={`Cliente ${c.name}`}
+          >
             <div className="row between">
               <span className="small strong">{c.name}</span>
-              {c.blocked ? <Badge tone="danger"><Icon name="lock" size={11} /> Crédito bloqueado</Badge> : <Badge tone="ok">Disponible {mxn(c.available)}</Badge>}
+              {c.blocked ? (
+                <Badge tone="danger">
+                  <Icon name="lock" size={11} /> Crédito bloqueado
+                </Badge>
+              ) : (
+                <Badge tone="ok">Disponible {mxn(c.available)}</Badge>
+              )}
             </div>
             <div className="caption muted">
               Saldo {mxn(c.balance)} · límite {mxn(c.creditLimit)} · {c.creditDays} días{c.blocked && c.reason ? ` · ${c.reason}` : ''}
@@ -282,7 +386,15 @@ function CustomerModal({ current, onPick, onClose }: { current: CreditInfo | nul
   );
 }
 
-function DiscountModal({ subtotal, onApply, onClose }: { subtotal: number; onApply: (d: { mode: 'PERCENT' | 'AMOUNT'; value: number; authorization: { username: string; password: string } }) => void; onClose: () => void }) {
+function DiscountModal({
+  subtotal,
+  onApply,
+  onClose,
+}: {
+  subtotal: number;
+  onApply: (d: { mode: 'PERCENT' | 'AMOUNT'; value: number; authorization: { username: string; password: string } }) => void;
+  onClose: () => void;
+}) {
   const [mode, setMode] = useState<'PERCENT' | 'AMOUNT'>('PERCENT');
   const [value, setValue] = useState('5');
   const [username, setUsername] = useState('');
@@ -320,35 +432,80 @@ function DiscountModal({ subtotal, onApply, onClose }: { subtotal: number; onApp
       }
     >
       <Field label="Aplicar a">
-        <Segmented soft value={mode} onChange={(m) => { setMode(m); setValue(m === 'PERCENT' ? '5' : ''); }} options={[['PERCENT', 'Porcentaje'], ['AMOUNT', 'Monto en pesos']]} />
+        <Segmented
+          soft
+          value={mode}
+          onChange={(m) => {
+            setMode(m);
+            setValue(m === 'PERCENT' ? '5' : '');
+          }}
+          options={[
+            ['PERCENT', 'Porcentaje'],
+            ['AMOUNT', 'Monto en pesos'],
+          ]}
+        />
       </Field>
       <div className="row" style={{ alignItems: 'flex-end' }}>
         <div className="grow">
           <Field label="Descuento">
-            <Input inputMode="decimal" prefix={mode === 'AMOUNT' ? '$' : undefined} suffix={mode === 'PERCENT' ? <span className="affix">%</span> : undefined} value={value} onChange={(e) => setValue(e.target.value.replace(/[^\d.]/g, ''))} aria-label="Valor del descuento" />
+            <Input
+              inputMode="decimal"
+              prefix={mode === 'AMOUNT' ? '$' : undefined}
+              suffix={mode === 'PERCENT' ? <span className="affix">%</span> : undefined}
+              value={value}
+              onChange={(e) => setValue(e.target.value.replace(/[^\d.]/g, ''))}
+              aria-label="Valor del descuento"
+            />
           </Field>
         </div>
         {mode === 'PERCENT' && (
           <div className="row gap8">
             {[5, 10, 15].map((p) => (
-              <button key={p} className={`chip ${v === p ? 'on' : ''}`} style={{ height: 44 }} onClick={() => setValue(String(p))}>{p} %</button>
+              <button key={p} className={`chip ${v === p ? 'on' : ''}`} style={{ height: 44 }} onClick={() => setValue(String(p))}>
+                {p} %
+              </button>
             ))}
           </div>
         )}
       </div>
       <div className="tile col gap8">
-        <div className="kv"><span className="small muted2">Subtotal</span><span className="small">{mxn(subtotal)}</span></div>
-        <div className="kv"><span className="small muted2">Descuento</span><span className="small" style={{ color: 'var(--ok)' }}>− {mxn(amount)}</span></div>
-        <div className="kv"><span className="title">Total a cobrar</span><span className="title">{mxn(subtotal - amount)}</span></div>
-      </div>
-      <div className="col gap12">
-        <span className="overline row gap4"><Icon name="lock" size={13} /> Autorización de supervisor</span>
-        <div className="row gap12">
-          <div className="grow"><Field label="Usuario"><Input icon="user" value={username} onChange={(e) => setUsername(e.target.value)} autoCapitalize="none" aria-label="Usuario del supervisor" /></Field></div>
-          <div className="grow"><Field label="Contraseña"><Input icon="lock" type="password" value={password} onChange={(e) => setPassword(e.target.value)} aria-label="Contraseña del supervisor" /></Field></div>
+        <div className="kv">
+          <span className="small muted2">Subtotal</span>
+          <span className="small">{mxn(subtotal)}</span>
+        </div>
+        <div className="kv">
+          <span className="small muted2">Descuento</span>
+          <span className="small" style={{ color: 'var(--ok)' }}>
+            − {mxn(amount)}
+          </span>
+        </div>
+        <div className="kv">
+          <span className="title">Total a cobrar</span>
+          <span className="title">{mxn(subtotal - amount)}</span>
         </div>
       </div>
-      {error && <Notice tone="danger" icon="alert">{error}</Notice>}
+      <div className="col gap12">
+        <span className="overline row gap4">
+          <Icon name="lock" size={13} /> Autorización de supervisor
+        </span>
+        <div className="row gap12">
+          <div className="grow">
+            <Field label="Usuario">
+              <Input icon="user" value={username} onChange={(e) => setUsername(e.target.value)} autoCapitalize="none" aria-label="Usuario del supervisor" />
+            </Field>
+          </div>
+          <div className="grow">
+            <Field label="Contraseña">
+              <Input icon="lock" type="password" value={password} onChange={(e) => setPassword(e.target.value)} aria-label="Contraseña del supervisor" />
+            </Field>
+          </div>
+        </div>
+      </div>
+      {error && (
+        <Notice tone="danger" icon="alert">
+          {error}
+        </Notice>
+      )}
     </Modal>
   );
 }

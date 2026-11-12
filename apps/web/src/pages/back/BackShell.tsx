@@ -16,7 +16,10 @@ export function BackShell() {
   const [alerts, setAlerts] = useState<PurchaseAlerts | null>(null);
   useEffect(() => {
     if (!seesPurchasing) return;
-    const load = () => api<PurchaseAlerts>('GET', '/purchasing/alerts').then(setAlerts).catch(() => undefined);
+    const load = () =>
+      api<PurchaseAlerts>('GET', '/purchasing/alerts')
+        .then(setAlerts)
+        .catch(() => undefined);
     void load();
     const t = setInterval(load, 60000);
     return () => clearInterval(t);
@@ -34,8 +37,16 @@ export function BackShell() {
     ['/compras/por-pagar', 'Cuentas por pagar', 'wallet', false, alerts ? alerts.overdue.length + alerts.dueSoon.length : undefined],
     ['/compras/precios', 'Historial y precios', 'chart', false],
   ];
-  const groups: [string, NavItem[]][] = [...(seesRoutes ? [['Finanzas y logística', routeItems] as [string, NavItem[]]] : []), ...(seesPurchasing ? [['Compras', purchaseItems] as [string, NavItem[]]] : [])];
-  const initials = user.fullName.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+  const groups: [string, NavItem[]][] = [
+    ...(seesRoutes ? [['Finanzas y logística', routeItems] as [string, NavItem[]]] : []),
+    ...(seesPurchasing ? [['Compras', purchaseItems] as [string, NavItem[]]] : []),
+  ];
+  const initials = user.fullName
+    .split(' ')
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
   return (
     <div className="back">
       <aside className="side">
@@ -50,7 +61,11 @@ export function BackShell() {
               <NavLink key={to} to={to} end={end} className={({ isActive }) => `item ${isActive ? 'on' : ''}`}>
                 <Icon name={icon} size={16} />
                 <span className="grow">{label}</span>
-                {!!badge && <span className="badge warn" aria-label={`${badge} pendientes`}>{badge}</span>}
+                {!!badge && (
+                  <span className="badge warn" aria-label={`${badge} pendientes`}>
+                    {badge}
+                  </span>
+                )}
               </NavLink>
             ))}
           </div>
@@ -58,7 +73,11 @@ export function BackShell() {
         {user.role === 'ADMINISTRADOR' && (
           <>
             <div className="grp overline">Operación</div>
-            <Link to="/" className="item" style={{ display: 'flex', alignItems: 'center', gap: 10, height: 32, padding: '0 8px', fontSize: 13, color: 'var(--text-2)' }}>
+            <Link
+              to="/"
+              className="item"
+              style={{ display: 'flex', alignItems: 'center', gap: 10, height: 32, padding: '0 8px', fontSize: 13, color: 'var(--text-2)' }}
+            >
               <Icon name="receipt" size={16} />
               Punto de venta
             </Link>

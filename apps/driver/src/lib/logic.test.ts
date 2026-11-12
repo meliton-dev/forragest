@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ApiError, NetworkError } from './errors';
+import { ApiError, NetworkError } from '@forrajera/shared';
 import { deliveredTotal, isPartial, processQueue, summarize, uid } from './logic';
 import type { LocalPayment, Op, Route } from './types';
 
@@ -91,7 +91,16 @@ describe('summarize', () => {
 });
 
 describe('entrega parcial', () => {
-  const item = (id: number, quantity: number, deliveredQty?: number) => ({ id, productId: id, code: 'A', name: 'A', presentation: 'Saco', quantity, unitPrice: 100, deliveredQty });
+  const item = (id: number, quantity: number, deliveredQty?: number) => ({
+    id,
+    productId: id,
+    code: 'A',
+    name: 'A',
+    presentation: 'Saco',
+    quantity,
+    unitPrice: 100,
+    deliveredQty,
+  });
   const stop = (status: string, items: ReturnType<typeof item>[]) => ({ id: 1, status, paymentTerms: 'Contado', total: 0, items });
 
   it('el importe usa lo entregado y lo no tocado cuenta completo', () => {

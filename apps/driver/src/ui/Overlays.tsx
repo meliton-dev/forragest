@@ -59,15 +59,28 @@ export function GpsPrimer({ onAccept, onDecline }: { onAccept: () => void; onDec
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.2 } }}
     >
-      <motion.div className="sheet" initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%', transition: { duration: 0.22 } }} transition={{ type: 'spring', stiffness: 380, damping: 36 }}>
-        <motion.div className="ico" initial={{ scale: 0.4, rotate: -12 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 14, delay: 0.12 }}>
+      <motion.div
+        className="sheet"
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%', transition: { duration: 0.22 } }}
+        transition={{ type: 'spring', stiffness: 380, damping: 36 }}
+      >
+        <motion.div
+          className="ico"
+          initial={{ scale: 0.4, rotate: -12 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', stiffness: 380, damping: 14, delay: 0.12 }}
+        >
           <Icon name="pin" size={26} />
         </motion.div>
         <div>
-          <h2 className="h2" style={{ fontSize: 22, lineHeight: '28px' }}>¿Compartir tu ubicación?</h2>
+          <h2 className="h2" style={{ fontSize: 22, lineHeight: '28px' }}>
+            ¿Compartir tu ubicación?
+          </h2>
           <p className="small muted2" style={{ margin: '6px 0 0', fontSize: 15, lineHeight: '22px' }}>
-            Tu supervisor verá dónde va el camión para avisar a los clientes y ayudarte si hay un problema.
-            Se comparte <b>solo mientras la ruta está en curso</b> y con la app abierta; se detiene al cerrar la ruta.
+            Tu supervisor verá dónde va el camión para avisar a los clientes y ayudarte si hay un problema. Se comparte{' '}
+            <b>solo mientras la ruta está en curso</b> y con la app abierta; se detiene al cerrar la ruta.
           </p>
         </div>
         <motion.button ref={ok} className="btn primary" whileTap={{ scale: 0.96 }} onClick={onAccept}>
@@ -76,7 +89,9 @@ export function GpsPrimer({ onAccept, onDecline }: { onAccept: () => void; onDec
         <motion.button className="btn ghost" whileTap={{ scale: 0.96 }} onClick={onDecline}>
           Ahora no
         </motion.button>
-        <p className="caption muted" style={{ margin: 0, textAlign: 'center' }}>Puedes cambiarlo después en Perfil.</p>
+        <p className="caption muted" style={{ margin: 0, textAlign: 'center' }}>
+          Puedes cambiarlo después en Perfil.
+        </p>
       </motion.div>
     </motion.div>
   );

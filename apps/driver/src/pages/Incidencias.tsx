@@ -28,7 +28,11 @@ function List({ route }: { route: Route }) {
       <Header title="Incidencias" sub="Reportes de la ruta de hoy" />
       <div className="content">
         <SyncBanner />
-        {s.incidents.length === 0 && <Empty icon="alert" title="Sin incidencias">Reporta aquí cualquier problema durante el reparto.</Empty>}
+        {s.incidents.length === 0 && (
+          <Empty icon="alert" title="Sin incidencias">
+            Reporta aquí cualquier problema durante el reparto.
+          </Empty>
+        )}
         {s.incidents.map((i) => {
           const t = TONE[i.type] ?? TONE.OTRO;
           return (
@@ -82,7 +86,11 @@ function Form({ route }: { route: Route }) {
         ))}
         <Field label="Parada relacionada (opcional)">
           <div className="input">
-            <select value={stopId} onChange={(e) => setStopId(e.target.value ? Number(e.target.value) : '')} style={{ flex: 1, border: 0, background: 'none', height: '100%', fontSize: 16 }}>
+            <select
+              value={stopId}
+              onChange={(e) => setStopId(e.target.value ? Number(e.target.value) : '')}
+              style={{ flex: 1, border: 0, background: 'none', height: '100%', fontSize: 16 }}
+            >
               <option value="">Ninguna</option>
               {route.stops.map((s) => (
                 <option key={s.id} value={s.id}>

@@ -1,7 +1,7 @@
 import { del, get, set as idbSet } from 'idb-keyval';
 import { useSyncExternalStore } from 'react';
 import { clearSession, request } from './api';
-import { ApiError, NetworkError } from './errors';
+import { ApiError, NetworkError } from '@forrajera/shared';
 import { mergeQueue, processQueue, uid } from './logic';
 import { showToast } from './toast';
 import type { FailReason, IncidentType, LocalIncident, LocalPayment, Method, Op, Route } from './types';
@@ -22,8 +22,17 @@ export interface State {
 
 const KEY = 'fd.state.v1';
 const initial: State = {
-  ready: false, loading: false, route: null, noRoute: false, payments: [], incidents: [], queue: [],
-  online: typeof navigator === 'undefined' ? true : navigator.onLine, syncing: false, lastSync: null, error: null,
+  ready: false,
+  loading: false,
+  route: null,
+  noRoute: false,
+  payments: [],
+  incidents: [],
+  queue: [],
+  online: typeof navigator === 'undefined' ? true : navigator.onLine,
+  syncing: false,
+  lastSync: null,
+  error: null,
 };
 
 let state: State = initial;
@@ -73,7 +82,11 @@ async function pull() {
     // si el repartidor registró algo mientras se descargaba, lo local manda: reemplazarlo borraría su avance
     if (pendingCount() > 0) return void patch({ online: true, loading: false }, false);
     patch({
-      route, noRoute: false, online: true, loading: false, lastSync: new Date().toISOString(),
+      route,
+      noRoute: false,
+      online: true,
+      loading: false,
+      lastSync: new Date().toISOString(),
       payments: pay.items.map((p) => ({ id: 's' + p.id, customer: p.customer, amount: p.amount, method: p.method, receivedAt: p.receivedAt, synced: true })),
       incidents: inc.map((i) => ({ id: 's' + i.id, type: i.type, description: i.description, createdAt: i.createdAt, synced: true })),
     });
@@ -173,7 +186,12 @@ function undoOp(id: string, restore: () => void) {
 
 export function deliver(
   stopId: number,
-  data: { signature?: string; photo?: string; payment?: { amount: number; method: Method }; /** renglón → cantidad entregada; omitido = completo */ qty?: Record<number, number> },
+  data: {
+    signature?: string;
+    photo?: string;
+    payment?: { amount: number; method: Method };
+    /** renglón → cantidad entregada; omitido = completo */ qty?: Record<number, number>;
+  },
 ) {
   const id = uid();
   const at = new Date().toISOString();
@@ -181,9 +199,23 @@ export function deliver(
   const payment = data.payment && data.payment.amount > 0 ? data.payment : undefined;
   const items = before.items.map((i) => ({ id: i.id, qty: Math.min(i.quantity, Math.max(0, data.qty?.[i.id] ?? i.quantity)) }));
   patch({
-    route: mapStop(stopId, (s) => ({ ...s, status: 'ENTREGADA', deliveredAt: at, items: s.items.map((i) => ({ ...i, deliveredQty: items.find((x) => x.id === i.id)!.qty })) })),
-    payments: payment ? [{ id, customer: before.customer.name, amount: payment.amount, method: payment.method, receivedAt: at, synced: false }, ...state.payments] : state.payments,
-    queue: enqueue(hold({ id, label: `Entrega · ${before.customer.name}`, path: `/driver/stops/${stopId}/deliver`, body: { clientOpId: id, deliveredAt: at, signature: data.signature, photo: data.photo, payment, items } })),
+    route: mapStop(stopId, (s) => ({
+      ...s,
+      status: 'ENTREGADA',
+      deliveredAt: at,
+      items: s.items.map((i) => ({ ...i, deliveredQty: items.find((x) => x.id === i.id)!.qty })),
+    })),
+    payments: payment
+      ? [{ id, customer: before.customer.name, amount: payment.amount, method: payment.method, receivedAt: at, synced: false }, ...state.payments]
+      : state.payments,
+    queue: enqueue(
+      hold({
+        id,
+        label: `Entrega · ${before.customer.name}`,
+        path: `/driver/stops/${stopId}/deliver`,
+        body: { clientOpId: id, deliveredAt: at, signature: data.signature, photo: data.photo, payment, items },
+      }),
+    ),
   });
   showToast(`Entrega registrada · ${before.customer.name}`, {
     ms: UNDO_MS,
@@ -199,8 +231,24 @@ export function failStop(stopId: number, data: { reason: FailReason; notes?: str
   const before = state.route!.stops.find((s) => s.id === stopId)!;
   patch({
     route: mapStop(stopId, (s) => ({ ...s, status: 'NO_ENTREGADA', failReason: data.reason })),
-    incidents: [{ id, type: data.reason === 'CLIENTE_AUSENTE' ? 'CLIENTE_AUSENTE' : 'OTRO', description: `No entrega: ${data.reason}${data.notes ? ' · ' + data.notes : ''}`, createdAt: at, synced: false }, ...state.incidents],
-    queue: enqueue(hold({ id, label: `No entrega · ${before.customer.name}`, path: `/driver/stops/${stopId}/fail`, body: { clientOpId: id, reason: data.reason, notes: data.notes, photo: data.photo, at } })),
+    incidents: [
+      {
+        id,
+        type: data.reason === 'CLIENTE_AUSENTE' ? 'CLIENTE_AUSENTE' : 'OTRO',
+        description: `No entrega: ${data.reason}${data.notes ? ' · ' + data.notes : ''}`,
+        createdAt: at,
+        synced: false,
+      },
+      ...state.incidents,
+    ],
+    queue: enqueue(
+      hold({
+        id,
+        label: `No entrega · ${before.customer.name}`,
+        path: `/driver/stops/${stopId}/fail`,
+        body: { clientOpId: id, reason: data.reason, notes: data.notes, photo: data.photo, at },
+      }),
+    ),
   });
   showToast(`No entrega registrada · ${before.customer.name}`, {
     tone: 'warn',
@@ -216,9 +264,19 @@ export function addPayment(data: { customerId?: number; customerName: string; am
   const at = new Date().toISOString();
   patch({
     payments: [{ id, customer: data.customerName, amount: data.amount, method: data.method, receivedAt: at, synced: false }, ...state.payments],
-    queue: enqueue(hold({ id, label: `Cobro · ${data.customerName}`, path: '/driver/payments', body: { clientOpId: id, routeId: state.route!.id, customerId: data.customerId, amount: data.amount, method: data.method, receivedAt: at } })),
+    queue: enqueue(
+      hold({
+        id,
+        label: `Cobro · ${data.customerName}`,
+        path: '/driver/payments',
+        body: { clientOpId: id, routeId: state.route!.id, customerId: data.customerId, amount: data.amount, method: data.method, receivedAt: at },
+      }),
+    ),
   });
-  showToast(`Cobro guardado · ${data.customerName}`, { ms: UNDO_MS, undo: () => undoOp(id, () => patch({ payments: state.payments.filter((p) => p.id !== id) })) });
+  showToast(`Cobro guardado · ${data.customerName}`, {
+    ms: UNDO_MS,
+    undo: () => undoOp(id, () => patch({ payments: state.payments.filter((p) => p.id !== id) })),
+  });
   void flush();
   scheduleFlush();
 }
@@ -228,7 +286,12 @@ export function addIncident(data: { type: IncidentType; description: string; sto
   const at = new Date().toISOString();
   patch({
     incidents: [{ id, type: data.type, description: data.description, createdAt: at, synced: false }, ...state.incidents],
-    queue: enqueue({ id, label: 'Incidencia', path: '/driver/incidents', body: { clientOpId: id, routeId: state.route!.id, stopId: data.stopId, type: data.type, description: data.description, photo: data.photo, createdAt: at } }),
+    queue: enqueue({
+      id,
+      label: 'Incidencia',
+      path: '/driver/incidents',
+      body: { clientOpId: id, routeId: state.route!.id, stopId: data.stopId, type: data.type, description: data.description, photo: data.photo, createdAt: at },
+    }),
   });
   showToast('Incidencia enviada a tu supervisor', { ms: 3500 });
   void flush();

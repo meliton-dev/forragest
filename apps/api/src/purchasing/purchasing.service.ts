@@ -36,7 +36,12 @@ const orderInclude = {
 type OrderFull = Prisma.PurchaseOrderGetPayload<{ include: typeof orderInclude }>;
 
 /** Estado de una cuenta por pagar según su saldo y vencimiento. */
-export function payableState(amount: number, paid: number, dueDate: Date, today = todayUtc()): { status: 'PAGADA' | 'VENCIDA' | 'POR_VENCER' | 'PENDIENTE'; balance: number; daysToDue: number } {
+export function payableState(
+  amount: number,
+  paid: number,
+  dueDate: Date,
+  today = todayUtc(),
+): { status: 'PAGADA' | 'VENCIDA' | 'POR_VENCER' | 'PENDIENTE'; balance: number; daysToDue: number } {
   const balance = r2(amount - paid);
   const daysToDue = Math.round((dueDate.getTime() - today.getTime()) / DAY);
   if (balance <= 0) return { status: 'PAGADA', balance: 0, daysToDue };
@@ -52,7 +57,10 @@ export function suggestedQuantity(minStock: number, stock: number, onOrder: numb
 
 @Injectable()
 export class PurchasingService {
-  constructor(private prisma: PrismaService, private inventory: InventoryService) {}
+  constructor(
+    private prisma: PrismaService,
+    private inventory: InventoryService,
+  ) {}
 
   // ---------- Catálogos para los formularios ----------
 
@@ -68,8 +76,14 @@ export class PurchasingService {
       suppliers: suppliers.filter((s) => s.active),
       lines: lines.map((l) => ({ id: l.id, code: l.code, name: l.name })),
       products: products.map((p) => ({
-        id: p.id, code: p.code, name: p.name, unit: p.unit, lineId: p.lineId, purchasePrice: num(p.purchasePrice),
-        stock: stockMap.get(p.id)?.stock ?? 0, minStock: num(p.minStock),
+        id: p.id,
+        code: p.code,
+        name: p.name,
+        unit: p.unit,
+        lineId: p.lineId,
+        purchasePrice: num(p.purchasePrice),
+        stock: stockMap.get(p.id)?.stock ?? 0,
+        minStock: num(p.minStock),
       })),
     };
   }
@@ -78,8 +92,16 @@ export class PurchasingService {
 
   private mapSupplier(s: Prisma.SupplierGetPayload<{ include: { lines: true } }>) {
     return {
-      id: s.id, name: s.name, rfc: s.rfc, contact: s.contact, phone: s.phone, email: s.email, address: s.address,
-      paymentDays: s.paymentDays, active: s.active, lines: s.lines.map((l) => ({ id: l.id, code: l.code, name: l.name })),
+      id: s.id,
+      name: s.name,
+      rfc: s.rfc,
+      contact: s.contact,
+      phone: s.phone,
+      email: s.email,
+      address: s.address,
+      paymentDays: s.paymentDays,
+      active: s.active,
+      lines: s.lines.map((l) => ({ id: l.id, code: l.code, name: l.name })),
     };
   }
 
@@ -106,8 +128,13 @@ export class PurchasingService {
     await this.assertUniqueRfc(rfc);
     const s = await this.prisma.supplier.create({
       data: {
-        name: dto.name.trim(), rfc, contact: dto.contact?.trim() || null, phone: dto.phone?.trim() || null, email: dto.email?.trim() || null,
-        address: dto.address?.trim() || null, paymentDays: dto.paymentDays ?? 0,
+        name: dto.name.trim(),
+        rfc,
+        contact: dto.contact?.trim() || null,
+        phone: dto.phone?.trim() || null,
+        email: dto.email?.trim() || null,
+        address: dto.address?.trim() || null,
+        paymentDays: dto.paymentDays ?? 0,
         lines: { connect: (dto.lineIds ?? []).map((id) => ({ id })) },
       },
       include: { lines: true },
@@ -123,8 +150,14 @@ export class PurchasingService {
     const s = await this.prisma.supplier.update({
       where: { id },
       data: {
-        name: dto.name.trim(), rfc: rfc ?? null, contact: dto.contact?.trim() || null, phone: dto.phone?.trim() || null, email: dto.email?.trim() || null,
-        address: dto.address?.trim() || null, paymentDays: dto.paymentDays ?? 0, active: dto.active,
+        name: dto.name.trim(),
+        rfc: rfc ?? null,
+        contact: dto.contact?.trim() || null,
+        phone: dto.phone?.trim() || null,
+        email: dto.email?.trim() || null,
+        address: dto.address?.trim() || null,
+        paymentDays: dto.paymentDays ?? 0,
+        active: dto.active,
         lines: { set: (dto.lineIds ?? []).map((lid) => ({ id: lid })) },
       },
       include: { lines: true },
@@ -139,25 +172,46 @@ export class PurchasingService {
       const ordered = num(i.quantity);
       const received = num(i.receivedQty);
       return {
-        id: i.id, productId: i.productId, code: i.product.code, name: i.product.name, unit: i.product.unit,
-        ordered, received, pending: r3(Math.max(0, ordered - received)), unitCost: num(i.unitCost), subtotal: r2(ordered * num(i.unitCost)),
+        id: i.id,
+        productId: i.productId,
+        code: i.product.code,
+        name: i.product.name,
+        unit: i.product.unit,
+        ordered,
+        received,
+        pending: r3(Math.max(0, ordered - received)),
+        unitCost: num(i.unitCost),
+        subtotal: r2(ordered * num(i.unitCost)),
       };
     });
     const today = todayUtc();
     return {
-      id: o.id, folio: o.folio, status: o.status,
+      id: o.id,
+      folio: o.folio,
+      status: o.status,
       supplier: { id: o.supplier.id, name: o.supplier.name, paymentDays: o.supplier.paymentDays },
-      expectedAt: o.expectedAt, notes: o.notes, createdAt: o.createdAt, sentAt: o.sentAt, closedAt: o.closedAt,
+      expectedAt: o.expectedAt,
+      notes: o.notes,
+      createdAt: o.createdAt,
+      sentAt: o.sentAt,
+      closedAt: o.closedAt,
       total: r2(items.reduce((a, i) => a + i.subtotal, 0)),
       receivedTotal: r2(items.reduce((a, i) => a + i.received * i.unitCost, 0)),
       items,
       // COM-003: lo que quedó sin llegar cuando la orden se cerró con faltante
       shortage: o.status === 'RECIBIDA' ? items.filter((i) => i.pending > 0).map((i) => ({ productId: i.productId, name: i.name, missing: i.pending })) : [],
       receipts: o.receipts.map((r) => ({
-        id: r.id, createdAt: r.createdAt, notes: r.notes,
+        id: r.id,
+        createdAt: r.createdAt,
+        notes: r.notes,
         items: r.items.map((ri) => ({ orderItemId: ri.orderItemId, quantity: num(ri.quantity), note: ri.note })),
       })),
-      payables: o.payables.map((p) => ({ id: p.id, amount: num(p.amount), dueDate: p.dueDate, ...payableState(num(p.amount), num(p.paidAmount), p.dueDate, today) })),
+      payables: o.payables.map((p) => ({
+        id: p.id,
+        amount: num(p.amount),
+        dueDate: p.dueDate,
+        ...payableState(num(p.amount), num(p.paidAmount), p.dueDate, today),
+      })),
     };
   }
 
@@ -180,11 +234,24 @@ export class PurchasingService {
     });
     return rows.map((o) => {
       const m = this.mapOrder(o);
-      return { id: m.id, folio: m.folio, status: m.status, supplier: m.supplier, createdAt: m.createdAt, expectedAt: m.expectedAt, total: m.total, receivedTotal: m.receivedTotal, itemCount: m.items.length };
+      return {
+        id: m.id,
+        folio: m.folio,
+        status: m.status,
+        supplier: m.supplier,
+        createdAt: m.createdAt,
+        expectedAt: m.expectedAt,
+        total: m.total,
+        receivedTotal: m.receivedTotal,
+        itemCount: m.items.length,
+      };
     });
   }
 
-  async createOrder(dto: { supplierId: number; expectedAt?: string; notes?: string; items: { productId: number; quantity: number; unitCost: number }[] }, userId: number) {
+  async createOrder(
+    dto: { supplierId: number; expectedAt?: string; notes?: string; items: { productId: number; quantity: number; unitCost: number }[] },
+    userId: number,
+  ) {
     const supplier = await this.prisma.supplier.findUnique({ where: { id: dto.supplierId } });
     if (!supplier || !supplier.active) throw new BadRequestException('Elige un proveedor activo');
     const ids = dto.items.map((i) => i.productId);
@@ -194,8 +261,11 @@ export class PurchasingService {
     const order = await this.prisma.$transaction(async (tx) => {
       const created = await tx.purchaseOrder.create({
         data: {
-          folio: `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`, supplierId: supplier.id, expectedAt: dto.expectedAt ? new Date(dto.expectedAt) : null,
-          notes: dto.notes?.trim() || null, createdBy: userId,
+          folio: `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          supplierId: supplier.id,
+          expectedAt: dto.expectedAt ? new Date(dto.expectedAt) : null,
+          notes: dto.notes?.trim() || null,
+          createdBy: userId,
           items: { create: dto.items.map((i) => ({ productId: i.productId, quantity: i.quantity, unitCost: i.unitCost })) },
         },
       });
@@ -214,7 +284,8 @@ export class PurchasingService {
   async cancel(id: number) {
     const o = await this.fullOrder(id);
     if (o.status === 'CANCELADA') return this.mapOrder(o);
-    if (o.receipts.length || o.status === 'PARCIAL' || o.status === 'RECIBIDA') throw new BadRequestException('La orden ya recibió mercancía; ciérrala con el faltante en lugar de cancelarla');
+    if (o.receipts.length || o.status === 'PARCIAL' || o.status === 'RECIBIDA')
+      throw new BadRequestException('La orden ya recibió mercancía; ciérrala con el faltante en lugar de cancelarla');
     await this.prisma.purchaseOrder.update({ where: { id }, data: { status: 'CANCELADA', closedAt: new Date() } });
     return this.getOrder(id);
   }
@@ -226,19 +297,25 @@ export class PurchasingService {
     await this.prisma.$transaction(async (tx) => {
       const order = await tx.purchaseOrder.findUnique({ where: { id }, include: { supplier: true, items: true } });
       if (!order) throw new NotFoundException('Orden de compra no encontrada');
-      if (order.status !== 'ENVIADA' && order.status !== 'PARCIAL') throw new BadRequestException('Solo se recibe mercancía de órdenes enviadas o con recepción parcial');
+      if (order.status !== 'ENVIADA' && order.status !== 'PARCIAL')
+        throw new BadRequestException('Solo se recibe mercancía de órdenes enviadas o con recepción parcial');
       const lines = dto.items.map((x) => {
         const item = order.items.find((i) => i.id === x.orderItemId);
         if (!item) throw new BadRequestException('Hay un producto que no pertenece a esta orden');
         const pending = r3(num(item.quantity) - num(item.receivedQty));
-        if (x.quantity > pending) throw new BadRequestException(`Se esperaban como máximo ${pending} y se intentó recibir ${x.quantity}; registra el excedente como ajuste de inventario`);
+        if (x.quantity > pending)
+          throw new BadRequestException(
+            `Se esperaban como máximo ${pending} y se intentó recibir ${x.quantity}; registra el excedente como ajuste de inventario`,
+          );
         return { item, quantity: r3(x.quantity), note: x.note?.trim() || null };
       });
       const arrived = lines.filter((l) => l.quantity > 0);
       if (!arrived.length) throw new BadRequestException('Indica al menos un producto recibido');
       const receipt = await tx.purchaseReceipt.create({
         data: {
-          orderId: id, notes: dto.notes?.trim() || null, receivedBy: userId,
+          orderId: id,
+          notes: dto.notes?.trim() || null,
+          receivedBy: userId,
           items: { create: lines.filter((l) => l.quantity > 0 || l.note).map((l) => ({ orderItemId: l.item.id, quantity: l.quantity, note: l.note })) },
         },
       });
@@ -246,7 +323,16 @@ export class PurchasingService {
       for (const l of arrived) {
         await tx.purchaseOrderItem.update({ where: { id: l.item.id }, data: { receivedQty: { increment: l.quantity } } });
         await this.inventory.addEntry(
-          { productId: l.item.productId, quantity: l.quantity, unitCost: num(l.item.unitCost), type: 'ENTRADA_COMPRA', reason: `Recepción ${order.folio}`, refType: 'OrdenCompra', refId: id, userId },
+          {
+            productId: l.item.productId,
+            quantity: l.quantity,
+            unitCost: num(l.item.unitCost),
+            type: 'ENTRADA_COMPRA',
+            reason: `Recepción ${order.folio}`,
+            refType: 'OrdenCompra',
+            refId: id,
+            userId,
+          },
           tx,
         );
         amount += l.quantity * num(l.item.unitCost);
@@ -254,7 +340,10 @@ export class PurchasingService {
       const today = todayUtc();
       await tx.payable.create({
         data: {
-          supplierId: order.supplierId, orderId: id, receiptId: receipt.id, amount: r2(amount),
+          supplierId: order.supplierId,
+          orderId: id,
+          receiptId: receipt.id,
+          amount: r2(amount),
           dueDate: new Date(today.getTime() + order.supplier.paymentDays * DAY),
         },
       });
@@ -278,8 +367,15 @@ export class PurchasingService {
       take: 1000,
     });
     const rows = items.map((i) => ({
-      date: i.order.sentAt ?? i.order.createdAt, folio: i.order.folio, supplierId: i.order.supplierId, supplier: i.order.supplier.name,
-      productId: i.productId, code: i.product.code, product: i.product.name, quantity: num(i.quantity), unitCost: num(i.unitCost),
+      date: i.order.sentAt ?? i.order.createdAt,
+      folio: i.order.folio,
+      supplierId: i.order.supplierId,
+      supplier: i.order.supplier.name,
+      productId: i.productId,
+      code: i.product.code,
+      product: i.product.name,
+      quantity: num(i.quantity),
+      unitCost: num(i.unitCost),
     }));
     // por producto y proveedor: último, mínimo, máximo y promedio ponderado por cantidad
     const groups = new Map<string, typeof rows>();
@@ -287,8 +383,15 @@ export class PurchasingService {
     const comparison = [...groups.values()].map((g) => {
       const qty = g.reduce((a, r) => a + r.quantity, 0);
       return {
-        productId: g[0].productId, code: g[0].code, product: g[0].product, supplierId: g[0].supplierId, supplier: g[0].supplier, purchases: g.length,
-        last: g[0].unitCost, min: Math.min(...g.map((r) => r.unitCost)), max: Math.max(...g.map((r) => r.unitCost)),
+        productId: g[0].productId,
+        code: g[0].code,
+        product: g[0].product,
+        supplierId: g[0].supplierId,
+        supplier: g[0].supplier,
+        purchases: g.length,
+        last: g[0].unitCost,
+        min: Math.min(...g.map((r) => r.unitCost)),
+        max: Math.max(...g.map((r) => r.unitCost)),
         average: qty > 0 ? r2(g.reduce((a, r) => a + r.unitCost * r.quantity, 0) / qty) : g[0].unitCost,
       };
     });
@@ -321,7 +424,13 @@ export class PurchasingService {
         const supplier = prev?.order.supplier ?? suppliers.find((s) => s.lines.some((l) => l.id === prod.lineId));
         const pendingQty = onOrder.get(p.id) ?? 0;
         return {
-          productId: p.id, code: p.code, name: p.name, unit: p.unit, stock: p.stock, minStock: p.minStock, onOrder: pendingQty,
+          productId: p.id,
+          code: p.code,
+          name: p.name,
+          unit: p.unit,
+          stock: p.stock,
+          minStock: p.minStock,
+          onOrder: pendingQty,
           quantity: suggestedQuantity(p.minStock, p.stock, pendingQty),
           unitCost: prev ? num(prev.unitCost) : num(prod.purchasePrice),
           supplier: supplier ? { id: supplier.id, name: supplier.name } : null,
@@ -336,17 +445,34 @@ export class PurchasingService {
   private mapPayable(p: Prisma.PayableGetPayload<{ include: { supplier: true; order: true } }>, today: Date) {
     const amount = num(p.amount);
     return {
-      id: p.id, supplierId: p.supplierId, supplier: p.supplier.name, orderId: p.orderId, folio: p.order.folio,
-      amount, paidAmount: num(p.paidAmount), dueDate: p.dueDate, paidAt: p.paidAt, createdAt: p.createdAt, ...payableState(amount, num(p.paidAmount), p.dueDate, today),
+      id: p.id,
+      supplierId: p.supplierId,
+      supplier: p.supplier.name,
+      orderId: p.orderId,
+      folio: p.order.folio,
+      amount,
+      paidAmount: num(p.paidAmount),
+      dueDate: p.dueDate,
+      paidAt: p.paidAt,
+      createdAt: p.createdAt,
+      ...payableState(amount, num(p.paidAmount), p.dueDate, today),
     };
   }
 
   async payables(filter: { status?: string; supplierId?: number }) {
-    const rows = await this.prisma.payable.findMany({ where: { supplierId: filter.supplierId }, include: { supplier: true, order: true }, orderBy: [{ dueDate: 'asc' }, { id: 'asc' }], take: 500 });
+    const rows = await this.prisma.payable.findMany({
+      where: { supplierId: filter.supplierId },
+      include: { supplier: true, order: true },
+      orderBy: [{ dueDate: 'asc' }, { id: 'asc' }],
+      take: 500,
+    });
     const today = todayUtc();
     const list = rows.map((p) => this.mapPayable(p, today));
     const open = list.filter((p) => p.status !== 'PAGADA');
-    const items = filter.status && filter.status !== 'TODAS' ? list.filter((p) => (filter.status === 'ABIERTAS' ? p.status !== 'PAGADA' : p.status === filter.status)) : list;
+    const items =
+      filter.status && filter.status !== 'TODAS'
+        ? list.filter((p) => (filter.status === 'ABIERTAS' ? p.status !== 'PAGADA' : p.status === filter.status))
+        : list;
     return {
       items,
       totals: {

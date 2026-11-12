@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: forrajera
+          POSTGRES_PASSWORD: forrajera
+          POSTGRES_DB: forrajera
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U forrajera"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://forrajera:forrajera@localhost:5432/forrajera
+      JWT_SECRET: ci-secreto-solo-para-pruebas-0123456789
+      SEED_PASSWORD: cambiar123
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Lint y formato
+        run: |
+          npm run lint
+          npm run format:check
+
+      - name: Base de datos
+        working-directory: apps/api
+        run: |
+          npx prisma migrate deploy
+          npx prisma generate
+
+      - name: Compilar
+        run: |
+          npx tsc --noEmit -p apps/api
+          npm run build -w apps/api
+          npm run driver:build
+          npm run web:build
+
+      - name: Pruebas unitarias
+        run: |
+          npm run api:test
+          npm run driver:test
+          npm run web:test
+
+      - name: Pruebas de integración (inventario)
+        run: |
+          npm run db:seed
+          npm run api:test:int
+
+      - name: Pruebas de flujo completo contra la API
+        run: |
+          node apps/api/dist/src/main.js > api.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf localhost:3000/health > /dev/null && break; sleep 1; done
+          npm run db:seed && npm run api:smoke
+          npm run db:seed && npm run pos:smoke
+          npm run db:seed && npm run routes:smoke
+
+      - name: Log de la API si algo falló
+        if: failure()
+        run: cat api.log || true

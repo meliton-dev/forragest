@@ -1,3 +1,4 @@
+import type { AuthedRequest } from '../auth/jwt-auth.guard';
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Req } from '@nestjs/common';
 import { Type } from 'class-transformer';
 import { IsBoolean, IsDate, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, Min } from 'class-validator';
@@ -95,7 +96,10 @@ export class ProductsController {
 
 @Controller('inventory')
 export class InventoryController {
-  constructor(private inventory: InventoryService, private counts: CountsService) {}
+  constructor(
+    private inventory: InventoryService,
+    private counts: CountsService,
+  ) {}
 
   @Get()
   current(@Query('line') line?: string) {
@@ -127,22 +131,27 @@ export class InventoryController {
   /** Entrada manual autorizada; las entradas por orden de compra llegan en la fase de Compras. */
   @Roles('ALMACENISTA')
   @Post('entries')
-  entry(@Body() dto: EntryDto, @Req() req: any) {
+  entry(@Body() dto: EntryDto, @Req() req: AuthedRequest) {
     return this.inventory.addEntry({
-      productId: dto.productId, quantity: dto.quantity, unitCost: dto.unitCost, expiresAt: dto.expiresAt,
-      type: 'ENTRADA_AJUSTE', reason: dto.reason, userId: req.user.sub,
+      productId: dto.productId,
+      quantity: dto.quantity,
+      unitCost: dto.unitCost,
+      expiresAt: dto.expiresAt,
+      type: 'ENTRADA_AJUSTE',
+      reason: dto.reason,
+      userId: req.user.sub,
     });
   }
 
   @Roles('ALMACENISTA')
   @Post('adjustments')
-  adjust(@Body() dto: AdjustDto, @Req() req: any) {
+  adjust(@Body() dto: AdjustDto, @Req() req: AuthedRequest) {
     return this.inventory.adjust(dto.productId, dto.delta, dto.reason, req.user.sub);
   }
 
   @Roles('ALMACENISTA')
   @Post('counts')
-  openCount(@Body() dto: OpenCountDto, @Req() req: any) {
+  openCount(@Body() dto: OpenCountDto, @Req() req: AuthedRequest) {
     return this.counts.open(req.user.sub, dto.lineCode);
   }
 
@@ -160,7 +169,7 @@ export class InventoryController {
 
   @Roles('ALMACENISTA')
   @Post('counts/:id/close')
-  close(@Param('id', ParseIntPipe) id: number, @Body() dto: CloseCountDto, @Req() req: any) {
+  close(@Param('id', ParseIntPipe) id: number, @Body() dto: CloseCountDto, @Req() req: AuthedRequest) {
     return this.counts.close(id, req.user.sub, !!dto.apply);
   }
 }

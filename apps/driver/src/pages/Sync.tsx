@@ -1,5 +1,5 @@
 import { hhmm } from '../lib/format';
-import { Hint } from "../ui/Hint";
+import { Hint } from '../ui/Hint';
 import { discardOp, flush, pendingCount, useStore } from '../lib/store';
 import { Badge, Button, Header, Icon, Notice } from '../ui/kit';
 
@@ -11,10 +11,21 @@ export function Sync() {
     <div className="screen">
       <Header title="Sincronización" sub="Trabajo sin conexión" back="/perfil" />
       <div className="content">
-        <Hint id="sync">Aquí ves lo que todavía no llegó al sistema. Cuando dice <b>Al día</b>, todo se envió. Con señal se envía solo.</Hint>
+        <Hint id="sync">
+          Aquí ves lo que todavía no llegó al sistema. Cuando dice <b>Al día</b>, todo se envió. Con señal se envía solo.
+        </Hint>
         <div className="card" style={{ padding: 16, gap: 12 }}>
           <div className="row">
-            <div style={{ width: 44, height: 44, borderRadius: 10, background: s.online ? 'var(--ok-soft)' : 'var(--warn-soft)', display: 'grid', placeItems: 'center' }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 10,
+                background: s.online ? 'var(--ok-soft)' : 'var(--warn-soft)',
+                display: 'grid',
+                placeItems: 'center',
+              }}
+            >
               <Icon name={s.online ? 'sync' : 'wifioff'} size={22} color={s.online ? 'var(--ok)' : 'var(--warn)'} />
             </div>
             <div className="grow">
@@ -41,7 +52,9 @@ export function Sync() {
             </div>
             {o.failed && (
               <>
-                <div className="caption" style={{ color: 'var(--danger)' }}>{o.error}</div>
+                <div className="caption" style={{ color: 'var(--danger)' }}>
+                  {o.error}
+                </div>
                 <button className="link danger small" style={{ textAlign: 'left' }} onClick={() => discardOp(o.id)}>
                   Descartar registro
                 </button>
@@ -49,7 +62,11 @@ export function Sync() {
             )}
           </div>
         ))}
-        {failed.length > 0 && <Notice tone="warn" icon="alert">Los registros rechazados no se enviarán de nuevo. Avisa a tu supervisor si necesitas corregirlos.</Notice>}
+        {failed.length > 0 && (
+          <Notice tone="warn" icon="alert">
+            Los registros rechazados no se enviarán de nuevo. Avisa a tu supervisor si necesitas corregirlos.
+          </Notice>
+        )}
       </div>
       <div className="bar">
         <Button variant="secondary" icon="sync" disabled={s.syncing} onClick={() => void flush().then(() => undefined)}>

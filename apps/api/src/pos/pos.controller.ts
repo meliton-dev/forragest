@@ -1,3 +1,4 @@
+import type { AuthedRequest } from '../auth/jwt-auth.guard';
 import { Body, Controller, Get, Param, ParseIntPipe, Post, Query, Req } from '@nestjs/common';
 import { Type } from 'class-transformer';
 import { ArrayMinSize, IsArray, IsIn, IsInt, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, MaxLength, Min, ValidateNested } from 'class-validator';
@@ -73,22 +74,22 @@ export class PosController {
   }
 
   @Get('shift')
-  shift(@Req() req: any) {
+  shift(@Req() req: AuthedRequest) {
     return this.pos.currentShift(req.user.sub);
   }
 
   @Post('shift/open')
-  open(@Body() dto: OpenShiftDto, @Req() req: any) {
+  open(@Body() dto: OpenShiftDto, @Req() req: AuthedRequest) {
     return this.pos.openShift(req.user.sub, dto.openingFloat);
   }
 
   @Post('shift/close')
-  close(@Body() dto: CloseShiftDto, @Req() req: any) {
+  close(@Body() dto: CloseShiftDto, @Req() req: AuthedRequest) {
     return this.pos.closeShift(req.user.sub, dto);
   }
 
   @Post('sales')
-  create(@Body() dto: CreateSaleDto, @Req() req: any) {
+  create(@Body() dto: CreateSaleDto, @Req() req: AuthedRequest) {
     return this.pos.createSale(req.user.sub, dto);
   }
 
@@ -113,12 +114,12 @@ export class PosController {
   }
 
   @Post('sales/:id/cancel')
-  cancel(@Param('id', ParseIntPipe) id: number, @Body() dto: CancelDto, @Req() req: any) {
+  cancel(@Param('id', ParseIntPipe) id: number, @Body() dto: CancelDto, @Req() req: AuthedRequest) {
     return this.pos.cancelSale(req.user.sub, id, dto);
   }
 
   @Post('returns')
-  createReturn(@Body() dto: ReturnDto, @Req() req: any) {
+  createReturn(@Body() dto: ReturnDto, @Req() req: AuthedRequest) {
     return this.pos.createReturn(req.user.sub, dto);
   }
 }

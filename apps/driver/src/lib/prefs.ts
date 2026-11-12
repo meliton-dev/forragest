@@ -30,6 +30,9 @@ export function writePref(key: string, value: string | null, storage: Store = lo
 
 /** Valor reactivo de una preferencia. */
 export function usePref(key: string): string | null {
-  useSyncExternalStore((cb) => (listeners.add(cb), () => listeners.delete(cb)), () => version);
+  useSyncExternalStore(
+    (cb) => (listeners.add(cb), () => listeners.delete(cb)),
+    () => version,
+  );
   return readPref(key);
 }

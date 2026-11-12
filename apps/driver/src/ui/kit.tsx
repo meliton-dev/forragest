@@ -1,7 +1,36 @@
 import { motion, type HTMLMotionProps } from 'framer-motion';
 import {
-  AlertTriangle, Bell, Box, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Download, Eye, Info, Loader2, Lock, LogOut,
-  Map as MapIcon, MapPin, Navigation, Package, Phone, Plus, RefreshCw, Route, Search, Send, Truck, User, Wallet, WifiOff, X, Wheat,
+  AlertTriangle,
+  Bell,
+  Box,
+  Camera,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Download,
+  Eye,
+  Info,
+  Loader2,
+  Lock,
+  LogOut,
+  Map as MapIcon,
+  MapPin,
+  Navigation,
+  Package,
+  Phone,
+  Plus,
+  RefreshCw,
+  Route,
+  Search,
+  Send,
+  Truck,
+  User,
+  Wallet,
+  WifiOff,
+  X,
+  Wheat,
   type LucideIcon,
 } from 'lucide-react';
 import { useId, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react';
@@ -10,9 +39,36 @@ import { pendingCount, useStore } from '../lib/store';
 
 /** Una sola biblioteca de iconos (Lucide) para toda la app: mismo trazo, mismas proporciones. */
 const ICONS: Record<string, LucideIcon> = {
-  route: Route, wallet: Wallet, alert: AlertTriangle, user: User, check: Check, box: Package, clock: Clock, pin: MapPin, nav: Navigation,
-  phone: Phone, camera: Camera, left: ChevronLeft, right: ChevronRight, down: ChevronDown, wifioff: WifiOff, sync: RefreshCw, logout: LogOut,
-  search: Search, bell: Bell, lock: Lock, leaf: Wheat, plus: Plus, map: MapIcon, truck: Truck, info: Info, x: X, send: Send, download: Download, eye: Eye, cube: Box,
+  route: Route,
+  wallet: Wallet,
+  alert: AlertTriangle,
+  user: User,
+  check: Check,
+  box: Package,
+  clock: Clock,
+  pin: MapPin,
+  nav: Navigation,
+  phone: Phone,
+  camera: Camera,
+  left: ChevronLeft,
+  right: ChevronRight,
+  down: ChevronDown,
+  wifioff: WifiOff,
+  sync: RefreshCw,
+  logout: LogOut,
+  search: Search,
+  bell: Bell,
+  lock: Lock,
+  leaf: Wheat,
+  plus: Plus,
+  map: MapIcon,
+  truck: Truck,
+  info: Info,
+  x: X,
+  send: Send,
+  download: Download,
+  eye: Eye,
+  cube: Box,
 };
 
 export function Icon({ name, size = 18, color = 'currentColor', sw = 2, spin }: { name: string; size?: number; color?: string; sw?: number; spin?: boolean }) {
@@ -20,7 +76,15 @@ export function Icon({ name, size = 18, color = 'currentColor', sw = 2, spin }: 
   return C ? <C size={size} color={color} strokeWidth={sw} aria-hidden className={spin ? 'spin' : undefined} /> : null;
 }
 
-export function Badge({ tone = 'neutral', children, dot }: { tone?: 'ok' | 'warn' | 'danger' | 'info' | 'accent' | 'neutral'; children: ReactNode; dot?: boolean }) {
+export function Badge({
+  tone = 'neutral',
+  children,
+  dot,
+}: {
+  tone?: 'ok' | 'warn' | 'danger' | 'info' | 'accent' | 'neutral';
+  children: ReactNode;
+  dot?: boolean;
+}) {
   return (
     <span className={`badge ${tone}`}>
       {dot && <i className="dot" />}
@@ -29,7 +93,13 @@ export function Badge({ tone = 'neutral', children, dot }: { tone?: 'ok' | 'warn
   );
 }
 
-type BtnProps = Omit<HTMLMotionProps<'button'>, 'children'> & { variant?: 'primary' | 'secondary' | 'danger' | 'ghost'; icon?: string; small?: boolean; loading?: boolean; children?: ReactNode };
+type BtnProps = Omit<HTMLMotionProps<'button'>, 'children'> & {
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  icon?: string;
+  small?: boolean;
+  loading?: boolean;
+  children?: ReactNode;
+};
 /** Botón con respuesta al toque (se hunde ligeramente) y estado de carga. */
 export function Button({ variant = 'primary', icon, small, loading, children, className = '', disabled, ...rest }: BtnProps) {
   return (
@@ -112,7 +182,15 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
   );
 }
 
-export function Notice({ tone = 'info', icon = 'info', children }: { tone?: 'info' | 'warn' | 'danger' | 'neutral' | 'ok'; icon?: string; children: ReactNode }) {
+export function Notice({
+  tone = 'info',
+  icon = 'info',
+  children,
+}: {
+  tone?: 'info' | 'warn' | 'danger' | 'neutral' | 'ok';
+  icon?: string;
+  children: ReactNode;
+}) {
   return (
     <div className={`notice ${tone}`}>
       <Icon name={icon} size={16} />
@@ -141,7 +219,11 @@ export function SyncBanner() {
     <Link to="/sync" className="banner">
       <Icon name={s.online ? 'sync' : 'wifioff'} size={16} color="var(--warn)" spin={s.online} />
       <span className="grow">
-        {s.online ? `Enviando… ${n} registro${n === 1 ? '' : 's'} por sincronizar` : n ? `Sin conexión · ${n} registro${n === 1 ? '' : 's'} por sincronizar` : 'Sin conexión · trabajando con datos guardados'}
+        {s.online
+          ? `Enviando… ${n} registro${n === 1 ? '' : 's'} por sincronizar`
+          : n
+            ? `Sin conexión · ${n} registro${n === 1 ? '' : 's'} por sincronizar`
+            : 'Sin conexión · trabajando con datos guardados'}
       </span>
       <Icon name="right" size={14} color="var(--text-3)" />
     </Link>
@@ -151,7 +233,12 @@ export function SyncBanner() {
 export function TabBar() {
   const s = useStore();
   const pending = pendingCount(s);
-  const tabs: [string, string, string][] = [['/', 'Ruta', 'route'], ['/cobros', 'Cobros', 'wallet'], ['/incidencias', 'Incidencias', 'alert'], ['/perfil', 'Perfil', 'user']];
+  const tabs: [string, string, string][] = [
+    ['/', 'Ruta', 'route'],
+    ['/cobros', 'Cobros', 'wallet'],
+    ['/incidencias', 'Incidencias', 'alert'],
+    ['/perfil', 'Perfil', 'user'],
+  ];
   return (
     <nav className="tabs" aria-label="Navegación principal">
       {tabs.map(([to, label, icon]) => (
@@ -159,7 +246,11 @@ export function TabBar() {
           {({ isActive }) => (
             <>
               {isActive && <motion.span layoutId="tab-pill" className="tab-pill" transition={{ type: 'spring', stiffness: 460, damping: 34 }} />}
-              <motion.span animate={{ y: isActive ? -1 : 0, scale: isActive ? 1.08 : 1 }} transition={{ type: 'spring', stiffness: 500, damping: 26 }} style={{ display: 'grid' }}>
+              <motion.span
+                animate={{ y: isActive ? -1 : 0, scale: isActive ? 1.08 : 1 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 26 }}
+                style={{ display: 'grid' }}
+              >
                 <Icon name={icon} size={22} />
               </motion.span>
               <span>{label}</span>

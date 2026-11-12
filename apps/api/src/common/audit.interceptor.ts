@@ -8,7 +8,12 @@ const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 function shorten(value: any): any {
   if (typeof value === 'string') return value.length > 200 ? `${value.slice(0, 40)}… (${value.length} caracteres)` : value;
   if (Array.isArray(value)) return value.map(shorten);
-  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).filter(([k]) => k.toLowerCase() !== 'password').map(([k, v]) => [k, shorten(v)]));
+  if (value && typeof value === 'object')
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([k]) => k.toLowerCase() !== 'password')
+        .map(([k, v]) => [k, shorten(v)]),
+    );
   return value;
 }
 
@@ -22,7 +27,7 @@ export class AuditInterceptor implements NestInterceptor {
     if (!MUTATING.has(req.method) || req.path === '/auth/login') return next.handle();
     return next.handle().pipe(
       tap(() => {
-        const { password, ...body } = req.body ?? {};
+        const { password: _password, ...body } = req.body ?? {};
         this.prisma.auditLog
           .create({ data: { userId: req.user?.sub ?? null, action: req.method, entity: req.path, payload: shorten(body) } })
           .catch(() => undefined);

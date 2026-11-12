@@ -1,7 +1,13 @@
 export type PurchaseStatus = 'BORRADOR' | 'ENVIADA' | 'PARCIAL' | 'RECIBIDA' | 'CANCELADA';
 export type PayableStatus = 'PAGADA' | 'VENCIDA' | 'POR_VENCER' | 'PENDIENTE';
 
-export const PURCHASE_LABEL: Record<PurchaseStatus, string> = { BORRADOR: 'Borrador', ENVIADA: 'Enviada', PARCIAL: 'Recepción parcial', RECIBIDA: 'Recibida', CANCELADA: 'Cancelada' };
+export const PURCHASE_LABEL: Record<PurchaseStatus, string> = {
+  BORRADOR: 'Borrador',
+  ENVIADA: 'Enviada',
+  PARCIAL: 'Recepción parcial',
+  RECIBIDA: 'Recibida',
+  CANCELADA: 'Cancelada',
+};
 export const PURCHASE_TONE = { BORRADOR: 'neutral', ENVIADA: 'info', PARCIAL: 'warn', RECIBIDA: 'ok', CANCELADA: 'danger' } as const;
 export const PAYABLE_LABEL: Record<PayableStatus, string> = { PAGADA: 'Pagada', VENCIDA: 'Vencida', POR_VENCER: 'Por vencer', PENDIENTE: 'Al corriente' };
 export const PAYABLE_TONE = { PAGADA: 'ok', VENCIDA: 'danger', POR_VENCER: 'warn', PENDIENTE: 'neutral' } as const;

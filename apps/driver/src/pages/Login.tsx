@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { request, setSession, type SessionUser } from '../lib/api';
-import { ApiError, NetworkError } from '../lib/errors';
+import { ApiError, NetworkError } from '@forrajera/shared';
 import { Button, Field, Input, Notice } from '../ui/kit';
 
 export function Login({ onDone }: { onDone: () => void }) {
@@ -42,7 +42,16 @@ export function Login({ onDone }: { onDone: () => void }) {
       </div>
       <div className="col gap12" style={{ gap: 16 }}>
         <Field label="Usuario">
-          <Input icon="user" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="ej. mdiaz" autoCapitalize="none" autoCorrect="off" autoComplete="username" required />
+          <Input
+            icon="user"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="ej. mdiaz"
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="username"
+            required
+          />
         </Field>
         <Field
           label="Contraseña"
@@ -52,9 +61,21 @@ export function Login({ onDone }: { onDone: () => void }) {
             </button>
           }
         >
-          <Input icon="lock" type={show ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" required />
+          <Input
+            icon="lock"
+            type={show ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            autoComplete="current-password"
+            required
+          />
         </Field>
-        {error && <Notice tone="danger" icon="alert">{error}</Notice>}
+        {error && (
+          <Notice tone="danger" icon="alert">
+            {error}
+          </Notice>
+        )}
         <Button type="submit" loading={busy} disabled={!username || !password}>
           {busy ? 'Entrando…' : 'Entrar'}
         </Button>

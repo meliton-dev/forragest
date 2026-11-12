@@ -33,7 +33,17 @@ describe('preferencias por usuario', () => {
     expect(prefKey('chofer', 'gps')).toBe('fd.pref.chofer.gps');
   });
   it('si el almacenamiento falla no truena', () => {
-    const roto = { getItem: () => { throw new Error('x'); }, setItem: () => { throw new Error('x'); }, removeItem: () => { throw new Error('x'); } };
+    const roto = {
+      getItem: () => {
+        throw new Error('x');
+      },
+      setItem: () => {
+        throw new Error('x');
+      },
+      removeItem: () => {
+        throw new Error('x');
+      },
+    };
     expect(() => writePref('gps', '1', roto, 'u')).not.toThrow();
     expect(readPref('gps', roto, 'u')).toBeNull();
   });

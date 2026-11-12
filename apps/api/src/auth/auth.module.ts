@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { AuditInterceptor } from '../common/audit.interceptor';
+import { LoginLimiter } from '../common/login-limiter';
 import { RolesGuard } from '../common/roles';
 import { PrismaService } from '../prisma.service';
 import { AuthController } from './auth.controller';
@@ -15,10 +16,11 @@ import { JwtAuthGuard } from './jwt-auth.guard';
   providers: [
     PrismaService,
     AuthService,
+    LoginLimiter,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
   ],
-  exports: [PrismaService],
+  exports: [PrismaService, LoginLimiter],
 })
 export class AuthModule {}

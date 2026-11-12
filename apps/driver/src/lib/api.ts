@@ -1,4 +1,4 @@
-import { ApiError, NetworkError } from './errors';
+import { ApiError, NetworkError } from '@forrajera/shared';
 
 const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api';
 const TOKEN_KEY = 'fd.token';
@@ -42,7 +42,7 @@ export async function request<T>(method: 'GET' | 'POST', path: string, body?: un
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
-    throw new NetworkError();
+    throw new NetworkError('Sin conexión');
   } finally {
     clearTimeout(timer);
   }
