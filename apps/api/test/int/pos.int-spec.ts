@@ -154,3 +154,62 @@ describe('cancelaciones', () => {
     expect(await inventory.stockOf(p.id)).toBe(1000);
   });
 });
+
+describe('turnos de caja', () => {
+  const newCashier = async () => {
+    const hash = await bcrypt.hash('x', 4);
+    return prisma.user.create({ data: { username: `caj-${uid()}`, fullName: 'Cajero turno', role: 'CAJERO', passwordHash: hash } });
+  };
+  const openCount = (id: number) => prisma.cashShift.count({ where: { cashierId: id, status: 'ABIERTO' } });
+
+  it('aperturas simultáneas del mismo cajero crean un solo turno', async () => {
+    const c = await newCashier();
+    const res = await Promise.allSettled(Array.from({ length: 6 }, () => pos.openShift(c.id, 500)));
+    expect(res.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    for (const r of res) if (r.status === 'rejected') expect(r.reason.message).toMatch(/turno abierto/);
+    expect(await openCount(c.id)).toBe(1);
+  });
+
+  it('la base rechaza un segundo turno abierto aunque se salte la aplicación', async () => {
+    const c = await newCashier();
+    await pos.openShift(c.id, 100);
+    await expect(prisma.cashShift.create({ data: { cashierId: c.id, openingFloat: 1 } })).rejects.toThrow();
+  });
+
+  it('cerrar dos veces a la vez cierra una sola vez', async () => {
+    const c = await newCashier();
+    await pos.openShift(c.id, 100);
+    const res = await Promise.allSettled([pos.closeShift(c.id, { countedCash: 100 }), pos.closeShift(c.id, { countedCash: 100 })]);
+    expect(res.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    expect(await openCount(c.id)).toBe(0);
+  });
+
+  it('ninguna venta queda fuera del corte aunque llegue mientras se cierra', async () => {
+    for (let round = 0; round < 3; round++) {
+      const c = await newCashier();
+      await pos.openShift(c.id, 200);
+      const p = await product(50, 5000);
+      const sell = () => pos.createSale(c.id, { items: [{ productId: p.id, quantity: 2 }], paymentMethod: 'EFECTIVO' });
+      const jobs: Promise<unknown>[] = [];
+      for (let i = 0; i < 4; i++) jobs.push(sell());
+      jobs.push(pos.closeShift(c.id, { countedCash: 0 }));
+      for (let i = 0; i < 4; i++) jobs.push(sell());
+      await Promise.allSettled(jobs);
+
+      const shift = await prisma.cashShift.findFirstOrThrow({ where: { cashierId: c.id } });
+      expect(shift.status).toBe('CERRADO');
+      const sales = await prisma.sale.findMany({ where: { shiftId: shift.id, status: { not: 'CANCELADA' } } });
+      const cashTotal = sales.reduce((a, s) => a + Number(s.total), 0);
+      // lo que el corte esperaba debe coincidir con las ventas que realmente quedaron en el turno
+      expect(Number(shift.expectedCash)).toBe(200 + cashTotal);
+    }
+  });
+
+  it('después del cierre no se puede vender ni devolver con ese turno', async () => {
+    const c = await newCashier();
+    await pos.openShift(c.id, 100);
+    await pos.closeShift(c.id, { countedCash: 100 });
+    const p = await product(50);
+    await expect(pos.createSale(c.id, { items: [{ productId: p.id, quantity: 1 }], paymentMethod: 'EFECTIVO' })).rejects.toThrow(/turno/);
+  });
+});

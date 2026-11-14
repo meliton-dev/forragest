@@ -18,7 +18,7 @@ Además de cumplir con el reporte, con HTTPS la app **ya puede instalarse en el 
 | `GET /health`                | Estado público del servicio y de la base de datos.                                                                               |
 | `scripts/reporte-remoto.mjs` | Genera el reporte con evidencia (ver abajo).                                                                                     |
 
-Seguridad ya incluida: en producción la API **no arranca** si `JWT_SECRET` falta o es débil, y con `CORS_ORIGINS` solo acepta peticiones de tus apps.
+Seguridad ya incluida: en producción la API **no arranca** si `JWT_SECRET` falta o es débil, o si `CORS_ORIGINS` está vacío o mal escrito (direcciones completas con `https://`, separadas por coma, sin comodines ni rutas); así solo acepta peticiones de tus apps.
 
 ## Opción recomendada: Render (tiene plan gratuito)
 
@@ -30,7 +30,7 @@ Necesitas una cuenta en [GitHub](https://github.com) y otra en [Render](https://
    git push -u origin master
    ```
 2. En Render: **New › Blueprint** y elige el repositorio. Detecta `render.yaml` y crea cuatro cosas: `forragest-db`, `forragest-api`, `forragest-repartos` (la app móvil) y `forragest-web` (punto de venta, rutas y compras; no necesita variables: reenvía `/api` a la API).
-3. Cuando pida valores, déjalos vacíos por ahora: `CORS_ORIGINS`, `SEED_PASSWORD` y `VITE_API_URL`.
+3. Cuando pida valores, déjalos vacíos por ahora: `CORS_ORIGINS`, `SEED_PASSWORD` y `VITE_API_URL`. La API no arrancará hasta que llenes `CORS_ORIGINS` (siguiente paso); es lo esperado.
 4. Al terminar, copia las dos direcciones que Render asignó (por ejemplo `https://forragest-api.onrender.com` y `https://forragest-repartos.onrender.com`) y completa:
    - En la API: `CORS_ORIGINS` = dirección de la app móvil, y `SEED_PASSWORD` = una contraseña propia (no uses `cambiar123`).
    - En la app móvil: `VITE_API_URL` = dirección de la API.
