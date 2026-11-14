@@ -5,47 +5,74 @@ import { hhmm } from '../lib/format';
 import { usePos } from '../pos-context';
 import { Button, Field, Icon, Input, Modal, Notice } from '../ui/kit';
 
+/** Menú lateral del punto de venta: riel angosto con icono y nombre, como los cajeros de Square, Shopify POS o Toast. */
+const NAV: [to: string, label: string, icon: string][] = [
+  ['/', 'Venta', 'cash'],
+  ['/ventas', 'Ventas del día', 'receipt'],
+  ['/devoluciones', 'Devoluciones', 'undo'],
+  ['/corte', 'Corte de caja', 'wallet'],
+];
+
+const initialsOf = (name: string) =>
+  name
+    .split(' ')
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
 export function Shell() {
   const pos = usePos();
-  const tabs: [string, string][] = [
-    ['/', 'Venta'],
-    ['/ventas', 'Ventas del día'],
-    ['/devoluciones', 'Devoluciones'],
-    ['/corte', 'Corte de caja'],
-  ];
+  const open = pos.shift?.shift;
   return (
     <div className="pos">
-      <header className="topbar">
-        <div className="brand">
-          <img src="/icon.svg" alt="Forragest" width={32} height={32} style={{ borderRadius: 9 }} />
-          <div>
-            <div className="small strong" style={{ lineHeight: '16px' }}>
-              Punto de venta · {pos.shift?.shift.register ?? 'Caja 1'}
-            </div>
-            <div className="caption muted">{pos.shift ? `Turno abierto ${hhmm(pos.shift.shift.openedAt)} · ${pos.user.fullName}` : pos.user.fullName}</div>
-          </div>
+      <aside className="rail" aria-label="Menú del punto de venta">
+        <div className="rail-brand">
+          <img src="/icon.svg" alt="Forragest" width={40} height={40} />
+          <span>{open?.register ?? 'Caja 1'}</span>
         </div>
-        <nav className="tabs">
-          {tabs.map(([to, label]) => (
-            <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => (isActive ? 'on' : '')}>
-              {label}
+        <nav className="rail-nav">
+          {NAV.map(([to, label, icon]) => (
+            <NavLink key={to} to={to} end={to === '/'} title={label} className={({ isActive }) => (isActive ? 'on' : '')}>
+              <Icon name={icon} size={24} sw={1.8} />
+              <span>{label}</span>
             </NavLink>
           ))}
         </nav>
-        <Button size="sm" icon="logout" onClick={pos.logout}>
-          Salir
-        </Button>
-      </header>
-      {pos.shift === undefined ? (
-        <div className="empty" style={{ flex: 1, justifyContent: 'center' }}>
-          <Icon name="refresh" size={24} color="var(--border-strong)" />
-          <div className="small">Cargando turno…</div>
+        <div className="rail-foot">
+          <div className={`shift-pill ${open ? 'open' : ''}`} role="status">
+            <span className="dot" />
+            {open ? (
+              <>
+                <b>Turno abierto</b>
+                <span>desde {hhmm(open.openedAt)}</span>
+              </>
+            ) : (
+              <b>Sin turno</b>
+            )}
+          </div>
+          <div className="rail-user" title={pos.user.fullName}>
+            <div className="avatar">{initialsOf(pos.user.fullName)}</div>
+            <span>{pos.user.fullName.split(' ')[0]}</span>
+          </div>
+          <button className="rail-out" onClick={pos.logout} aria-label="Salir">
+            <Icon name="logout" size={20} sw={1.8} />
+            <span>Salir</span>
+          </button>
         </div>
-      ) : pos.shift === null ? (
-        <OpenShift />
-      ) : (
-        <Outlet />
-      )}
+      </aside>
+      <div className="pos-main">
+        {pos.shift === undefined ? (
+          <div className="empty" style={{ flex: 1, justifyContent: 'center' }}>
+            <Icon name="refresh" size={24} color="var(--border-strong)" />
+            <div className="small">Cargando turno…</div>
+          </div>
+        ) : pos.shift === null ? (
+          <OpenShift />
+        ) : (
+          <Outlet />
+        )}
+      </div>
     </div>
   );
 }
