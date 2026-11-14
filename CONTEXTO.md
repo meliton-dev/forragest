@@ -1,0 +1,105 @@
+# Contexto del proyecto Forragest
+
+Resumen de lo que se ha hecho y decidido hasta noviembre de 2026, para retomar el trabajo sin releer toda la conversación. Lo que dice el código manda sobre este archivo: si algo no coincide, confía en el código y corrige este documento.
+
+## Qué es
+
+**Forragest** es el sistema de una forrajera (tienda de alimento para animales). Tiene tres piezas:
+
+| Pieza                | Para quién                               | Dónde vive                                                  |
+| -------------------- | ---------------------------------------- | ----------------------------------------------------------- |
+| Punto de venta (web) | Cajero (y administrador)                 | `apps/web`, rutas `/`, `/ventas`, `/devoluciones`, `/corte` |
+| Oficina (web)        | Supervisor de rutas, gerente de compras  | `apps/web`, rutas `/rutas/*` y `/compras/*`                 |
+| App del repartidor   | Chofer, en el celular (PWA sin conexión) | `apps/driver`                                               |
+| API                  | Las tres anteriores                      | `apps/api` (NestJS + Prisma + PostgreSQL)                   |
+
+Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/shared` (enums, etiquetas y errores comunes). Roles: `ADMINISTRADOR`, `CAJERO`, `ALMACENISTA`, `CHOFER`, `GERENTE_COMPRAS`, `SUPERVISOR_RUTAS`. El administrador pasa todas las guardas.
+
+## Producción (Render, plan gratuito)
+
+- Web: https://forragest-web.onrender.com (sitio estático; reenvía `/api` a la API, sin CORS)
+- App del repartidor: https://forragest-repartos.onrender.com
+- API: https://forragest-api.onrender.com (`/health` muestra estado y hora del servidor)
+- Código: https://github.com/Melf1852/forragest (rama `main`). Render despliega solo al empujar a `main`.
+- La API aplica las migraciones de Prisma al arrancar (`prisma migrate deploy`) y luego levanta.
+- `render.yaml` define la base, la API y los dos sitios estáticos. Los servicios gratuitos se duermen sin uso y la base gratuita tiene vigencia limitada.
+- Variables de la API que importan: `DATABASE_URL`, `JWT_SECRET` (mínimo 24 caracteres), `CORS_ORIGINS` (**obligatoria en producción**: direcciones completas con `https://`, separadas por coma, sin comodines), `SEED_PASSWORD`, `APP_TIMEZONE` (por defecto `America/Mexico_City`), `ROUTING_URL` (servicio de rutas por calles; vacío = líneas rectas), `PING_RETENTION_DAYS` (por defecto 45), `LOG_LEVEL`.
+- Respaldo diario cifrado con GitHub Actions (`.github/workflows/respaldo.yml`): necesita los secretos `BACKUP_DATABASE_URL` y `BACKUP_PASSPHRASE` (ver `DEPLOY.md`).
+- Los usuarios de demostración (`admin`, `cajero`, `almacen`, `chofer`, `chofer2`, `compras`, `supervisor`) existen también en producción con la contraseña que se puso en `SEED_PASSWORD`. No se guardan contraseñas de producción en el repositorio ni en este archivo.
+
+## Cómo trabajamos (acuerdos)
+
+1. Idioma: español. La persona que usa el proyecto no es técnica en todo; explicar en términos simples qué se hizo y qué falta.
+2. Cada cambio va en **una rama aparte** desde `main`, con pruebas, y se sube para que corra el CI de GitHub (`.github/workflows/ci.yml`: lint, formato, compilación, pruebas unitarias, de integración y los tres flujos completos contra una API real).
+3. Antes de publicar se **pregunta**. Cuando la persona dice "publícalo", se hace `git merge --ff-only <rama>` y `git push origin main`, y después se **verifica producción** (servicio reiniciado, build nuevo servido). Ese permiso es por cada publicación, no general.
+4. Prettier es obligatorio (`npx prettier --write .`); el CI falla si hay archivos sin formato. ESLint tiene ~11 avisos de `any` conocidos, sin errores.
+5. Para diseño visual, enseñar **maquetas** y dejar elegir; describir con palabras no funcionó bien.
+6. No poner datos personales ni credenciales en servicios externos, commits ni documentos.
+
+## Lo que ya está hecho
+
+**Inventario y caja (POS):** inventario PEPS por lotes; ventas de contado/transferencia/tarjeta/crédito; descuentos con autorización de supervisor; devoluciones con notas de crédito; cancelaciones; corte de caja con arqueo; tickets de 58/80 mm. Existencias protegidas contra ventas simultáneas (bloqueo de filas y `CHECK (quantity >= 0)`).
+
+**Rutas y reparto:** el supervisor crea rutas con paradas y productos; el chofer carga el camión, sale a ruta, registra llegada, entrega (con firma o foto), cobros, incidencias y **entrega parcial** (indica cuánto deja por producto; lo no entregado regresa al almacén al cerrar); funciona sin conexión y sincroniza después. Eficiencia de entregas (a tiempo/tardías) para el supervisor.
+
+**Compras (Fase 4):** proveedores, órdenes de compra, recepción parcial, historial de precios, sugerencias de reorden y cuentas por pagar con vencimientos.
+
+**Mejoras de calidad:** CI en GitHub, ESLint/Prettier, paquete compartido, logs estructurados (pino) con código de referencia de errores, límite de intentos de login y cabeceras de seguridad (helmet), respaldos diarios cifrados.
+
+**Cambios de esta etapa (todos publicados en `main`, commit `569dba5` al escribir esto):**
+
+- **Diseño "Campo"** en web y app del repartidor: verde bosque (`--ink #1f4d3a`), crema (`--bg #f4efe4`), terracota (`--accent #b8482f`) solo para acciones, dorado (`--gold #e9b949`); títulos en Fraunces y texto en Nunito Sans; ilustraciones por especie (componente `Species` en `apps/web/src/ui/kit.tsx`) y paisajes en las pantallas de entrada. Estados de éxito ("a tiempo", "entregada", avance) en **verde**, nunca terracota (se confundía con error).
+- **Turnos de caja sin carreras:** índice único parcial (un turno abierto por cajero) y cierre transaccional; ventas, devoluciones y cancelaciones toman el turno en modo compartido. En producción la API **no arranca** sin `CORS_ORIGINS` válido.
+- **Ubicación en vivo:** la app del chofer guarda ubicación cada 10 s, mantiene la pantalla encendida mientras comparte y sube en lote; el mapa del supervisor (`/rutas/mapa`) se refresca cada 5 s con `GET /routes/live` (ligero) y pide el detalle completo cada 30 s; muestra velocidad, "Sin señal" y botón "Ver en el mapa". Los saltos imposibles del GPS (>160 km/h) se descartan. Las ubicaciones de más de 45 días se borran solas.
+- **Rutas por calles:** `POST /routes/path` pide el trayecto al servicio público **OSRM** (caché de 24 h, consultas espaciadas, respaldo a línea recta). Se dibuja en el monitoreo y en la vista previa de "Nueva ruta" con km y minutos. OSRM recibe solo coordenadas, sin nombres.
+- **Zona horaria del negocio:** Render corre en UTC y a partir de las 18:00 de México "hoy" caía en el día siguiente (Rutas de reparto vacía, entregas "tardías", Ventas del día mal). Todo lo que use "hoy" u horas locales pasa por `apps/api/src/common/time.ts`.
+- **Menú lateral del cajero** (riel con icono y nombre, turno y "Salir" abajo) en lugar del menú de arriba.
+- **Ticket de venta:** la lista de productos tiene espacio y baja sola al último agregado; cantidad **editable** (teclear 12, o 2.5 kg en granel, con tope en la existencia); botón para quitar un producto completo.
+
+## Lecciones y trampas (leer antes de tocar)
+
+- **Fechas:** nunca usar `getDate()`/`getHours()` ni `new Date()` para "hoy" en la API. Usar `businessDate()`, `startOfBusinessDay()`, `atBusinessTime()`. Para probar: `TZ=UTC` en jest y una API aparte en el puerto 3001; la PC de la persona está en hora de México y **oculta** el fallo.
+- **Inyección de dependencias de Nest:** un servicio con un parámetro de constructor que Nest no sabe resolver pasa las pruebas unitarias pero **la API no arranca**. Existe `apps/api/test/int/boot.int-spec.ts` que levanta la aplicación completa; no quitarla.
+- **Pruebas locales ensucian la base:** las pruebas de integración crean clientes, productos y rutas. `npm run api:smoke` repetido sobre la misma base falla por `clientOpId` repetidos: borrar antes `Payment` e `Incident` con `clientOpId LIKE 'smoke-%'` y volver a correr `npm run db:seed`. Las rutas de prueba se dejan `FINALIZADA` para que no salgan "en curso" en el mapa.
+- **Prettier en Windows:** el repositorio guarda LF y Git en esta PC convierte a CRLF; `prettier --check` puede avisar de archivos que no cambiaron. Correr `npx prettier --write .` antes de confirmar.
+- **Vite tras cambiar de rama con cambios sin confirmar** puede quedar con un módulo a medias y mostrar la pantalla en blanco: reiniciar el servidor de desarrollo.
+- **Docker Desktop** no arranca solo en esta PC; si la API local da `P1001`, abrirlo y `docker compose restart db`.
+- **El navegador necesita HTTPS para el GPS:** en local no hay ubicación real; se simula con `navigator.geolocation` falso o con peticiones a `/driver/locations`.
+- Una app web **no puede rastrear en segundo plano**: la ubicación solo funciona con la app abierta, la ruta en curso y el chofer con "Compartir ubicación" activado.
+- Entre ramas apiladas, ambas suelen agregar reglas al final de `apps/web/src/styles.css`: al fusionar, conservar las dos partes.
+
+## Comandos útiles
+
+```bash
+npm install
+docker compose up -d db
+npm run db:seed                      # reinicia datos de demostración y la ruta de hoy
+npm run api:dev                      # API en :3000
+npm run web:dev                      # web en :5174 (proxy /api -> :3000)
+npm run driver:dev                   # app del chofer en :5173
+npm run api:test                     # unitarias de la API
+npm run api:test:int                 # integración (usa la base local)
+npm run driver:test && npm run web:test
+npm run api:smoke && npm run pos:smoke && npm run routes:smoke   # flujos completos contra una API en marcha
+npx prettier --write . && npx eslint apps packages
+```
+
+Cuentas de demostración locales: contraseña `cambiar123` (está en `README.md`). Servidores de vista previa del escritorio: `.claude/launch.json` (no versionado).
+
+## Archivos excluidos a propósito
+
+`docs/informe/` y `scripts/capturas-informe.mjs` están en `.git/info/exclude`: eran para un informe escolar que la persona pidió dejar fuera del repositorio. `reporte-consumo-remoto/` (evidencia de que la app móvil consume la API publicada) tampoco se versiona.
+
+## Pendiente
+
+1. **Rotar la contraseña de demostración compartida** y crear usuarios reales: es el mayor riesgo de producción (todos los roles comparten contraseña). También rotar la de la base de datos, que pasó por el chat.
+2. **Activar los respaldos diarios** agregando los dos secretos en GitHub.
+3. **Fotos y firmas fuera de la base** (hoy son base64 en `Delivery`/`Incident`): requiere elegir dónde guardarlas (R2, S3 o disco). Hay un límite de 10 MB por petición.
+4. Revisar con un **celular real en la calle** la ubicación en vivo (solo se probó con GPS simulado) y la **ruta por calles en producción** (que la API de Render alcance a OSRM).
+5. Consultas de ventas por rol: hoy cualquier cajero ve las ventas de hoy de todos los cajeros (hace falta para devoluciones por folio); decidir si se restringe.
+6. Si el uso crece: servidor propio o de pago para rutas por calles, plan de pago en Render, y monitoreo de errores con alertas (p. ej. Sentry).
+7. Tablet vertical (~800 px): el botón "Cobrar e imprimir ticket" queda apretado.
+
+## Documentos relacionados
+
+`README.md` (arranque y comandos), `DEPLOY.md` (publicar, respaldos, logs), `PLAN-MEJORAS.md` (mejoras de calidad y su estado), `render.yaml`, `.env.example`.
