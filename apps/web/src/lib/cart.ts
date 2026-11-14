@@ -38,3 +38,21 @@ export function quickAmounts(total: number): number[] {
   const up = (step: number) => Math.ceil(total / step) * step;
   return [...new Set([r2(total), up(100), up(500), up(1000)])].slice(0, 4);
 }
+
+/** ¿Se vende por kilo suelto? Solo el granel admite fracciones (2.5 kg); los sacos y demás unidades van enteros. */
+export const isBulk = (item: Pick<CatalogItem, 'presentation'>) => /granel/i.test(item.presentation);
+
+/**
+ * Interpreta lo que el cajero escribió en la cantidad de una partida.
+ * - qty: null si no es un número válido (vacío, cero, letras): el campo vuelve al valor anterior.
+ * - clamped: se pidió más de lo que hay en existencia y se dejó el máximo.
+ */
+export function parseQty(text: string, max: number, decimal: boolean): { qty: number | null; clamped: boolean } {
+  const t = text.trim().replace(',', '.');
+  if (!/^\d*\.?\d*$/.test(t) || t === '' || t === '.') return { qty: null, clamped: false };
+  let n = Number(t);
+  n = decimal ? Math.round(n * 1000) / 1000 : Math.floor(n);
+  if (!(n > 0)) return { qty: null, clamped: false };
+  if (n > max) return { qty: max, clamped: true };
+  return { qty: n, clamped: false };
+}

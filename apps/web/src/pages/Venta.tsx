@@ -4,6 +4,7 @@ import { quickAmounts, totalsOf } from '../lib/cart';
 import { folio, mxn } from '../lib/format';
 import type { CatalogItem, CreditInfo, PayMethod, Sale } from '../lib/types';
 import { usePos } from '../pos-context';
+import { CartLine } from '../ui/CartLine';
 import { Badge, Button, Empty, Field, Icon, Input, Modal, Notice, Segmented, Species } from '../ui/kit';
 import { ReceiptModal, SaleReceipt } from '../ui/Receipt';
 
@@ -33,6 +34,14 @@ export function Venta() {
   const [busy, setBusy] = useState(false);
   const [payErr, setPayErr] = useState<string | null>(null);
   const opId = useRef(uid());
+  const listRef = useRef<HTMLDivElement>(null);
+  const lineCount = cart.lines.length;
+  const prevCount = useRef(lineCount);
+  useEffect(() => {
+    // al agregar un producto nuevo el ticket baja hasta él, para que siempre se vea lo que se acaba de agregar
+    if (lineCount > prevCount.current) listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
+    prevCount.current = lineCount;
+  }, [lineCount]);
   const totals = totalsOf(cart);
 
   useEffect(() => {
@@ -140,20 +149,24 @@ export function Venta() {
       </section>
 
       <aside className="ticket">
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }} className="col gap12">
+        <div className="ticket-head">
           <div className="row between">
-            <span className="h2">Venta actual</span>
+            <span className="h2">
+              Venta actual
+              {cart.lines.length > 0 && (
+                <span className="small muted" style={{ fontFamily: 'var(--f-body)', fontWeight: 400 }}>
+                  {' '}
+                  · {cart.lines.length} {cart.lines.length === 1 ? 'producto' : 'productos'}
+                </span>
+              )}
+            </span>
             {cart.lines.length > 0 && (
               <button className="link" onClick={pos.clearCart}>
                 Vaciar
               </button>
             )}
           </div>
-          <button
-            className="row"
-            style={{ height: 40, padding: '0 12px', background: 'var(--bg)', border: 0, borderRadius: 6, textAlign: 'left' }}
-            onClick={() => setModal('customer')}
-          >
+          <button className="customer-btn" onClick={() => setModal('customer')}>
             <Icon name="user" size={16} color="var(--text-2)" />
             <span className="grow small strong">{cart.customer?.name ?? 'Público general'}</span>
             <span className="small strong" style={{ color: 'var(--accent)' }}>
@@ -167,69 +180,49 @@ export function Venta() {
           )}
         </div>
 
-        <div className="ticket-scroll" style={{ padding: '0 20px' }}>
+        <div className="ticket-scroll" ref={listRef}>
           {cart.lines.length === 0 && (
             <Empty icon="receipt" title="Aún no hay productos">
               Toca un producto para agregarlo.
             </Empty>
           )}
           {cart.lines.map((l) => (
-            <div key={l.item.key} className="line">
-              <div className="grow">
-                <div className="small strong">{l.item.name}</div>
-                <div className="caption muted">
-                  {l.item.presentation} · {mxn(l.item.price)}
-                </div>
-              </div>
-              <div className="stepper">
-                <button aria-label="Quitar uno" onClick={() => pos.setQty(l.item.key, l.qty - 1)}>
-                  <Icon name="minus" size={16} color="var(--text-2)" />
-                </button>
-                <span>{l.qty}</span>
-                <button aria-label="Agregar uno" disabled={l.qty >= l.item.stockUnits} onClick={() => pos.setQty(l.item.key, l.qty + 1)}>
-                  <Icon name="plus" size={16} color="var(--text-2)" />
-                </button>
-              </div>
-              <span className="title right" style={{ width: 76 }}>
-                {mxn(l.qty * l.item.price)}
-              </span>
-            </div>
+            <CartLine key={l.item.key} line={l} onQty={(q) => pos.setQty(l.item.key, q)} onRemove={() => pos.setQty(l.item.key, 0)} />
           ))}
         </div>
 
-        <div style={{ padding: '14px 20px', background: 'var(--surface-2)', borderTop: '1px solid var(--border)' }} className="col gap8">
-          <div className="kv">
-            <span className="small muted2">Subtotal</span>
-            <span className="small">{mxn(totals.subtotal)}</span>
-          </div>
-          <div className="kv">
-            <span className="small muted2">Descuento{cart.discount ? (cart.discount.mode === 'PERCENT' ? ` (${cart.discount.value} %)` : '') : ''}</span>
-            {cart.discount ? (
-              <span className="row gap8">
-                <span className="small" style={{ color: 'var(--ok)' }}>
-                  − {mxn(totals.discount)}
+        <div className="ticket-foot">
+          <div className="col gap4">
+            <div className="kv">
+              <span className="small muted2">Subtotal</span>
+              <span className="small">{mxn(totals.subtotal)}</span>
+            </div>
+            <div className="kv">
+              <span className="small muted2">Descuento{cart.discount ? (cart.discount.mode === 'PERCENT' ? ` (${cart.discount.value} %)` : '') : ''}</span>
+              {cart.discount ? (
+                <span className="row gap8">
+                  <span className="small" style={{ color: 'var(--ok)' }}>
+                    − {mxn(totals.discount)}
+                  </span>
+                  <button className="link" style={{ color: 'var(--danger)' }} onClick={() => setCart((c) => ({ ...c, discount: null }))}>
+                    Quitar
+                  </button>
                 </span>
-                <button className="link" style={{ color: 'var(--danger)' }} onClick={() => setCart((c) => ({ ...c, discount: null }))}>
-                  Quitar
+              ) : (
+                <button className="link" disabled={cart.lines.length === 0} onClick={() => setModal('discount')}>
+                  Aplicar
                 </button>
+              )}
+            </div>
+            <div className="kv">
+              <span className="h2">Total</span>
+              <span className="num-lg" data-testid="total">
+                {mxn(totals.total)}
               </span>
-            ) : (
-              <button className="link" disabled={cart.lines.length === 0} onClick={() => setModal('discount')}>
-                Aplicar
-              </button>
-            )}
+            </div>
           </div>
-          <div className="kv">
-            <span className="h2">Total</span>
-            <span className="num-lg" data-testid="total">
-              {mxn(totals.total)}
-            </span>
-          </div>
-        </div>
 
-        <div style={{ padding: '14px 20px 0' }} className="col gap12">
-          <span className="overline">Forma de pago</span>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+          <div className="pay-grid">
             {METHODS.map(([m, label, icon]) => (
               <button
                 key={m}
@@ -244,17 +237,25 @@ export function Venta() {
           </div>
           {cart.payment === 'EFECTIVO' && (
             <>
-              <div className="input" style={{ height: 44 }}>
-                <span className="small muted grow">Recibido</span>
-                <span className="affix">$</span>
-                <input
-                  style={{ flex: 'none', width: 110, textAlign: 'right', fontWeight: 600, fontSize: 18 }}
-                  inputMode="decimal"
-                  value={cart.received}
-                  aria-label="Efectivo recibido"
-                  onChange={(e) => setCart((c) => ({ ...c, received: e.target.value.replace(/[^\d.]/g, '') }))}
-                  placeholder="0.00"
-                />
+              <div className="cash-row">
+                <div className="input" style={{ height: 44 }}>
+                  <span className="small muted grow">Recibido</span>
+                  <span className="affix">$</span>
+                  <input
+                    style={{ flex: 'none', width: 96, textAlign: 'right', fontWeight: 600, fontSize: 18 }}
+                    inputMode="decimal"
+                    value={cart.received}
+                    aria-label="Efectivo recibido"
+                    onChange={(e) => setCart((c) => ({ ...c, received: e.target.value.replace(/[^\d.]/g, '') }))}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="change-box">
+                  <span className="caption">Cambio</span>
+                  <span className="num" data-testid="change">
+                    {mxn(totals.change)}
+                  </span>
+                </div>
               </div>
               <div className="row gap8">
                 {quickAmounts(totals.total).map((a, i) => (
@@ -262,14 +263,6 @@ export function Venta() {
                     {i === 0 ? 'Exacto' : mxn(a).replace('.00', '')}
                   </button>
                 ))}
-              </div>
-              <div className="row between" style={{ height: 40, padding: '0 12px', borderRadius: 6, background: 'var(--ok-soft)' }}>
-                <span className="small strong" style={{ color: 'var(--ok)' }}>
-                  Cambio a entregar
-                </span>
-                <span className="num" style={{ color: 'var(--ok)' }} data-testid="change">
-                  {mxn(totals.change)}
-                </span>
               </div>
             </>
           )}
@@ -284,15 +277,15 @@ export function Venta() {
               {payErr}
             </Notice>
           )}
-        </div>
 
-        <div className="row" style={{ padding: 20, gap: 10 }}>
-          <Button size="lg" style={{ width: 110 }} onClick={pos.clearCart} disabled={cart.lines.length === 0}>
-            Cancelar
-          </Button>
-          <Button variant="primary" size="lg" icon="printer" disabled={!canPay} onClick={pay}>
-            {busy ? 'Cobrando…' : 'Cobrar e imprimir ticket'}
-          </Button>
+          <div className="row" style={{ gap: 10 }}>
+            <Button size="lg" style={{ width: 110 }} onClick={pos.clearCart} disabled={cart.lines.length === 0}>
+              Cancelar
+            </Button>
+            <Button variant="primary" size="lg" icon="printer" disabled={!canPay} onClick={pay}>
+              {busy ? 'Cobrando…' : 'Cobrar e imprimir ticket'}
+            </Button>
+          </div>
         </div>
       </aside>
 

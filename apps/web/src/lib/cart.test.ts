@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptyCart, quickAmounts, totalsOf } from './cart';
+import { emptyCart, isBulk, parseQty, quickAmounts, totalsOf } from './cart';
 import type { CatalogItem } from './types';
 
 const item = (price: number): CatalogItem => ({
@@ -54,5 +54,35 @@ describe('quickAmounts', () => {
   });
   it('total 0 no ofrece nada', () => {
     expect(quickAmounts(0)).toEqual([]);
+  });
+});
+
+describe('parseQty', () => {
+  it('acepta cantidades enteras escritas a mano', () => {
+    expect(parseQty('12', 100, false)).toEqual({ qty: 12, clamped: false });
+    expect(parseQty(' 7 ', 100, false)).toEqual({ qty: 7, clamped: false });
+  });
+  it('en unidades enteras descarta la fracción', () => {
+    expect(parseQty('2.9', 100, false)).toEqual({ qty: 2, clamped: false });
+    expect(parseQty('0.5', 100, false).qty).toBeNull();
+  });
+  it('el granel admite fracciones, con punto o coma, a milésimas', () => {
+    expect(parseQty('2.5', 100, true)).toEqual({ qty: 2.5, clamped: false });
+    expect(parseQty('2,25', 100, true)).toEqual({ qty: 2.25, clamped: false });
+    expect(parseQty('0.0004', 100, true).qty).toBeNull();
+  });
+  it('no pasa de la existencia: deja el máximo y avisa', () => {
+    expect(parseQty('500', 58, false)).toEqual({ qty: 58, clamped: true });
+    expect(parseQty('58', 58, false)).toEqual({ qty: 58, clamped: false });
+  });
+  it('vacío, cero o texto no son cantidad', () => {
+    for (const t of ['', ' ', '0', '.', 'abc', '-3', '1e3', '1.2.3']) expect(parseQty(t, 10, true).qty).toBeNull();
+  });
+});
+
+describe('isBulk', () => {
+  it('solo el granel es fraccionable', () => {
+    expect(isBulk({ presentation: 'Granel · kg' })).toBe(true);
+    expect(isBulk({ presentation: 'Saco 40 kg' })).toBe(false);
   });
 });

@@ -1681,3 +1681,118 @@ table.t td.strong {
 .pcard .body > .row.between:last-child .caption {
   white-space: nowrap;
 }
+
+/* ticket de venta: la lista de productos es lo principal; el cobro ocupa lo mínimo */
+.ticket {
+  overflow-y: auto;
+}
+.ticket-head {
+  flex: none;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.customer-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 12px;
+  background: var(--bg);
+  border: 0;
+  border-radius: var(--r-md);
+  text-align: left;
+}
+.ticket-scroll {
+  flex: 1 1 200px;
+  min-height: 190px;
+  overflow-y: auto;
+  padding: 0 16px;
+}
+.ticket-foot {
+  flex: none;
+  padding: 12px 16px 14px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cart-line {
+  padding: 8px 0 10px;
+  border-bottom: 1px dashed var(--border-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cart-line:last-child {
+  border-bottom: 0;
+}
+.line-del {
+  width: 36px;
+  height: 36px;
+  margin: -6px -8px 0 0;
+  flex: none;
+}
+.line-del:hover {
+  background: var(--danger-soft);
+}
+.line-total {
+  font-size: 17px;
+}
+.stepper input {
+  width: 64px;
+  height: 38px;
+  border: 0;
+  outline: 0;
+  background: none;
+  text-align: center;
+  font-weight: 700;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+.stepper:focus-within {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+.stepper input.max {
+  color: var(--warn);
+}
+.stepper button {
+  width: 38px;
+  height: 38px;
+}
+.stepper button:hover:not([disabled]) {
+  background: var(--bg);
+}
+.stepper button[disabled] {
+  opacity: 0.35;
+}
+.pay-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.ticket-foot .pay {
+  height: 48px;
+  gap: 2px;
+}
+.cash-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  gap: 8px;
+}
+.change-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 12px;
+  border-radius: var(--r-md);
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.change-box .num {
+  font-size: 17px;
+}
