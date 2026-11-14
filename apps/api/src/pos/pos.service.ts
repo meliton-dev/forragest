@@ -9,6 +9,17 @@ type Tx = Prisma.TransactionClient;
 /** Bloquea la fila hasta el fin de la transacción: las operaciones simultáneas sobre la misma venta o cliente van en fila. */
 const lockRow = (tx: Tx, table: 'Sale' | 'Customer', id: number) => tx.$queryRawUnsafe(`SELECT id FROM "${table}" WHERE id = $1 FOR UPDATE`, id);
 
+/**
+ * Bloquea el turno hasta el fin de la transacción y comprueba que siga abierto.
+ * Ventas, devoluciones y cancelaciones lo toman en modo compartido (no se estorban entre sí);
+ * el cierre lo toma exclusivo, así que espera a las operaciones en curso y las que llegan después ven el turno cerrado.
+ */
+async function lockShift(tx: Tx, shiftId: number, mode: 'SHARE' | 'UPDATE') {
+  const rows = await tx.$queryRawUnsafe<{ status: string }[]>(`SELECT status::text AS status FROM "CashShift" WHERE id = $1 FOR ${mode}`, shiftId);
+  if (!rows.length) throw new NotFoundException('Turno no encontrado');
+  if (rows[0].status !== 'ABIERTO') throw new BadRequestException('El turno de caja ya está cerrado');
+}
+
 const num = (d: Prisma.Decimal | number | null | undefined) => Number(d ?? 0);
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 const r3 = (n: number) => Math.round((n + Number.EPSILON) * 1000) / 1000;
@@ -56,7 +67,13 @@ export class PosService {
 
   async openShift(userId: number, openingFloat: number) {
     if (await this.openShiftOf(userId)) throw new ConflictException('Ya tienes un turno abierto');
-    return this.prisma.cashShift.create({ data: { cashierId: userId, openingFloat } });
+    try {
+      return await this.prisma.cashShift.create({ data: { cashierId: userId, openingFloat } });
+    } catch (e) {
+      // Índice único parcial: dos aperturas simultáneas del mismo cajero no pueden crear dos turnos.
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') throw new ConflictException('Ya tienes un turno abierto');
+      throw e;
+    }
   }
 
   async currentShift(userId: number) {
@@ -65,10 +82,10 @@ export class PosService {
     return this.shiftSummary(shift.id);
   }
 
-  private async shiftSummary(shiftId: number) {
-    const shift = await this.prisma.cashShift.findUniqueOrThrow({ where: { id: shiftId } });
-    const sales = await this.prisma.sale.findMany({ where: { shiftId } });
-    const notes = await this.prisma.creditNote.findMany({ where: { shiftId } });
+  private async shiftSummary(shiftId: number, db: Tx | PrismaService = this.prisma) {
+    const shift = await db.cashShift.findUniqueOrThrow({ where: { id: shiftId } });
+    const sales = await db.sale.findMany({ where: { shiftId } });
+    const notes = await db.creditNote.findMany({ where: { shiftId } });
     const done = sales.filter((s) => s.status !== 'CANCELADA');
     const byMethod: Record<string, { count: number; total: number }> = {};
     for (const m of ['EFECTIVO', 'TRANSFERENCIA', 'TARJETA', 'CREDITO']) byMethod[m] = { count: 0, total: 0 };
@@ -101,20 +118,28 @@ export class PosService {
 
   async closeShift(userId: number, dto: { countedCash: number; notes?: string; denominations?: Record<string, number> }) {
     const shift = await this.requireShift(userId);
-    const sum = await this.shiftSummary(shift.id);
-    const difference = r2(dto.countedCash - sum.expectedCash);
-    await this.prisma.cashShift.update({
-      where: { id: shift.id },
-      data: {
-        status: 'CERRADO',
-        closedAt: new Date(),
-        expectedCash: sum.expectedCash,
-        countedCash: dto.countedCash,
-        difference,
-        notes: dto.notes,
-        denominations: dto.denominations as Prisma.InputJsonValue | undefined,
+    // Con el turno bloqueado el efectivo esperado ya incluye toda venta en curso, y ninguna otra puede entrar después del corte.
+    const difference = await this.prisma.$transaction(
+      async (tx) => {
+        await lockShift(tx, shift.id, 'UPDATE');
+        const sum = await this.shiftSummary(shift.id, tx);
+        const diff = r2(dto.countedCash - sum.expectedCash);
+        await tx.cashShift.update({
+          where: { id: shift.id },
+          data: {
+            status: 'CERRADO',
+            closedAt: new Date(),
+            expectedCash: sum.expectedCash,
+            countedCash: dto.countedCash,
+            difference: diff,
+            notes: dto.notes,
+            denominations: dto.denominations as Prisma.InputJsonValue | undefined,
+          },
+        });
+        return diff;
       },
-    });
+      { timeout: 20000 },
+    );
     return { ...(await this.shiftSummary(shift.id)), difference };
   }
 
@@ -279,6 +304,7 @@ export class PosService {
 
     const saleId = await this.prisma.$transaction(
       async (tx) => {
+        await lockShift(tx, shift.id, 'SHARE');
         if (dto.paymentMethod === 'CREDITO') {
           // Revalida con el cliente bloqueado: dos ventas a crédito simultáneas no pueden rebasar el límite.
           await lockRow(tx, 'Customer', dto.customerId!);
@@ -419,9 +445,13 @@ export class PosService {
       if (sale.status === 'CANCELADA') throw new BadRequestException('La venta ya está cancelada');
       if (sale.creditNotes.length) throw new BadRequestException('La venta tiene devoluciones; no se puede cancelar');
     };
-    check(await this.prisma.sale.findUnique({ where: { id: saleId }, include: { creditNotes: true } }));
+    const found = await this.prisma.sale.findUnique({ where: { id: saleId }, include: { creditNotes: true } });
+    check(found);
     const authId = await this.authorize(dto.authorization);
     await this.prisma.$transaction(async (tx) => {
+      // Si el turno de la venta sigue abierto se bloquea: el corte no puede calcularse a mitad de la cancelación.
+      const open = await tx.cashShift.findUnique({ where: { id: found!.shiftId }, select: { status: true } });
+      if (open?.status === 'ABIERTO') await lockShift(tx, found!.shiftId, 'SHARE');
       // Se vuelve a validar con la venta bloqueada: dos cancelaciones (o cancelación y devolución) a la vez no duplican inventario.
       await lockRow(tx, 'Sale', saleId);
       const sale = (await tx.sale.findUnique({ where: { id: saleId }, include: { items: true, creditNotes: true } }))!;
@@ -462,6 +492,7 @@ export class PosService {
     if (!wanted.size) throw new BadRequestException('Selecciona al menos una partida a devolver');
 
     const { noteId, saleFolio } = await this.prisma.$transaction(async (tx) => {
+      await lockShift(tx, shift.id, 'SHARE');
       // Con la venta bloqueada, las devoluciones y cancelaciones simultáneas leen las cantidades ya devueltas.
       await lockRow(tx, 'Sale', dto.saleId);
       const sale = await tx.sale.findUnique({ where: { id: dto.saleId }, include: { items: true, creditNotes: true } });

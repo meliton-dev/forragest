@@ -317,6 +317,7 @@ enum ShiftStatus {
   CERRADO
 }
 
+// Índice único parcial (solo en SQL, migración un_turno_abierto): un cajero tiene a lo sumo un turno ABIERTO.
 model CashShift {
   id            Int          @id @default(autoincrement())
   register      String       @default("Caja 1")

@@ -5,24 +5,12 @@ import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
-
-/** En producción no se arranca con un secreto ausente o débil: cualquiera podría falsificar sesiones. */
-function assertProductionConfig() {
-  if (process.env.NODE_ENV !== 'production') return;
-  const secret = process.env.JWT_SECRET ?? '';
-  if (secret.length < 24 || /cambia|secret|changeme/i.test(secret)) {
-    throw new Error('JWT_SECRET debe definirse con al menos 24 caracteres aleatorios en producción.');
-  }
-  if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL no está definida.');
-}
+import { assertProductionConfig, parseCorsOrigins } from './common/config';
 
 async function bootstrap() {
   assertProductionConfig();
-  // CORS_ORIGINS="https://app.ejemplo.com,https://caja.ejemplo.com"; sin definir (desarrollo) acepta cualquier origen
-  const origins = (process.env.CORS_ORIGINS ?? '')
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
+  // CORS_ORIGINS="https://app.ejemplo.com,https://caja.ejemplo.com"; sin definir solo se acepta en desarrollo (en producción la API no arranca)
+  const origins = parseCorsOrigins(process.env.CORS_ORIGINS);
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: origins.length ? { origin: origins } : true,
     bufferLogs: true,
