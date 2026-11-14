@@ -10,6 +10,7 @@
     "api:dev": "npm run start:dev -w apps/api",
     "api:test": "npm test -w apps/api",
     "db:seed": "npm run seed -w apps/api",
+    "db:reset": "npm exec -w apps/api -- prisma migrate reset --force --skip-seed && npm run db:seed",
     "driver:dev": "npm run dev -w apps/driver",
     "driver:build": "npm run build -w apps/driver",
     "driver:preview": "npm run preview -w apps/driver",

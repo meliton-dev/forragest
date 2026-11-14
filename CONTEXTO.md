@@ -25,7 +25,7 @@ Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/sh
 - `render.yaml` define la base, la API y los dos sitios estáticos. Los servicios gratuitos se duermen sin uso y la base gratuita tiene vigencia limitada.
 - Variables de la API que importan: `DATABASE_URL`, `JWT_SECRET` (mínimo 24 caracteres), `CORS_ORIGINS` (**obligatoria en producción**: direcciones completas con `https://`, separadas por coma, sin comodines), `SEED_PASSWORD`, `APP_TIMEZONE` (por defecto `America/Mexico_City`), `ROUTING_URL` (servicio de rutas por calles; vacío = líneas rectas), `PING_RETENTION_DAYS` (por defecto 45), `LOG_LEVEL`.
 - Respaldo diario cifrado con GitHub Actions (`.github/workflows/respaldo.yml`): necesita los secretos `BACKUP_DATABASE_URL` y `BACKUP_PASSPHRASE` (ver `DEPLOY.md`).
-- Los usuarios de demostración (`admin`, `cajero`, `almacen`, `chofer`, `chofer2`, `compras`, `supervisor`) existen también en producción con la contraseña que se puso en `SEED_PASSWORD`. No se guardan contraseñas de producción en el repositorio ni en este archivo.
+- Los usuarios de demostración (`admin`, `cajero`, `almacen`, `chofer`, `chofer2`, `compras`, `supervisor`; `cajero2` y `chofer3` llegan con la rama `datos-forrajera`) existen también en producción con la contraseña que se puso en `SEED_PASSWORD`. No se guardan contraseñas de producción en el repositorio ni en este archivo.
 
 ## Cómo trabajamos (acuerdos)
 
@@ -55,6 +55,17 @@ Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/sh
 - **Zona horaria del negocio:** Render corre en UTC y a partir de las 18:00 de México "hoy" caía en el día siguiente (Rutas de reparto vacía, entregas "tardías", Ventas del día mal). Todo lo que use "hoy" u horas locales pasa por `apps/api/src/common/time.ts`.
 - **Menú lateral del cajero** (riel con icono y nombre, turno y "Salir" abajo) en lugar del menú de arriba.
 - **Ticket de venta:** la lista de productos tiene espacio y baja sola al último agregado; cantidad **editable** (teclear 12, o 2.5 kg en granel, con tope en la existencia); botón para quitar un producto completo.
+
+## Datos de demostración: la forrajera simulada
+
+No hay un cliente real: se **simula** uno, la **Forrajera San Miguel** (Tulancingo, Hgo.), para que el sistema se vea como en un negocio en marcha. Todo es inventado (personas, negocios, RFC, teléfonos con el patrón 555-01xx, correos `.example`). Está en `apps/api/prisma/seed-data.ts` (los datos) y `apps/api/prisma/seed.ts` (cómo se cargan). Rama `datos-forrajera`.
+
+- **Qué carga:** 9 personas (dueño, 2 cajeras, almacenista, compras, supervisor, 3 choferes), 3 camiones, 37 productos en las tres líneas, 25 clientes repartidos en 5 zonas de reparto, 8 proveedores, 18 órdenes de compra (recibidas, en camino y un borrador) con cuentas por pagar pagadas, por vencer y una vencida, unas 3 semanas de ventas de mostrador con cortes de caja, 18 días de rutas terminadas, la ruta de hoy y las programadas para el siguiente día hábil. Se trabaja de lunes a sábado; el domingo no se abre.
+- **El inventario cuadra:** lo recibido en compras menos lo vendido es la existencia. La primera vez, el seed vende lo que sobra respecto a la existencia normal de cada producto (`stock` en `seed-data.ts`); después solo agrega los días que falten. Tres productos quedan bajos a propósito (sal mineralizada agotada, codorniz y bloque ovino) para que haya sugerencias de compra.
+- **Se puede repetir** (`npm run db:seed`): reconoce lo suyo por la nota de la orden de compra y por `clientOpId` `seed-v-…` en las ventas; rehace el historial de rutas y la ruta de hoy. El azar es repetible (sale de la fecha), así que no cambia la historia.
+- **Anclas que usan las pruebas** (no cambiarlas sin revisar `apps/api/test`): los nombres de usuario y que `admin` sea el usuario 1; `BV-001` saco de 40 kg a $430 y `AV-001` a $380; `BV-002` agotado y con "Sal mineralizada" en el nombre; solo `AV-001` lleva "postura"; los cinco clientes de la ruta de hoy; _Borregos La Loma_ con exactamente $14,300 vencidos; choferes "Luis Gómez" y "Marco Díaz"; la ruta de hoy con 5 paradas, 9 sacos de `BV-001`, 3 de `OV-001` en la parada 2 y **un solo producto en la parada 4**.
+- `npm run db:reset` borra **toda** la base local y la carga limpia. Las pruebas de integración dejan basura ("Ruta en vivo…", "Chofer en vivo", productos de prueba) que el seed no quita.
+- Para probar el seed como lo hace el CI: una base vacía aparte (`CREATE DATABASE …`, `prisma migrate deploy`, seed) y una API en el puerto 3001 con ese `DATABASE_URL`.
 
 ## Lecciones y trampas (leer antes de tocar)
 
@@ -92,6 +103,7 @@ Cuentas de demostración locales: contraseña `cambiar123` (está en `README.md`
 
 ## Pendiente
 
+0. **Forrajera simulada:** falta publicar la rama `datos-forrajera` y después cargar el seed en la base de producción (`DATABASE_URL` externo y `SEED_PASSWORD`, ver `DEPLOY.md`). Allá los productos viejos conservan su existencia; el seed venderá el excedente dentro del historial.
 1. **Rotar la contraseña de demostración compartida** y crear usuarios reales: es el mayor riesgo de producción (todos los roles comparten contraseña). También rotar la de la base de datos, que pasó por el chat.
 2. **Activar los respaldos diarios** agregando los dos secretos en GitHub.
 3. **Fotos y firmas fuera de la base** (hoy son base64 en `Delivery`/`Incident`): requiere elegir dónde guardarlas (R2, S3 o disco). Hay un límite de 10 MB por petición.

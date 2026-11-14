@@ -19,13 +19,28 @@ Requisitos: Node 22, Docker Desktop.
 npm install
 docker compose up -d db              # PostgreSQL
 npm run prisma:migrate -w apps/api   # crea las tablas (usa apps/api/.env)
-npm run db:seed                      # usuarios, productos, stock y la ruta de demostración de hoy
+npm run db:seed                      # carga la forrajera de demostración (personal, catálogo, clientes, compras, ventas y rutas)
 ```
 
-Cuentas de demostración (contraseña `cambiar123`): `admin`, `cajero`, `almacen`, `chofer`, `compras`, `supervisor`.
-Para usar otra contraseña: `SEED_PASSWORD=MiClaveSegura npm run db:seed`.
+Los datos simulan un negocio real, la **Forrajera San Miguel** de Tulancingo, Hgo. Todo es ficticio (personas, negocios, RFC, teléfonos); está definido en `apps/api/prisma/seed-data.ts`:
 
-`npm run db:seed` también **reinicia la ruta de demostración del chofer** (5 paradas, hoy) para volver a probar.
+| Usuario      | Persona          | Puesto                                |
+| ------------ | ---------------- | ------------------------------------- |
+| `admin`      | Rogelio Islas    | Dueño (administrador)                 |
+| `cajero`     | Guadalupe Téllez | Cajera, caja 1                        |
+| `cajero2`    | Brenda Licona    | Cajera, caja 2 (lunes y sábados)      |
+| `almacen`    | Fidel Barrera    | Almacenista                           |
+| `compras`    | Patricia Olvera  | Gerente de compras                    |
+| `supervisor` | Héctor Lozada    | Supervisor de rutas                   |
+| `chofer`     | Luis Gómez       | Repartidor (tiene la ruta de hoy)     |
+| `chofer2`    | Marco Díaz       | Repartidor                            |
+| `chofer3`    | Abel Canales     | Repartidor (martes, jueves y sábados) |
+
+Contraseña de todos: `cambiar123`. Para usar otra: `SEED_PASSWORD=MiClaveSegura npm run db:seed`.
+
+Además del catálogo (37 productos), 25 clientes y 8 proveedores, el seed crea la historia reciente del negocio: compras recibidas con sus cuentas por pagar, unas tres semanas de ventas de mostrador con cortes de caja, rutas terminadas y las programadas para el siguiente día hábil. Las fechas son relativas a hoy.
+
+`npm run db:seed` se puede repetir: no duplica nada, agrega los días que falten y **reinicia la ruta de demostración del chofer** (5 paradas, hoy) para volver a probar. `npm run db:reset` **borra toda la base local** y la vuelve a cargar limpia (útil cuando las pruebas la dejaron llena de datos de prueba).
 
 ## Correr la API y la app
 

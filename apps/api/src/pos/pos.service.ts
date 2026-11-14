@@ -30,9 +30,10 @@ const money = (n: number) => '$' + n.toLocaleString('es-MX', { minimumFractionDi
 
 export const STORE = {
   name: 'Forrajera San Miguel',
-  address: 'Av. Hidalgo 214, Tulancingo, Hgo.',
-  rfc: 'XXXX000000XXX',
-  phone: '775 000 0000',
+  address: 'Av. Hidalgo 214, Col. Centro, Tulancingo, Hgo.',
+  // Datos ficticios de la forrajera de demostración (ver apps/api/prisma/seed-data.ts)
+  rfc: 'FSM080512KD3',
+  phone: '775 555 0142',
 };
 
 export interface SaleLineInput {
