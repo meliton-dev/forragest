@@ -79,7 +79,7 @@ export function SignaturePad({ onChange }: { onChange: (dataUrl: string | null) 
       <div className="row between">
         <span className="overline">Firma del cliente</span>
         <button type="button" className="link row gap4 small" onClick={clear}>
-          <Icon name="x" size={13} color="var(--accent)" />
+          <Icon name="x" size={13} color="var(--ink)" />
           Limpiar
         </button>
       </div>

@@ -182,7 +182,7 @@ export function RutasLista() {
                       <div
                         className="stop-n"
                         style={{
-                          background: s.status === 'ENTREGADA' ? 'var(--accent)' : s.status === 'NO_ENTREGADA' ? 'var(--danger)' : 'var(--border-strong)',
+                          background: s.status === 'ENTREGADA' ? 'var(--ok)' : s.status === 'NO_ENTREGADA' ? 'var(--danger)' : 'var(--border-strong)',
                         }}
                       >
                         {s.sequence}

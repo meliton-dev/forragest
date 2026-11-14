@@ -39,7 +39,7 @@ function List({ route }: { route: Route }) {
         {s.payments.map((p) => (
           <div key={p.id} className="card row-card tight">
             <div style={{ width: 36, height: 36, borderRadius: 6, background: 'var(--accent-soft)', display: 'grid', placeItems: 'center' }}>
-              <Icon name="wallet" size={18} color="var(--accent)" />
+              <Icon name="wallet" size={18} color="var(--ink)" />
             </div>
             <div className="grow">
               <div className="small strong">{p.customer}</div>

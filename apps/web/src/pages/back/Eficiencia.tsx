@@ -94,7 +94,7 @@ export function Eficiencia() {
               <div className="card-b">
                 <div className="row gap16">
                   {[
-                    ['A tiempo', 'var(--accent)'],
+                    ['A tiempo', 'var(--ok)'],
                     ['Tardías', 'var(--warn)'],
                     ['No entregadas', 'var(--danger)'],
                   ].map(([n, c]) => (
@@ -113,7 +113,7 @@ export function Eficiencia() {
                         <div className="bar-stack">
                           {d.failed > 0 && <i style={{ height: h(d.failed), background: 'var(--danger)' }} />}
                           {d.late > 0 && <i style={{ height: h(d.late), background: 'var(--warn)' }} />}
-                          {d.onTime > 0 && <i style={{ height: h(d.onTime), background: 'var(--accent)' }} />}
+                          {d.onTime > 0 && <i style={{ height: h(d.onTime), background: 'var(--ok)' }} />}
                         </div>
                         <span className="caption muted">{Number(days) <= 7 ? DOW[dt.getDay()] : `${dt.getDate()}/${dt.getMonth() + 1}`}</span>
                       </div>

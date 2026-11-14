@@ -66,7 +66,7 @@ function Inner({ route }: { route: Route }) {
           <Kv
             k={stop.paymentTerms === 'Contado' ? 'Por cobrar al entregar' : 'Total de la entrega'}
             v={mxn(stop.total)}
-            tone={stop.paymentTerms === 'Contado' ? 'var(--accent-dark)' : undefined}
+            tone={stop.paymentTerms === 'Contado' ? 'var(--ink)' : undefined}
           />
         </div>
 

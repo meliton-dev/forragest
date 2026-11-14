@@ -43,7 +43,7 @@ export function Perfil() {
               height: 56,
               borderRadius: '50%',
               background: 'var(--accent-soft)',
-              color: 'var(--accent-dark)',
+              color: 'var(--ink)',
               display: 'grid',
               placeItems: 'center',
             }}

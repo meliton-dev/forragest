@@ -162,7 +162,7 @@ export function Ayuda() {
       <div className="content">
         <button className="card row-card" style={{ textAlign: 'left' }} onClick={() => setTour(true)}>
           <div style={{ width: 44, height: 44, borderRadius: 14, background: 'var(--accent-soft)', display: 'grid', placeItems: 'center', flex: 'none' }}>
-            <Icon name="route" size={22} color="var(--accent)" />
+            <Icon name="route" size={22} color="var(--ink)" />
           </div>
           <div className="grow">
             <div className="title">Ver el tutorial otra vez</div>

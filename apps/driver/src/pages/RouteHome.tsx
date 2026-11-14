@@ -89,7 +89,7 @@ function Inner({ route }: { route: import('../lib/types').Route }) {
         {route.status === 'PROGRAMADA' && (
           <Link to="/carga" className="card accent">
             <div className="row">
-              <Icon name="truck" size={20} color="var(--accent)" />
+              <Icon name="truck" size={20} color="var(--ink)" />
               <div className="grow">
                 <div className="title">Carga tu camión para salir</div>
                 <div className="caption muted">Verifica los productos y registra la salida del almacén.</div>
@@ -102,7 +102,7 @@ function Inner({ route }: { route: import('../lib/types').Route }) {
         {allDone && (
           <Link to="/cierre" className="card accent">
             <div className="row">
-              <Icon name="check" size={20} color="var(--accent)" />
+              <Icon name="check" size={20} color="var(--ink)" />
               <div className="grow">
                 <div className="title">Ruta completa</div>
                 <div className="caption muted">Cierra la ruta y registra tu regreso al almacén.</div>
@@ -150,7 +150,7 @@ function StopRow({ stop, current, last, started }: { stop: Stop; current: boolea
         {current ? (
           <div className="card accent" style={{ gap: 12 }}>
             <div className="row between">
-              <span className="overline" style={{ color: 'var(--accent)' }}>
+              <span className="overline" style={{ color: 'var(--ink)' }}>
                 Siguiente parada
               </span>
               <span className="caption muted2 row gap4">
@@ -172,7 +172,7 @@ function StopRow({ stop, current, last, started }: { stop: Stop; current: boolea
               ))}
               <div className="kv">
                 <span className="caption muted">{stop.paymentTerms === 'Contado' ? 'Por cobrar (contado)' : stop.paymentTerms}</span>
-                <span className="title" style={{ color: 'var(--accent-dark)' }}>
+                <span className="title" style={{ color: 'var(--ink)' }}>
                   {mxn(stop.total)}
                 </span>
               </div>

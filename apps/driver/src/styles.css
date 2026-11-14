@@ -14,7 +14,7 @@
   --text-3: #66736b;
   --accent: #b8482f;
   --accent-dark: #963a25;
-  --accent-soft: #f7e3dc;
+  --accent-soft: #e3ebdf;
   --on-accent: #fff;
   --gold: #e9b949;
   --gold-dark: #7a5200;
@@ -281,7 +281,7 @@ button.card:active {
 }
 .badge.accent {
   background: var(--accent-soft);
-  color: var(--accent-dark);
+  color: var(--ink);
 }
 .badge.neutral {
   background: var(--bg);
@@ -614,7 +614,7 @@ button.card:active {
   position: relative;
 }
 .tab.on {
-  color: var(--accent-dark);
+  color: var(--ink);
   font-weight: 600;
 }
 .tab .pip {
@@ -1004,7 +1004,7 @@ button.card:active {
   padding: 12px 8px 12px 14px;
   border-radius: var(--r-md);
   background: var(--accent-soft);
-  color: var(--accent-dark);
+  color: var(--ink);
   border: 1px solid rgba(31, 77, 58, 0.18);
 }
 .hint .t {
@@ -1022,7 +1022,7 @@ button.card:active {
   background: none;
   font-weight: 600;
   font-size: 13px;
-  color: var(--accent-dark);
+  color: var(--ink);
   border-radius: var(--r-md);
   margin: -8px 0;
 }
@@ -1127,7 +1127,7 @@ body {
   background: var(--accent-soft);
 }
 .tab.on {
-  color: var(--accent-dark);
+  color: var(--ink);
 }
 .toast {
   background: rgba(22, 25, 34, 0.84);
@@ -1725,4 +1725,14 @@ body {
   line-height: 15px;
   font-weight: 400;
   opacity: 0.75;
+}
+
+/* estados "completado" y "activado" en verde; el terracota queda para acciones */
+.progress i.on {
+  background: var(--ink);
+}
+.switch.on,
+.checkbox.on {
+  background: var(--ink);
+  border-color: var(--ink);
 }

@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from './kit';
 
-const G = 'var(--accent)';
+const G = 'var(--ink)';
 const GS = 'var(--accent-soft)';
 const B = 'var(--border-strong)';
 const S = 'var(--surface)';
@@ -60,7 +60,7 @@ function ArtFlow() {
       </Step>
       <path d="M96 109h20m-6-6 6 6-6 6M203 109h20m-6-6 6 6-6 6" stroke={B} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       <rect x="94" y="196" width="132" height="26" rx="13" fill={GS} />
-      <text x="160" y="213" textAnchor="middle" fontSize="12" fontWeight="600" fill="var(--accent-dark)" fontFamily="Nunito Sans, sans-serif">
+      <text x="160" y="213" textAnchor="middle" fontSize="12" fontWeight="600" fill="var(--ink)" fontFamily="Nunito Sans, sans-serif">
         Todo en una sola pantalla
       </text>
     </svg>
