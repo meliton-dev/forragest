@@ -4,6 +4,7 @@ import { api, errMsg } from '../../lib/api';
 import { mxn, r2 } from '../../lib/format';
 import { DEPOT, type RouteDetail, type RouteOptions } from '../../lib/routes-types';
 import { Badge, Button, Field, Icon, Input, Notice, Segmented, Select, TextArea } from '../../ui/kit';
+import { useRoadPaths } from '../../lib/road';
 import { MapView, type MapLine, type MapMarker } from '../../ui/MapView';
 
 interface StopForm {
@@ -82,7 +83,11 @@ export function NuevaRuta() {
       line.push([c.lat, c.lng]);
     }
   });
-  const lines: MapLine[] = [{ points: line, color: '#b8482f', dashed: true }];
+  // el trayecto se pide por las calles (con un pequeño retraso para no consultar en cada cambio); mientras llega se ve la línea recta
+  const road = useRoadPaths({ plan: line }).plan;
+  const lines: MapLine[] = [
+    road.status === 'road' ? { points: road.coords, color: '#b8482f', weight: 5, opacity: 0.8 } : { points: road.coords, color: '#b8482f', dashed: true },
+  ];
 
   const valid =
     !!name.trim() &&
@@ -362,6 +367,18 @@ export function NuevaRuta() {
                 <span className="small muted2">Paradas</span>
                 <span className="small strong">{stops.length}</span>
               </div>
+              {line.length > 1 && (
+                <div className="kv">
+                  <span className="small muted2">Recorrido</span>
+                  <span className="small strong">
+                    {road.status === 'road' && road.km !== null
+                      ? `${road.km} km · ${road.min} min manejando`
+                      : road.status === 'loading'
+                        ? 'Calculando…'
+                        : 'No disponible (línea recta)'}
+                  </span>
+                </div>
+              )}
               <div className="kv">
                 <span className="small muted2">Carga</span>
                 <span className="small strong">

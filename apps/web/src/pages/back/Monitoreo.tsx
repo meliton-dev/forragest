@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api, errMsg } from '../../lib/api';
 import { hhmm } from '../../lib/format';
 import { mergeLive, movement } from '../../lib/live';
+import { useRoadPaths, type LatLng } from '../../lib/road';
 import { DEPOT, type LiveRoute, type MonitorRoute } from '../../lib/routes-types';
 import { Badge, Empty, Icon, Notice, Segmented } from '../../ui/kit';
 import { MapView, type MapLine, type MapMarker } from '../../ui/MapView';
@@ -72,6 +73,18 @@ export function Monitoreo() {
   const visible = routes.filter((r) => sel === 'all' || String(r.id) === sel);
   const now = tick + skew.current;
 
+  // recorrido planeado de cada ruta (almacén → paradas en orden); se dibuja por las calles, no en línea recta
+  const planned = useMemo(() => {
+    const out: Record<string, LatLng[]> = {};
+    for (const r of routes) {
+      const pts: LatLng[] = [DEPOT];
+      for (const s of r.stopsMap) if (s.customer.lat != null && s.customer.lng != null) pts.push([s.customer.lat, s.customer.lng]);
+      out[String(r.id)] = pts;
+    }
+    return out;
+  }, [routes]);
+  const roads = useRoadPaths(planned);
+
   const { markers, lines } = useMemo(() => {
     const markers: MapMarker[] = [{ lat: DEPOT[0], lng: DEPOT[1], kind: 'depot' }];
     const lines: MapLine[] = [];
@@ -79,11 +92,9 @@ export function Monitoreo() {
       .filter((r) => sel === 'all' || String(r.id) === sel)
       .forEach((r) => {
         const color = COLORS[routes.indexOf(r) % COLORS.length];
-        const planned: [number, number][] = [DEPOT];
         for (const s of r.stopsMap) {
           const { lat, lng } = s.customer;
           if (lat == null || lng == null) continue;
-          planned.push([lat, lng]);
           markers.push({
             lat,
             lng,
@@ -93,7 +104,9 @@ export function Monitoreo() {
             tooltip: `${s.sequence}. ${s.customer.name} · ${s.eta ?? 's/h'}`,
           });
         }
-        lines.push({ points: planned, color, dashed: true });
+        const road = roads[String(r.id)];
+        // por las calles: línea continua más tenue; mientras carga o sin servicio, punteada y recta
+        if (road) lines.push(road.status === 'road' ? { points: road.coords, color, weight: 5, opacity: 0.45 } : { points: road.coords, color, dashed: true });
         if (r.trail.length > 1) lines.push({ points: r.trail, color });
         if (r.lastPing) {
           const mv = movement(r.speedKmh);
@@ -108,7 +121,7 @@ export function Monitoreo() {
         }
       });
     return { markers, lines };
-  }, [routes, sel]);
+  }, [routes, sel, roads]);
 
   return (
     <>

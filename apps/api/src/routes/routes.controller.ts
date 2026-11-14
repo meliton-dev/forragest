@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import { RoadPathService } from './road-path';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -12,6 +13,7 @@ import {
   IsOptional,
   IsString,
   Matches,
+  Max,
   MaxLength,
   Min,
   ValidateNested,
@@ -42,14 +44,31 @@ class CreateRouteDto {
   @IsArray() @ArrayMinSize(1) @ArrayMaxSize(40) @ValidateNested({ each: true }) @Type(() => StopDto) stops: StopDto[];
 }
 
+class PointDto {
+  @IsNumber() @Min(-90) @Max(90) lat: number;
+  @IsNumber() @Min(-180) @Max(180) lng: number;
+}
+class PathDto {
+  @IsArray() @ArrayMinSize(2) @ArrayMaxSize(26) @ValidateNested({ each: true }) @Type(() => PointDto) points: PointDto[];
+}
+
 @Roles('SUPERVISOR_RUTAS')
 @Controller('routes')
 export class RoutesController {
-  constructor(private routes: RoutesService) {}
+  constructor(
+    private routes: RoutesService,
+    private roads: RoadPathService,
+  ) {}
 
   @Get('options')
   options() {
     return this.routes.options();
+  }
+
+  /** Ruta por calles pasando por los puntos en orden (vista previa al crear una ruta y mapa en vivo). */
+  @Post('path')
+  path(@Body() dto: PathDto) {
+    return this.roads.path(dto.points);
   }
 
   @Get('live')

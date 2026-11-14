@@ -18,6 +18,8 @@ export interface MapLine {
   points: [number, number][];
   color: string;
   dashed?: boolean;
+  weight?: number;
+  opacity?: number;
 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -96,7 +98,14 @@ export function MapView({
     for (const l of lines ?? []) {
       if (l.points.length < 2) continue;
       L.polyline(l.points, { color: '#fff', weight: 8, opacity: 0.9 }).addTo(g);
-      L.polyline(l.points, { color: l.color, weight: 4, opacity: 0.95, dashArray: l.dashed ? '2 9' : undefined, lineCap: 'round' }).addTo(g);
+      L.polyline(l.points, {
+        color: l.color,
+        weight: l.weight ?? 4,
+        opacity: l.opacity ?? 0.95,
+        dashArray: l.dashed ? '2 9' : undefined,
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(g);
       bounds.push(...l.points);
     }
     const liveIds = new Set<string>();
