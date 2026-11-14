@@ -19,7 +19,8 @@ interface TState {
 }
 
 const KEY = 'fd.pings.v1';
-export const MIN_INTERVAL_MS = 30_000;
+/** Cada cuánto se guarda una ubicación para el supervisor; el GPS ya está encendido, así que casi no cuesta batería. */
+export const MIN_INTERVAL_MS = 10_000;
 const BATCH = 100;
 
 /** ¿Ya pasó el intervalo mínimo desde la última ubicación guardada? */
@@ -47,6 +48,25 @@ let routeId: number | null = null;
 let watchId: number | null = null;
 let timer: ReturnType<typeof setInterval> | null = null;
 let lastRecorded = 0;
+let wakeLock: WakeLockSentinel | null = null;
+
+/** Mantiene la pantalla encendida: con la pantalla apagada el navegador deja de dar ubicación y el supervisor pierde al camión. */
+async function keepAwake() {
+  try {
+    if (document.visibilityState !== 'visible' || wakeLock || !('wakeLock' in navigator)) return;
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => (wakeLock = null));
+  } catch {
+    // sin permiso o sin soporte: el seguimiento sigue, solo que la pantalla puede apagarse
+  }
+}
+const onVisible = () => {
+  if (document.visibilityState === 'visible' && routeId !== null) void keepAwake();
+};
+function releaseAwake() {
+  void wakeLock?.release().catch(() => undefined);
+  wakeLock = null;
+}
 let buffer: Ping[] = [];
 
 const persist = () => void set(KEY, buffer);
@@ -94,6 +114,8 @@ export async function startTracking(id: number) {
   watchId = navigator.geolocation.watchPosition(onFix, onError, { enableHighAccuracy: true, maximumAge: 10_000, timeout: 30_000 });
   timer = setInterval(() => void flushPings(), 60_000);
   window.addEventListener('online', onOnline);
+  document.addEventListener('visibilitychange', onVisible);
+  void keepAwake();
 }
 
 const onOnline = () => void flushPings();
@@ -102,6 +124,8 @@ export function stopTracking() {
   if (watchId !== null) navigator.geolocation.clearWatch(watchId);
   if (timer) clearInterval(timer);
   window.removeEventListener('online', onOnline);
+  document.removeEventListener('visibilitychange', onVisible);
+  releaseAwake();
   watchId = null;
   timer = null;
   if (routeId !== null) void flushPings();

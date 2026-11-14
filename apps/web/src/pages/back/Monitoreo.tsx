@@ -1,13 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, errMsg } from '../../lib/api';
 import { hhmm } from '../../lib/format';
-import { DEPOT, type MonitorRoute } from '../../lib/routes-types';
+import { mergeLive, movement } from '../../lib/live';
+import { DEPOT, type LiveRoute, type MonitorRoute } from '../../lib/routes-types';
 import { Badge, Empty, Icon, Notice, Segmented } from '../../ui/kit';
 import { MapView, type MapLine, type MapMarker } from '../../ui/MapView';
 
 const COLORS = ['#b8482f', '#1f4d3a', '#8e5a32', '#94660a'];
 const SIGNAL_LOST_MIN = 3;
+/** El mapa se refresca con la versión ligera; el detalle completo (paradas, eventos) se pide con menos frecuencia. */
+const LIVE_MS = 5000;
+const FULL_MS = 30000;
 
 function ago(now: number, iso: string) {
   const s = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
@@ -18,23 +22,55 @@ export function Monitoreo() {
   const [data, setData] = useState<{ now: string; routes: MonitorRoute[] } | null>(null);
   const [sel, setSel] = useState('all');
   const [error, setError] = useState<string | null>(null);
+  const [focus, setFocus] = useState<{ lat: number; lng: number; n: number } | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<number | null>(null);
+  // el reloj local avanza cada segundo para que "hace 12 s" no se quede congelado entre actualizaciones
+  const [tick, setTick] = useState(() => Date.now());
+  // diferencia entre el reloj del servidor y el de este equipo: la antigüedad de una ubicación debe medirse con el del servidor
+  const skew = useRef(0);
 
   useEffect(() => {
-    const load = () =>
+    const full = () =>
       api<{ now: string; routes: MonitorRoute[] }>('GET', '/routes/monitor')
         .then((d) => {
+          skew.current = new Date(d.now).getTime() - Date.now();
           setData(d);
+          setLastUpdate(Date.now());
           setError(null);
         })
         .catch((e) => setError(errMsg(e)));
-    void load();
-    const t = setInterval(load, 10000);
-    return () => clearInterval(t);
+    const live = () =>
+      api<{ now: string; routes: LiveRoute[] }>('GET', '/routes/live')
+        .then((d) => {
+          skew.current = new Date(d.now).getTime() - Date.now();
+          setLastUpdate(Date.now());
+          setError(null);
+          setData((cur) => {
+            if (!cur) return cur;
+            const m = mergeLive(cur.routes, d.routes);
+            if (m.needsFull) void full();
+            return { now: d.now, routes: m.routes };
+          });
+        })
+        .catch((e) => setError(errMsg(e)));
+    void full();
+    // con la pestaña oculta no se consulta: nadie está mirando el mapa
+    const tLive = setInterval(() => !document.hidden && void live(), LIVE_MS);
+    const tFull = setInterval(() => !document.hidden && void full(), FULL_MS);
+    const onShow = () => !document.hidden && void full();
+    document.addEventListener('visibilitychange', onShow);
+    const tTick = setInterval(() => setTick(Date.now()), 1000);
+    return () => {
+      clearInterval(tLive);
+      clearInterval(tFull);
+      clearInterval(tTick);
+      document.removeEventListener('visibilitychange', onShow);
+    };
   }, []);
 
   const routes = useMemo(() => data?.routes ?? [], [data]);
   const visible = routes.filter((r) => sel === 'all' || String(r.id) === sel);
-  const now = data ? new Date(data.now).getTime() : Date.now();
+  const now = tick + skew.current;
 
   const { markers, lines } = useMemo(() => {
     const markers: MapMarker[] = [{ lat: DEPOT[0], lng: DEPOT[1], kind: 'depot' }];
@@ -59,7 +95,17 @@ export function Monitoreo() {
         }
         lines.push({ points: planned, color, dashed: true });
         if (r.trail.length > 1) lines.push({ points: r.trail, color });
-        if (r.lastPing) markers.push({ lat: r.lastPing.lat, lng: r.lastPing.lng, kind: 'truck', color, tooltip: `${r.name} · ${r.driver.name}` });
+        if (r.lastPing) {
+          const mv = movement(r.speedKmh);
+          markers.push({
+            id: `truck-${r.id}`,
+            lat: r.lastPing.lat,
+            lng: r.lastPing.lng,
+            kind: 'truck',
+            color,
+            tooltip: `${r.name} · ${r.driver.name}${mv ? ` · ${mv}` : ''}`,
+          });
+        }
       });
     return { markers, lines };
   }, [routes, sel]);
@@ -69,7 +115,10 @@ export function Monitoreo() {
       <div className="row between">
         <div>
           <h1 className="h1">Monitoreo en vivo</h1>
-          <div className="small muted">Ubicación de los repartidores · se actualiza cada 10 s</div>
+          <div className="small muted">
+            Ubicación de los repartidores · se actualiza cada 5 s
+            {lastUpdate !== null && <> · última consulta hace {Math.max(0, Math.round((tick - lastUpdate) / 1000))} s</>}
+          </div>
         </div>
         {routes.length > 1 && (
           <Segmented
@@ -87,7 +136,7 @@ export function Monitoreo() {
 
       <div className="split">
         <div style={{ flex: 1, minWidth: 0 }}>
-          <MapView markers={markers} lines={lines} fitKey={`${sel}:${routes.map((r) => r.id).join()}`} height="calc(100dvh - 190px)" />
+          <MapView markers={markers} lines={lines} fitKey={`${sel}:${routes.map((r) => r.id).join()}`} height="calc(100dvh - 190px)" focus={focus} />
         </div>
         <aside className="col gap12" style={{ width: 380, flex: 'none' }}>
           {data && routes.length === 0 && (
@@ -108,9 +157,20 @@ export function Monitoreo() {
                     <i className="dot" style={{ color }} />
                     <span className="title">{r.name}</span>
                   </span>
-                  <Link to="/rutas" className="link">
-                    Detalle
-                  </Link>
+                  <span className="row gap12">
+                    {r.lastPing && (
+                      <button
+                        className="link"
+                        onClick={() => setFocus({ lat: r.lastPing!.lat, lng: r.lastPing!.lng, n: Date.now() })}
+                        aria-label={`Ver a ${r.driver.name} en el mapa`}
+                      >
+                        Ver en el mapa
+                      </button>
+                    )}
+                    <Link to="/rutas" className="link">
+                      Detalle
+                    </Link>
+                  </span>
                 </div>
                 <div className="card-b">
                   <div className="row between">
@@ -118,14 +178,16 @@ export function Monitoreo() {
                       {r.driver.name} · {r.vehicle.plate}
                     </span>
                     {ageMin === null ? (
-                      <Badge>Sin ubicación</Badge>
+                      <Badge tone="warn">
+                        <Icon name="wifioff" size={12} /> Sin ubicación
+                      </Badge>
                     ) : ageMin > SIGNAL_LOST_MIN ? (
                       <Badge tone="warn">
                         <Icon name="wifioff" size={12} /> Sin señal {ago(now, r.lastPing!.at)}
                       </Badge>
                     ) : (
                       <Badge tone="ok" dot>
-                        Ubicación hace {ago(now, r.lastPing!.at)}
+                        {movement(r.speedKmh) ? `${movement(r.speedKmh)} · ` : ''}hace {ago(now, r.lastPing!.at)}
                       </Badge>
                     )}
                   </div>

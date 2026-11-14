@@ -62,7 +62,7 @@ Entra a la misma app web (`npm run web:dev`) con `supervisor` / `cambiar123`; te
 - **Monitoreo en vivo:** mapa con el camión de cada ruta en curso, su recorrido y el estado de cada parada; avisa “Sin señal” si el repartidor lleva más de 3 minutos sin reportar.
 - **Eficiencia:** entregas a tiempo vs. tardías (tardía = más de 15 min sobre la hora estimada), tiempo por parada, cobros y motivos de no entrega, por repartidor y por día.
 
-El mapa usa OpenStreetMap, así que necesita internet. La app del repartidor manda su ubicación cada 30 s **solo mientras la ruta está en curso y la app está abierta**, y la guarda si no hay señal. El GPS del navegador **solo funciona con HTTPS** (ver más abajo el túnel).
+El mapa usa OpenStreetMap, así que necesita internet. La app del repartidor manda su ubicación cada 10 s **solo mientras la ruta está en curso, la app está abierta y el chofer activó "Compartir ubicación"**; mantiene la pantalla encendida mientras comparte (con la pantalla apagada el navegador deja de dar GPS) y guarda las ubicaciones si no hay señal. El mapa del supervisor se refresca cada 5 s con `GET /routes/live` (ligero), muestra la velocidad y el último dato de cada camión, y pide el detalle completo cada 30 s. Las ubicaciones de más de 45 días se borran solas (`PING_RETENTION_DAYS`). El GPS del navegador **solo funciona con HTTPS** (ver más abajo el túnel).
 
 ## Probarla en el celular
 

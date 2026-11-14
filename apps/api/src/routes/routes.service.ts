@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { Prisma } from '@prisma/client';
 import { PosService } from '../pos/pos.service';
 import { PrismaService } from '../prisma.service';
+import { speedKmh } from './live';
 
 const num = (d: Prisma.Decimal | number | null | undefined) => Number(d ?? 0);
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -231,6 +232,7 @@ export class RoutesService {
       out.push({
         ...this.row(r),
         lastPing: last ? { lat: last.lat, lng: last.lng, at: last.recordedAt } : null,
+        speedKmh: speedKmh(ordered.map((p) => ({ lat: p.lat, lng: p.lng, at: p.recordedAt }))),
         trail: ordered.map((p) => [p.lat, p.lng]),
         stopsMap: r.stops.map((s) => ({
           id: s.id,
@@ -244,6 +246,33 @@ export class RoutesService {
       });
     }
     return { now: new Date(), routes: out };
+  }
+
+  /**
+   * Versión ligera de monitor() para refrescar el mapa cada pocos segundos: solo las últimas ubicaciones de cada ruta en curso.
+   * El cliente las mezcla con el recorrido que ya tiene y pide monitor() completo de vez en cuando.
+   */
+  async live() {
+    const rows = await this.prisma.route.findMany({
+      where: { status: 'EN_CURSO' },
+      select: { id: true, name: true, driver: { select: { fullName: true } }, vehicle: { select: { plate: true } } },
+      orderBy: { id: 'asc' },
+    });
+    const routes = [];
+    for (const r of rows) {
+      const pings = await this.prisma.locationPing.findMany({ where: { routeId: r.id }, orderBy: { recordedAt: 'desc' }, take: 6 });
+      const recent = [...pings].reverse().map((p) => ({ lat: p.lat, lng: p.lng, at: p.recordedAt }));
+      routes.push({
+        id: r.id,
+        name: r.name,
+        driver: r.driver.fullName,
+        plate: r.vehicle.plate,
+        lastPing: recent.length ? recent[recent.length - 1] : null,
+        speedKmh: speedKmh(recent),
+        recent,
+      });
+    }
+    return { now: new Date(), routes };
   }
 
   /** Entregas a tiempo vs. tardías, tiempos por parada, cobros y no entregas en un rango de fechas. */

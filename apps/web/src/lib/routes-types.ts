@@ -62,6 +62,8 @@ export interface RouteOptions {
 
 export interface MonitorRoute extends RouteRow {
   lastPing: { lat: number; lng: number; at: string } | null;
+  /** km/h entre las dos últimas ubicaciones; 0 = detenido; null = sin dato fiable */
+  speedKmh?: number | null;
   trail: [number, number][];
   stopsMap: {
     id: number;
@@ -107,3 +109,19 @@ export interface Efficiency {
 /** Almacén de salida (referencia para trazar las rutas en el mapa). */
 export const DEPOT: [number, number] = [20.0833, -98.3631];
 export { FAIL_LABEL, ROUTE_STATUS_LABEL } from '@forrajera/shared';
+
+export interface LivePing {
+  lat: number;
+  lng: number;
+  at: string;
+}
+/** Respuesta ligera de GET /routes/live: las últimas ubicaciones de cada ruta en curso. */
+export interface LiveRoute {
+  id: number;
+  name: string;
+  driver: string;
+  plate: string;
+  lastPing: LivePing | null;
+  speedKmh: number | null;
+  recent: LivePing[];
+}

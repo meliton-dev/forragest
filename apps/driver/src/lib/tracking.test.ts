@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { shouldRecord, splitBatches } from './tracking';
 
 describe('shouldRecord', () => {
-  it('guarda una ubicación cada 30 s como mínimo', () => {
-    expect(shouldRecord(0, 29_999)).toBe(false);
-    expect(shouldRecord(0, 30_000)).toBe(true);
+  it('guarda una ubicación cada 10 s como mínimo', () => {
+    expect(shouldRecord(0, 9_999)).toBe(false);
+    expect(shouldRecord(0, 10_000)).toBe(true);
     expect(shouldRecord(1_000, 61_000)).toBe(true);
   });
   it('la primera ubicación siempre se guarda', () => {

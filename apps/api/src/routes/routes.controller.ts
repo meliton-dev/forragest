@@ -52,6 +52,11 @@ export class RoutesController {
     return this.routes.options();
   }
 
+  @Get('live')
+  live() {
+    return this.routes.live();
+  }
+
   @Get('monitor')
   monitor() {
     return this.routes.monitor();
