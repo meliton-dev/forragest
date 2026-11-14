@@ -1,5 +1,6 @@
 import { PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { addDays, atBusinessTime, businessDate } from '../src/common/time';
 
 const prisma = new PrismaClient();
 
@@ -116,9 +117,8 @@ async function history() {
   const product = await prisma.product.findUniqueOrThrow({ where: { code: 'BV-001' } });
   const etas = ['08:30', '09:15', '10:05', '10:40'];
   for (let d = 6; d >= 1; d--) {
-    const day = new Date();
-    day.setDate(day.getDate() - d);
-    const date = new Date(Date.UTC(day.getFullYear(), day.getMonth(), day.getDate()));
+    // los días y las horas de la demostración son los del negocio (igual que la API), no los de la máquina donde corre el seed
+    const date = addDays(businessDate(), -d);
     for (let di = 0; di < 2; di++) {
       const route = await prisma.route.create({
         data: {
@@ -128,15 +128,15 @@ async function history() {
           vehicleId: vehicles[di].id,
           status: 'FINALIZADA',
           plannedDeparture: '07:50',
-          departedAt: new Date(day.getFullYear(), day.getMonth(), day.getDate(), 7, 52),
-          returnedAt: new Date(day.getFullYear(), day.getMonth(), day.getDate(), 12, 10),
+          departedAt: atBusinessTime(date, 7, 52),
+          returnedAt: atBusinessTime(date, 12, 10),
         },
       });
       for (let k = 0; k < etas.length; k++) {
         const [h, m] = etas[k].split(':').map(Number);
         const late = (d + di + k) % 5 === 0;
         const failed = (d * 3 + k + di) % 11 === 0;
-        const arrived = new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, m + (late ? 28 : -4 + ((d + k) % 12)));
+        const arrived = atBusinessTime(date, h, m + (late ? 28 : -4 + ((d + k) % 12)));
         const delivered = new Date(arrived.getTime() + (12 + ((d * 2 + k * 3) % 14)) * 60000);
         const contado = k % 2 === 0;
         const stop = await prisma.routeStop.create({
@@ -179,10 +179,8 @@ async function overdueDemo() {
   const customer = await prisma.customer.findFirstOrThrow({ where: { name: 'Borregos La Loma' } });
   if (await prisma.sale.findUnique({ where: { clientOpId: 'seed-overdue-borregos' } })) return;
   const cashier = await prisma.user.findUniqueOrThrow({ where: { username: 'cajero' } });
-  const past = new Date();
-  past.setDate(past.getDate() - 78);
-  const due = new Date();
-  due.setDate(due.getDate() - 63);
+  const past = addDays(businessDate(), -78);
+  const due = addDays(businessDate(), -63);
   const shift = await prisma.cashShift.create({
     data: { cashierId: cashier.id, openedAt: past, closedAt: past, status: 'CERRADO', openingFloat: 0, expectedCash: 0, countedCash: 0, difference: 0 },
   });
@@ -196,7 +194,7 @@ async function overdueDemo() {
       subtotal: 14300,
       total: 14300,
       balance: 14300,
-      dueDate: new Date(Date.UTC(due.getFullYear(), due.getMonth(), due.getDate())),
+      dueDate: due,
       createdAt: past,
       clientOpId: 'seed-overdue-borregos',
     },
@@ -207,8 +205,7 @@ async function overdueDemo() {
 async function demoRoute() {
   const driver = await prisma.user.findUniqueOrThrow({ where: { username: 'chofer' } });
   const vehicle = await prisma.vehicle.upsert({ where: { plate: 'TUL-482' }, update: {}, create: { plate: 'TUL-482', name: 'Camión 6 t' } });
-  const d = new Date();
-  const today = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const today = businessDate();
 
   const old = await prisma.route.findMany({ where: { driverId: driver.id, date: today } });
   for (const r of old) {
@@ -299,10 +296,7 @@ async function purchasingDemo() {
   const admin = await prisma.user.findUniqueOrThrow({ where: { username: 'compras' } });
   const prod = Object.fromEntries((await prisma.product.findMany()).map((x) => [x.code, x]));
   const day = 86_400_000;
-  const todayUtc = (() => {
-    const d = new Date();
-    return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  })();
+  const todayUtc = businessDate();
   const orders: { folio: string; supplier: string; status: 'ENVIADA' | 'RECIBIDA'; items: [string, number, number, number][]; payableDue?: number }[] = [
     {
       folio: 'OC-DEMO1',

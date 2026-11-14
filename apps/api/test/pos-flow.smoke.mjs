@@ -105,9 +105,10 @@ const sinStock = await call(cajero, 'POST', '/pos/sales', {
 check('sin existencia se rechaza y nombra el producto', sinStock.status === 400 && /Sal mineralizada/.test(sinStock.json.message), sinStock.json.message);
 
 // ---- crédito
-const customers = (await call(cajero, 'GET', '/pos/customers')).json;
-const borregos = customers.find((c) => c.name === 'Borregos La Loma');
-const pinos = customers.find((c) => c.name === 'Establo Los Pinos');
+// se buscan por nombre: la lista sin filtro está limitada y una base con muchos clientes de prueba los dejaría fuera
+const findCustomer = async (name) => (await call(cajero, 'GET', `/pos/customers?q=${encodeURIComponent(name)}`)).json.find((c) => c.name === name);
+const borregos = await findCustomer('Borregos La Loma');
+const pinos = await findCustomer('Establo Los Pinos');
 check('alerta de saldo vencido del cliente', borregos.blocked === true && borregos.overdue === 14300, borregos.reason);
 const blocked = await call(cajero, 'POST', '/pos/sales', { items: [lines[1]], paymentMethod: 'CREDITO', customerId: borregos.id });
 check('venta a crédito a cliente con saldo vencido → bloqueada', blocked.status === 400 && /bloqueado/i.test(blocked.json.message), blocked.json.message);

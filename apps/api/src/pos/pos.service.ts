@@ -3,6 +3,7 @@ import { Prisma, RefundMethod, SalePayment } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { InventoryService } from '../inventory/inventory.service';
 import { LoginLimiter } from '../common/login-limiter';
+import { addDays, businessDate, startOfBusinessDay } from '../common/time';
 import { PrismaService } from '../prisma.service';
 
 type Tx = Prisma.TransactionClient;
@@ -23,12 +24,9 @@ async function lockShift(tx: Tx, shiftId: number, mode: 'SHARE' | 'UPDATE') {
 const num = (d: Prisma.Decimal | number | null | undefined) => Number(d ?? 0);
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 const r3 = (n: number) => Math.round((n + Number.EPSILON) * 1000) / 1000;
-const startOfToday = () => {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-};
+/** Inicio del día local del negocio (las ventas "de hoy" empiezan a la medianoche de México, no a la de UTC). */
+const startOfToday = () => startOfBusinessDay();
 const money = (n: number) => '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const dateOnly = (d: Date) => new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
 
 export const STORE = {
   name: 'Forrajera San Miguel',
@@ -191,7 +189,7 @@ export class PosService {
     const c = await db.customer.findUnique({ where: { id: customerId } });
     if (!c) throw new NotFoundException('Cliente no encontrado');
     const open = await db.sale.findMany({ where: { customerId, status: 'POR_COBRAR', balance: { gt: 0 } } });
-    const today = dateOnly(new Date());
+    const today = businessDate();
     const balance = r2(open.reduce((a, s) => a + num(s.balance), 0));
     const overdue = r2(open.filter((s) => s.dueDate && s.dueDate < today).reduce((a, s) => a + num(s.balance), 0));
     const limit = num(c.creditLimit);
@@ -297,9 +295,7 @@ export class PosService {
       status = 'POR_COBRAR';
       balance = total;
       received = null;
-      const d = new Date();
-      d.setDate(d.getDate() + credit.creditDays);
-      dueDate = dateOnly(d);
+      dueDate = addDays(businessDate(), credit.creditDays);
     }
 
     const saleId = await this.prisma.$transaction(

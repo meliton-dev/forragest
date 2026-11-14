@@ -39,6 +39,8 @@ npm run driver:dev       # http://localhost:5173
 La app habla solo con su propio servidor: `/api` se reenvía a la API (`API_URL`, por defecto `http://localhost:3000`).
 Por eso basta exponer **un solo puerto** para probar en el celular y no hay problemas de CORS.
 
+> **Zona horaria:** "hoy", las horas estimadas de las paradas y el día de las ventas se calculan en la hora del negocio (`APP_TIMEZONE`, por defecto `America/Mexico_City`), no en la del servidor, que en Render es UTC. Todo código nuevo que use fechas debe pasar por `apps/api/src/common/time.ts`.
+
 ## Punto de venta (web)
 
 ```bash

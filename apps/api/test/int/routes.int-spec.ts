@@ -71,3 +71,50 @@ describe('ubicación en vivo', () => {
     expect(await prisma.locationPing.count({ where: { routeId } })).toBe(before - 3);
   });
 });
+
+describe('"hoy" es el día del negocio, no el del servidor (UTC)', () => {
+  // 10:42 p. m. del sábado 14 en México = 04:42 UTC del domingo 15: un servidor en UTC cree que ya es otro día.
+  const NIGHT = new Date('2026-11-15T04:42:00Z');
+  const justDate = [
+    'hrtime',
+    'nextTick',
+    'performance',
+    'queueMicrotask',
+    'setImmediate',
+    'clearImmediate',
+    'setInterval',
+    'clearInterval',
+    'setTimeout',
+    'clearTimeout',
+  ] as const;
+  let todayRoute: number;
+
+  beforeAll(async () => {
+    const r = await prisma.route.findUniqueOrThrow({ where: { id: routeId } });
+    const copy = await prisma.route.create({
+      data: { name: `Ruta de hoy ${uid()}`, date: new Date('2026-11-14T00:00:00Z'), driverId: r.driverId, vehicleId: r.vehicleId, status: 'PROGRAMADA' },
+    });
+    todayRoute = copy.id;
+  });
+  afterAll(() => prisma.route.update({ where: { id: todayRoute }, data: { status: 'FINALIZADA' } }));
+
+  it('la lista de rutas de hoy incluye la ruta del día local aunque el reloj UTC ya marque el día siguiente', async () => {
+    jest.useFakeTimers({ now: NIGHT, doNotFake: [...justDate] });
+    try {
+      const { routes: list } = await routes.list('today');
+      expect(list.map((r) => r.id)).toContain(todayRoute);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('al día siguiente local esa ruta ya no es "de hoy"', async () => {
+    jest.useFakeTimers({ now: new Date('2026-11-15T07:00:00Z'), doNotFake: [...justDate] }); // 01:00 del 15 en México
+    try {
+      const { routes: list } = await routes.list('today');
+      expect(list.map((r) => r.id)).not.toContain(todayRoute);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});

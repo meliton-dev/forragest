@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { Prisma } from '@prisma/client';
 import { PosService } from '../pos/pos.service';
 import { PrismaService } from '../prisma.service';
+import { atBusinessTime, businessDate } from '../common/time';
 import { speedKmh } from './live';
 
 const num = (d: Prisma.Decimal | number | null | undefined) => Number(d ?? 0);
@@ -9,17 +10,15 @@ const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 /** Minutos de gracia sobre la hora estimada antes de contar una entrega como tardía. */
 export const LATE_TOLERANCE_MIN = 15;
 
-const todayUtc = () => {
-  const d = new Date();
-  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-};
+/** "Hoy" en la hora del negocio (no la del servidor, que está en UTC). */
+const todayUtc = () => businessDate();
 const parseDate = (s: string) => new Date(s + 'T00:00:00.000Z');
 
-/** ¿Llegó/entregó después de su hora estimada + tolerancia? (eta "HH:MM" en hora local del día de la ruta) */
+/** ¿Llegó/entregó después de su hora estimada + tolerancia? (eta "HH:MM" en la hora local del negocio, el día de la ruta) */
 export function isLate(eta: string | null, routeDate: Date, at: Date): boolean {
   if (!eta || !/^\d{2}:\d{2}$/.test(eta)) return false;
   const [h, m] = eta.split(':').map(Number);
-  const target = new Date(routeDate.getUTCFullYear(), routeDate.getUTCMonth(), routeDate.getUTCDate(), h, m + LATE_TOLERANCE_MIN);
+  const target = atBusinessTime(routeDate, h, m + LATE_TOLERANCE_MIN);
   return at.getTime() > target.getTime();
 }
 

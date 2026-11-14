@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, PurchaseStatus } from '@prisma/client';
+import { businessDate } from '../common/time';
 import { InventoryService } from '../inventory/inventory.service';
 import { PrismaService } from '../prisma.service';
 
@@ -10,10 +11,8 @@ const DAY = 86_400_000;
 /** Días de anticipación con los que una cuenta por pagar se marca como “por vencer” (COM-007). */
 export const DUE_SOON_DAYS = 7;
 
-const todayUtc = () => {
-  const d = new Date();
-  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-};
+/** "Hoy" en la hora del negocio (no la del servidor, que está en UTC). */
+const todayUtc = () => businessDate();
 
 export interface SupplierInput {
   name: string;

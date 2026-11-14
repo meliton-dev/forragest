@@ -5,6 +5,7 @@
 import 'dotenv/config';
 import * as bcrypt from 'bcrypt';
 import { LoginLimiter } from '../../src/common/login-limiter';
+import { businessDate } from '../../src/common/time';
 import { InventoryService } from '../../src/inventory/inventory.service';
 import { PosService } from '../../src/pos/pos.service';
 import { PrismaService } from '../../src/prisma.service';
@@ -50,7 +51,7 @@ describe('crédito', () => {
     expect(s.status).toBe('POR_COBRAR');
     expect(s.balance).toBe(300);
     const due = new Date(s.dueDate!);
-    const days = Math.round((due.getTime() - Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())) / 864e5);
+    const days = Math.round((due.getTime() - businessDate().getTime()) / 864e5);
     expect(days).toBe(15);
     expect((await pos.creditOf(c.id)).available).toBe(700);
   });

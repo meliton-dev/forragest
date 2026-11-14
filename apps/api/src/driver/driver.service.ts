@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { IncidentType, PaymentMethod, Prisma } from '@prisma/client';
+import { businessDate } from '../common/time';
 import { InventoryService } from '../inventory/inventory.service';
 import { PrismaService } from '../prisma.service';
 
@@ -92,8 +93,7 @@ export class DriverService {
 
   /** Ruta vigente del chofer: la más reciente sin finalizar; si no hay, la finalizada de hoy. */
   async currentRoute(userId: number) {
-    const d = new Date();
-    const today = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const today = businessDate();
     const open = await this.prisma.route.findFirst({
       where: { driverId: userId, date: { lte: today }, status: { not: 'FINALIZADA' } },
       orderBy: { date: 'desc' },
