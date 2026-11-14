@@ -27,10 +27,33 @@ function check(name, cond, extra = '') {
 const login = async (u) => (await call(null, 'POST', '/auth/login', { username: u, password: 'cambiar123' })).json.accessToken;
 const sup = await login('supervisor');
 const chofer = await login('chofer');
+// Las horas estimadas son de la hora del negocio (APP_TIMEZONE, por defecto America/Mexico_City), no de la zona de esta máquina.
+const TZ = process.env.APP_TIMEZONE || 'America/Mexico_City';
+const zoneParts = (d) =>
+  Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: TZ,
+      hourCycle: 'h23',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+    })
+      .formatToParts(d)
+      .filter((p) => p.type !== 'literal')
+      .map((p) => [p.type, Number(p.value)]),
+  );
+const zoneOffset = (d) => {
+  const p = zoneParts(d);
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(d.getTime() / 1000) * 1000;
+};
 const localAt = (h, m) => {
-  const d = new Date();
-  d.setHours(h, m, 0, 0);
-  return d.toISOString();
+  const t = zoneParts(new Date());
+  const guess = Date.UTC(t.year, t.month - 1, t.day, h, m);
+  const first = guess - zoneOffset(new Date(guess));
+  return new Date(guess - zoneOffset(new Date(first))).toISOString();
 };
 
 // ---- permisos
