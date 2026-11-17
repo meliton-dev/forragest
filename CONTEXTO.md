@@ -101,6 +101,8 @@ Cuentas de demostración locales: contraseña `cambiar123` (está en `README.md`
 
 `docs/informe/` y `scripts/capturas-informe.mjs` están en `.git/info/exclude`: eran para un informe escolar que la persona pidió dejar fuera del repositorio. `reporte-consumo-remoto/` (evidencia de que la app móvil consume la API publicada) tampoco se versiona.
 
+También excluidos: `docs/informe-u3/` y `scripts/pruebas-informe-u3.mjs`, del reporte «Pruebas Debug y Release» de la Unidad III (16 nov 2026). El guion prueba la app del repartidor en modo depuración (`vite` en :5175) y en modo liberación (`vite build` + `vite preview` en :4173, entrada `driver-release` de `.claude/launch.json`): carga inicial con y sin red 4G lenta, código que se entrega, recorrido completo de 14 pasos y arranque sin conexión. `docs/informe-u3/generar.mjs` arma el PDF (cuerpo en `cuerpo.html`, portada con el formato de la Unidad I, estilos del informe anterior, índice con páginas calculadas con `pdftotext`). En esta PC no hay `pdftoppm`: los PDF se leen con `pdftotext`. Pendientes que el reporte declara: Lighthouse, Sentry y prueba en teléfono real.
+
 ## Pendiente
 
 0. **Forrajera simulada:** falta publicar la rama `datos-forrajera` y después cargar el seed en la base de producción (`DATABASE_URL` externo y `SEED_PASSWORD`, ver `DEPLOY.md`). Allá los productos viejos conservan su existencia; el seed venderá el excedente dentro del historial.
