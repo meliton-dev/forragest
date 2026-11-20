@@ -25,7 +25,9 @@ Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/sh
 - `render.yaml` define la base, la API y los dos sitios estáticos. Los servicios gratuitos se duermen sin uso y la base gratuita tiene vigencia limitada.
 - Variables de la API que importan: `DATABASE_URL`, `JWT_SECRET` (mínimo 24 caracteres), `CORS_ORIGINS` (**obligatoria en producción**: direcciones completas con `https://`, separadas por coma, sin comodines), `SEED_PASSWORD`, `APP_TIMEZONE` (por defecto `America/Mexico_City`), `ROUTING_URL` (servicio de rutas por calles; vacío = líneas rectas), `PING_RETENTION_DAYS` (por defecto 45), `LOG_LEVEL`.
 - Respaldo diario cifrado con GitHub Actions (`.github/workflows/respaldo.yml`): necesita los secretos `BACKUP_DATABASE_URL` y `BACKUP_PASSPHRASE` (ver `DEPLOY.md`).
-- Los usuarios de demostración (`admin`, `cajero`, `almacen`, `chofer`, `chofer2`, `compras`, `supervisor`; `cajero2` y `chofer3` llegan con la rama `datos-forrajera`) existen también en producción con la contraseña que se puso en `SEED_PASSWORD`. No se guardan contraseñas de producción en el repositorio ni en este archivo.
+- **Base actual: `forragest-db-2`** (creada el 19 nov 2026 por el Blueprint, caduca ~19 dic 2026: ver la fecha en su página de Render). Tiene **solo la forrajera simulada**. La primera, `forragest-db`, quedó **suspendida** (no borrada) porque Render solo permite una base gratuita activa; caduca el 3 dic 2026. Para la siguiente base: cambiar el nombre en `render.yaml` (`databases` y `fromDatabase`), suspender o borrar la anterior y hacer "Manual sync" del Blueprint (pide "Approve").
+- **`SEED_ON_BOOT=1`** (en `render.yaml`): al arrancar, `apps/api/start.sh` aplica migraciones, corre el seed (completa los días que falten y rehace la ruta de hoy si no ha salido) y levanta la API. Suma unos segundos al arranque en frío. Quitarlo si algún día hay un cliente real.
+- Los usuarios de demostración (`admin`, `cajero`, `cajero2`, `almacen`, `chofer`, `chofer2`, `chofer3`, `compras`, `supervisor`) existen en producción con la contraseña de `SEED_PASSWORD` (variable de `forragest-api`, puesta nueva por la persona el 19 nov 2026). No se guardan contraseñas de producción en el repositorio ni en este archivo. Sin `SEED_PASSWORD` el seed se cancela solo y la API arranca sin datos.
 
 ## Cómo trabajamos (acuerdos)
 
@@ -117,9 +119,9 @@ También excluidos: `docs/informe-u3/` y `scripts/pruebas-informe-u3.mjs`, del r
 
 ## Pendiente
 
-0. **Forrajera simulada:** publicar `listo-produccion` (incluye `datos-forrajera`), crear una base nueva en Render, conectar la API y cargar el seed (pasos en `DEPLOY.md`, sección "Cambiar a una base nueva"). No correr el seed sobre una base con datos.
+0. ~~Forrajera simulada en producción~~: hecho el 19 nov 2026 (base nueva `forragest-db-2`, 304 ventas en 21 días hábiles). Falta revisar las pantallas con sesión en producción (la contraseña la tiene la persona) y regenerar `JWT_SECRET` en Render para invalidar tokens emitidos con la base vieja (los ids de usuario coinciden).
 1. **Rotar la contraseña de demostración compartida** y crear usuarios reales: es el mayor riesgo de producción (todos los roles comparten contraseña). Al menos `admin` y `supervisor` con contraseñas propias, y regenerar `JWT_SECRET` para cerrar sesiones (el token dura 12 h y no se revoca al desactivar al usuario).
-2. **Activar los respaldos diarios** agregando los dos secretos en GitHub.
+2. **Activar los respaldos diarios** agregando los dos secretos en GitHub (`BACKUP_DATABASE_URL` = External URL de `forragest-db-2`).
 3. **Fotos y firmas fuera de la base** (hoy son base64 en `Delivery`/`Incident`): requiere elegir dónde guardarlas (R2, S3 o disco). Hay un límite de 10 MB por petición.
 4. Revisar con un **celular real en la calle** la ubicación en vivo (solo se probó con GPS simulado) y la **ruta por calles en producción** (que la API de Render alcance a OSRM).
 5. Consultas de ventas por rol: hoy cualquier cajero ve las ventas de hoy de todos los cajeros (hace falta para devoluciones por folio); decidir si se restringe.
