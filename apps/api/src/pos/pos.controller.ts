@@ -6,8 +6,8 @@ import { Roles } from '../common/roles';
 import { PosService } from './pos.service';
 
 class AuthorizationDto {
-  @IsString() username: string;
-  @IsString() password: string;
+  @IsString() @MaxLength(64) username: string;
+  @IsString() @MaxLength(128) password: string;
 }
 
 class LineDto {
@@ -99,8 +99,8 @@ export class PosController {
   }
 
   @Post('authorize')
-  authorize(@Body() dto: AuthorizationDto) {
-    return this.pos.verifyAuthorization(dto);
+  authorize(@Body() dto: AuthorizationDto, @Req() req: AuthedRequest) {
+    return this.pos.verifyAuthorization(req.user.sub, dto);
   }
 
   @Get('sales/by-folio/:folio')

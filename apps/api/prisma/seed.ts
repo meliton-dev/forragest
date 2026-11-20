@@ -1,5 +1,6 @@
 import { PaymentMethod, Prisma, PrismaClient, SalePayment } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { databaseHost, isLocalDatabaseUrl, loadEnv } from './db-guard';
 import { addDays, atBusinessTime, businessDate } from '../src/common/time';
 import {
   CUSTOMERS,
@@ -90,14 +91,36 @@ async function seedCustomers() {
 
 // ---------- Catálogos ----------
 
+/** Se niega a correr contra una base que no sea local (salvo SEED_ALLOW_REMOTE=1) y exige SEED_PASSWORD fuera de local. */
+function checkTarget() {
+  loadEnv();
+  const url = process.env.DATABASE_URL;
+  const local = isLocalDatabaseUrl(url);
+  if (!local && process.env.SEED_ALLOW_REMOTE !== '1') {
+    const host = databaseHost(url);
+    throw new Error(
+      `El seed se canceló: la base de datos no es local (${host ? `host "${host}"` : 'DATABASE_URL falta o no se puede leer'}). ` +
+        'Si de verdad quieres cargarla ahí (por ejemplo una base NUEVA y vacía en Render), vuelve a correrlo con SEED_ALLOW_REMOTE=1. No se tocó nada.',
+    );
+  }
+  if (!local && !process.env.SEED_PASSWORD) {
+    throw new Error(
+      'El seed se canceló: con una base que no es local hay que definir SEED_PASSWORD (la contraseña de los usuarios de demostración). No se usa "cambiar123" fuera de tu computadora.',
+    );
+  }
+}
+
+/**
+ * Crea los usuarios que falten. A los que ya existen NO se les cambia la contraseña ni el nombre,
+ * salvo con SEED_RESET_PASSWORDS=1 (entonces se les pone SEED_PASSWORD, o "cambiar123" en una base local).
+ */
 async function users() {
+  const reset = process.env.SEED_RESET_PASSWORDS === '1';
   const passwordHash = await bcrypt.hash(process.env.SEED_PASSWORD ?? 'cambiar123', 10);
   for (const [username, fullName, role] of STAFF) {
-    await prisma.user.upsert({
-      where: { username },
-      update: { fullName, ...(process.env.SEED_PASSWORD ? { passwordHash } : {}) },
-      create: { username, fullName, role, passwordHash },
-    });
+    const exists = await prisma.user.findUnique({ where: { username }, select: { id: true } });
+    if (!exists) await prisma.user.create({ data: { username, fullName, role, passwordHash } });
+    else if (reset) await prisma.user.update({ where: { username }, data: { fullName, passwordHash } });
   }
 }
 
@@ -643,7 +666,16 @@ async function todayRoute() {
   const driver = await userByName('chofer');
   const vehicle = await prisma.vehicle.findUniqueOrThrow({ where: { plate: VEHICLES[0][0] } });
   const today = businessDate();
-  await deleteRoutes({ driverId: driver.id, date: today });
+  const existing = await prisma.route.findMany({ where: { driverId: driver.id, date: today }, select: { name: true, status: true } });
+  // En una base local (desarrollo y CI) la ruta de hoy se rehace siempre: routes:smoke la necesita sin iniciar
+  // aunque api:smoke la haya terminado. En una base remota no se toca una ruta que ya salió o terminó.
+  const local = isLocalDatabaseUrl(process.env.DATABASE_URL);
+  const inUse = existing.filter((x) => x.status !== 'PROGRAMADA');
+  if (inUse.length && !local) {
+    console.warn(`Aviso: "chofer" ya tiene hoy ${inUse.map((x) => `"${x.name}" (${x.status})`).join(', ')}; no se toca y no se crea la ruta de hoy.`);
+    return;
+  }
+  await deleteRoutes({ driverId: driver.id, date: today, ...(local ? {} : { status: 'PROGRAMADA' }) });
 
   const pres = await presentationMap();
   const clients = await seedCustomers();
@@ -797,7 +829,7 @@ async function scheduledRoutes() {
   const date = nextWorkingDay(today);
   const drivers = [await userByName('chofer2'), await userByName('chofer3')];
   const trucks = await Promise.all([VEHICLES[1][0], VEHICLES[2][0]].map((plate) => prisma.vehicle.findUniqueOrThrow({ where: { plate } })));
-  await deleteRoutes({ status: 'PROGRAMADA', name: { in: [...ZONES] }, driverId: { in: drivers.map((d) => d.id) } });
+  await deleteRoutes({ status: 'PROGRAMADA', date: { gt: today }, name: { in: [...ZONES] }, driverId: { in: drivers.map((d) => d.id) } });
 
   const pres = await presentationMap();
   const clients = await seedCustomers();
@@ -831,6 +863,7 @@ async function scheduledRoutes() {
 }
 
 async function main() {
+  checkTarget();
   for (const [code, name] of [
     ['OVINO', 'Ovino'],
     ['BOVINO', 'Bovino'],

@@ -35,12 +35,30 @@ Necesitas una cuenta en [GitHub](https://github.com) y otra en [Render](https://
    - En la API: `CORS_ORIGINS` = dirección de la app móvil, y `SEED_PASSWORD` = una contraseña propia (no uses `cambiar123`).
    - En la app móvil: `VITE_API_URL` = dirección de la API.
      Guarda y pulsa **Manual Deploy** en la app móvil (el valor se incorpora al compilar).
-5. **Carga los datos de demostración** desde tu computadora, apuntando a la base remota (copia la _External Database URL_ desde Render):
-   ```bash
-   DATABASE_URL="postgresql://…externa…" SEED_PASSWORD="tu-contraseña" npm run db:seed
+5. **Carga los datos de demostración** desde tu computadora, apuntando a la base remota (copia la _External Database URL_ desde Render). En PowerShell, en una **terminal nueva** que cierres al terminar:
+   ```powershell
+   $env:DATABASE_URL='postgresql://…externa…'; $env:SEED_PASSWORD='tu-contraseña'; $env:SEED_ALLOW_REMOTE='1'; npm run db:seed
    ```
-   Importante: el seed reconstruye los datos de demostración. Úsalo solo en una base de demostración, nunca sobre datos reales.
+   Por seguridad, el seed se niega a correr contra una base que no sea local si falta `SEED_ALLOW_REMOTE=1`, y también si falta `SEED_PASSWORD`. A los usuarios que ya existen no les cambia la contraseña (solo con `SEED_RESET_PASSWORDS=1`). Úsalo en una base de demostración, nunca sobre datos reales; para pasar datos reales a otra base usa los respaldos (ver abajo). Más detalle en la sección siguiente.
 6. Comprueba que está viva: abre `https://TU-API.onrender.com/health` → debe mostrar `"status":"ok"` y `"db":"up"`.
+
+## Cambiar a una base nueva (por ejemplo cuando caduca la gratuita)
+
+Pensado para hacerlo sin saber programar. Todo en PowerShell, en la carpeta del proyecto.
+
+1. **Respaldo de la vieja (opcional).** Si hay datos que quieras conservar, baja el último respaldo de _GitHub → Actions → Respaldo diario → Artifacts_ (ver "Respaldos diarios"). Si la base era solo de demostración, sáltate este paso: el seed vuelve a crear todo.
+2. **Crear la base nueva en Render.** Revisa en tu panel cuántas bases gratuitas permite tu cuenta (el plan gratuito permite pocas): si ya llegaste al límite, borra primero la vieja (_Dashboard → forragest-db → Settings → Delete_; borrarla es definitivo). Luego _New → PostgreSQL_, plan gratuito, y espera a que quede en estado _Available_.
+3. **Conectar la API a la nueva.** La opción más simple: en _forragest-api → Environment_ edita `DATABASE_URL` y pega el **Internal Database URL** de la base nueva (_la base → Connect → Internal_). Guarda; Render reinicia la API. (`render.yaml` enlaza `forragest-db` por nombre, pero ese enlace se conecta al crear el Blueprint; pegar la dirección a mano es lo más directo. Si más adelante vuelves a sincronizar el Blueprint, revisa que `DATABASE_URL` siga apuntando a la base nueva.)
+4. **Migraciones.** Al reiniciar, la API crea las tablas sola (aplica las migraciones). Comprueba `https://TU-API.onrender.com/health`: debe decir `"db":"up"`.
+5. **Cargar los datos de demostración.** Abre una **terminal nueva** de PowerShell (no reutilices una ya abierta: `$env:DATABASE_URL` queda guardada mientras la terminal esté abierta y podrías apuntar a la base equivocada después) y copia el **External Database URL** de la base nueva:
+   ```powershell
+   $env:DATABASE_URL='postgresql://…externa…'; $env:SEED_PASSWORD='una-contraseña-propia'; $env:SEED_ALLOW_REMOTE='1'; npm run db:seed
+   ```
+   Tarda varios minutos (la base está lejos). Si se corta, en una base **nueva** puedes vaciarla (borrarla y crearla de nuevo, o `DROP SCHEMA public CASCADE; CREATE SCHEMA public;` y reiniciar la API para que migre) y repetir. Cuando termine, **cierra esa terminal**.
+6. **Después:**
+   - Cambia las contraseñas de `admin` y `supervisor` desde la app (los demás usuarios son de demostración).
+   - En _forragest-api → Environment_, genera un `JWT_SECRET` nuevo (esto cierra todas las sesiones abiertas).
+   - Actualiza el secreto `BACKUP_DATABASE_URL` de GitHub con el External URL de la base nueva, para que los respaldos nocturnos sigan funcionando.
 
 ## Cualquier otro servidor con Docker (VPS, servidor de la escuela)
 

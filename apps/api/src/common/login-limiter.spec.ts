@@ -22,3 +22,24 @@ describe('LoginLimiter', () => {
     expect(() => l.check('k')).not.toThrow();
   });
 });
+
+describe('LoginLimiter: llaves largas', () => {
+  it('una llave enorme no ocupa memoria y se sigue bloqueando', () => {
+    const l = new LoginLimiter();
+    const key = 'login:' + 'x'.repeat(1_000_000) + ':1.2.3.4';
+    for (let i = 0; i < 5; i++) l.fail(key);
+    expect(() => l.check(key)).toThrow(HttpException);
+    const stored = [...(l as unknown as { failures: Map<string, unknown> }).failures.keys()];
+    expect(stored).toHaveLength(1);
+    expect(stored[0].length).toBeLessThan(100);
+    l.succeed(key);
+    expect(() => l.check(key)).not.toThrow();
+  });
+
+  it('llaves largas distintas no se mezclan', () => {
+    const l = new LoginLimiter();
+    const base = 'x'.repeat(500);
+    for (let i = 0; i < 5; i++) l.fail(base + 'a');
+    expect(() => l.check(base + 'b')).not.toThrow();
+  });
+});

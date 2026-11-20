@@ -56,6 +56,17 @@ Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/sh
 - **Menú lateral del cajero** (riel con icono y nombre, turno y "Salir" abajo) en lugar del menú de arriba.
 - **Ticket de venta:** la lista de productos tiene espacio y baja sola al último agregado; cantidad **editable** (teclear 12, o 2.5 kg en granel, con tope en la existencia); botón para quitar un producto completo.
 
+**Rama `listo-produccion` (sobre `datos-forrajera`, para la presentación):**
+
+- **Límite del cuerpo:** 200 KB para todo; 10 MB solo en `POST /driver/stops/:id/deliver`, `/driver/stops/:id/fail` y `/driver/incidents` (firmas y fotos). Está en `apps/api/src/common/body-limit.ts`; `main.ts` crea la app con `bodyParser: false`. Un cuerpo grande responde 413 y un JSON roto 400 (no 500). Si se agrega una ruta con imágenes, hay que sumarla ahí.
+- **Login y autorización de supervisor** con tope de longitud (64/128); el limitador guarda un hash si la llave es larga. La llave del supervisor incluye al cajero que intenta: 5 errores de una caja ya no bloquean a las demás.
+- **Cerrar una ruta** reclama el cierre con `updateMany` condicionado: un doble cierre ya no regresa el inventario dos veces.
+- **Seed protegido:** se niega a correr contra una base que no sea `localhost` sin `SEED_ALLOW_REMOTE=1`, y ahí exige `SEED_PASSWORD`. No cambia contraseñas ni nombres de usuarios existentes salvo con `SEED_RESET_PASSWORDS=1`. En base remota no toca la ruta de hoy si ya salió; en base local la rehace siempre (`routes:smoke` la necesita sin iniciar). Las rutas programadas solo se borran si son de días posteriores. `npm run db:reset` se niega fuera de `localhost` (`scripts/db-reset.mjs`, `apps/api/prisma/db-guard.js`).
+- **Tablet vertical:** de 700 a 900 px el botón "Cobrar e imprimir ticket" ocupa toda la fila y Cancelar va debajo.
+- `DEPLOY.md` explica cómo cambiar a una base nueva de Render y cargar el seed desde PowerShell.
+- **Decisión:** para la presentación se crea una **base nueva y vacía** en Render y se carga ahí el seed, en lugar de correrlo sobre la base vieja. Revisión del seed sobre datos existentes: borra rutas ajenas, no usa transacciones y tarda 6-10 min contra Render; solo es seguro en base vacía.
+- La base gratuita vieja caducaba hacia el 3-4 dic 2026 (estimación: creada ~3 nov).
+
 ## Datos de demostración: la forrajera simulada
 
 No hay un cliente real: se **simula** uno, la **Forrajera San Miguel** (Tulancingo, Hgo.), para que el sistema se vea como en un negocio en marcha. Todo es inventado (personas, negocios, RFC, teléfonos con el patrón 555-01xx, correos `.example`). Está en `apps/api/prisma/seed-data.ts` (los datos) y `apps/api/prisma/seed.ts` (cómo se cargan). Rama `datos-forrajera`.
@@ -71,6 +82,7 @@ No hay un cliente real: se **simula** uno, la **Forrajera San Miguel** (Tulancin
 
 - **Fechas:** nunca usar `getDate()`/`getHours()` ni `new Date()` para "hoy" en la API. Usar `businessDate()`, `startOfBusinessDay()`, `atBusinessTime()`. Para probar: `TZ=UTC` en jest y una API aparte en el puerto 3001; la PC de la persona está en hora de México y **oculta** el fallo.
 - **Inyección de dependencias de Nest:** un servicio con un parámetro de constructor que Nest no sabe resolver pasa las pruebas unitarias pero **la API no arranca**. Existe `apps/api/test/int/boot.int-spec.ts` que levanta la aplicación completa; no quitarla.
+- **Probar como el CI en local:** base aparte `forragest_ci` (`docker compose exec -T db psql -U forrajera -d forrajera -c "CREATE DATABASE forragest_ci"`), `prisma migrate deploy`, `db:seed`, `api:test:int`, y la API compilada en el puerto 3001 (`PORT=3001`) para los smokes pasando `http://localhost:3001` como argumento. Todo con `TZ=UTC`.
 - **Pruebas locales ensucian la base:** las pruebas de integración crean clientes, productos y rutas. `npm run api:smoke` repetido sobre la misma base falla por `clientOpId` repetidos: borrar antes `Payment` e `Incident` con `clientOpId LIKE 'smoke-%'` y volver a correr `npm run db:seed`. Las rutas de prueba se dejan `FINALIZADA` para que no salgan "en curso" en el mapa.
 - **Prettier en Windows:** el repositorio guarda LF y Git en esta PC convierte a CRLF; `prettier --check` puede avisar de archivos que no cambiaron. Correr `npx prettier --write .` antes de confirmar.
 - **Vite tras cambiar de rama con cambios sin confirmar** puede quedar con un módulo a medias y mostrar la pantalla en blanco: reiniciar el servidor de desarrollo.
@@ -105,14 +117,15 @@ También excluidos: `docs/informe-u3/` y `scripts/pruebas-informe-u3.mjs`, del r
 
 ## Pendiente
 
-0. **Forrajera simulada:** falta publicar la rama `datos-forrajera` y después cargar el seed en la base de producción (`DATABASE_URL` externo y `SEED_PASSWORD`, ver `DEPLOY.md`). Allá los productos viejos conservan su existencia; el seed venderá el excedente dentro del historial.
-1. **Rotar la contraseña de demostración compartida** y crear usuarios reales: es el mayor riesgo de producción (todos los roles comparten contraseña). También rotar la de la base de datos, que pasó por el chat.
+0. **Forrajera simulada:** publicar `listo-produccion` (incluye `datos-forrajera`), crear una base nueva en Render, conectar la API y cargar el seed (pasos en `DEPLOY.md`, sección "Cambiar a una base nueva"). No correr el seed sobre una base con datos.
+1. **Rotar la contraseña de demostración compartida** y crear usuarios reales: es el mayor riesgo de producción (todos los roles comparten contraseña). Al menos `admin` y `supervisor` con contraseñas propias, y regenerar `JWT_SECRET` para cerrar sesiones (el token dura 12 h y no se revoca al desactivar al usuario).
 2. **Activar los respaldos diarios** agregando los dos secretos en GitHub.
 3. **Fotos y firmas fuera de la base** (hoy son base64 en `Delivery`/`Incident`): requiere elegir dónde guardarlas (R2, S3 o disco). Hay un límite de 10 MB por petición.
 4. Revisar con un **celular real en la calle** la ubicación en vivo (solo se probó con GPS simulado) y la **ruta por calles en producción** (que la API de Render alcance a OSRM).
 5. Consultas de ventas por rol: hoy cualquier cajero ve las ventas de hoy de todos los cajeros (hace falta para devoluciones por folio); decidir si se restringe.
 6. Si el uso crece: servidor propio o de pago para rutas por calles, plan de pago en Render, y monitoreo de errores con alertas (p. ej. Sentry).
-7. Tablet vertical (~800 px): el botón "Cobrar e imprimir ticket" queda apretado.
+7. El día de la presentación: abrir `https://forragest-api.onrender.com/health` 10 min antes (el arranque en frío tardó 33 s).
+8. **Seguridad que quedó para después** (auditoría de nov 2026): devoluciones en efectivo sin supervisor y sin límite de fecha; GET de inventario/productos sin `@Roles` (el chofer ve costos); el chofer puede registrar cobros con `stopId` de otra ruta; listas de DTO sin `@ArrayMaxSize`; `npm audit` con avisos (`body-parser`, `qs`); sitios estáticos sin CSP propia.
 
 ## Documentos relacionados
 

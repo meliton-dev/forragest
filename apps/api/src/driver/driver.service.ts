@@ -331,12 +331,17 @@ export class DriverService {
         back.set(i.productId, cur);
       }
     await this.prisma.$transaction(async (tx) => {
+      // Se reclama el cierre primero: si dos cierres llegan juntos (doble toque o reintento), solo uno regresa inventario.
+      const claimed = await tx.route.updateMany({
+        where: { id: routeId, status: 'EN_CURSO' },
+        data: { status: 'FINALIZADA', returnedAt: returnedAt ? new Date(returnedAt) : new Date() },
+      });
+      if (claimed.count !== 1) return;
       for (const [productId, b] of back)
         await this.inventory.addEntry(
           { productId, quantity: b.kg, unitCost: b.cost, type: 'ENTRADA_RUTA', reason: `Regreso de ${route.name}`, refType: 'Ruta', refId: route.id, userId },
           tx,
         );
-      await tx.route.update({ where: { id: routeId }, data: { status: 'FINALIZADA', returnedAt: returnedAt ? new Date(returnedAt) : new Date() } });
     });
     return this.summary(routeId, userId);
   }

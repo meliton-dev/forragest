@@ -208,8 +208,9 @@ export class PosService {
   }
 
   // ---------- autorización de supervisor ----------
-  private async authorize(a?: Authorization): Promise<number> {
-    const key = `supervisor:${(a?.username ?? '').trim().toLowerCase()}`;
+  private async authorize(userId: number, a?: Authorization): Promise<number> {
+    // la llave incluye a quien intenta (el cajero): los errores de una caja no bloquean a las demás
+    const key = `supervisor:${userId}:${(a?.username ?? '').trim().toLowerCase()}`;
     this.limiter.check(key);
     const user = a?.username ? await this.prisma.user.findUnique({ where: { username: a.username.trim() } }) : null;
     const ok =
@@ -223,8 +224,8 @@ export class PosService {
   }
 
   /** Valida las credenciales de un supervisor sin ejecutar ninguna acción (para dar respuesta inmediata en pantalla). */
-  async verifyAuthorization(a: Authorization) {
-    await this.authorize(a);
+  async verifyAuthorization(userId: number, a: Authorization) {
+    await this.authorize(userId, a);
     return { ok: true };
   }
 
@@ -276,7 +277,7 @@ export class PosService {
     let discountAmount = 0;
     if ((dto.discountPercent ?? 0) > 0) discountAmount = r2((subtotal * Math.min(dto.discountPercent!, 100)) / 100);
     else if ((dto.discountAmount ?? 0) > 0) discountAmount = r2(Math.min(dto.discountAmount!, subtotal));
-    const discountAuthorizedById = discountAmount > 0 ? await this.authorize(dto.authorization) : null;
+    const discountAuthorizedById = discountAmount > 0 ? await this.authorize(userId, dto.authorization) : null;
     const total = r2(subtotal - discountAmount);
 
     let received: number | null = total;
@@ -444,7 +445,7 @@ export class PosService {
     };
     const found = await this.prisma.sale.findUnique({ where: { id: saleId }, include: { creditNotes: true } });
     check(found);
-    const authId = await this.authorize(dto.authorization);
+    const authId = await this.authorize(userId, dto.authorization);
     await this.prisma.$transaction(async (tx) => {
       // Si el turno de la venta sigue abierto se bloquea: el corte no puede calcularse a mitad de la cancelación.
       const open = await tx.cashShift.findUnique({ where: { id: found!.shiftId }, select: { status: true } });

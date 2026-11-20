@@ -1796,3 +1796,26 @@ table.t td.strong {
 .change-box .num {
   font-size: 17px;
 }
+.pay-actions > .btn:first-child {
+  width: 110px;
+}
+.pay-actions > .btn.primary {
+  min-width: 0;
+}
+/* tablet vertical (~768-900 px): el ticket mide 320 px y "Cobrar e imprimir ticket" quedaba
+   apretado junto a Cancelar; Cobrar ocupa toda la fila (56 px) y Cancelar pasa debajo */
+@media (min-width: 700px) and (max-width: 900px) {
+  .pay-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .pay-actions > .btn,
+  .pay-actions > .btn:first-child {
+    width: 100%;
+    min-height: 48px;
+  }
+  .pay-actions > .btn.primary {
+    height: 56px;
+    font-size: 16px;
+  }
+}

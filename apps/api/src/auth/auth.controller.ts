@@ -1,11 +1,11 @@
 import { Body, Controller, Get, Ip, Post, Req } from '@nestjs/common';
-import { IsString } from 'class-validator';
+import { IsString, MaxLength } from 'class-validator';
 import { AuthService } from './auth.service';
 import { AuthedRequest, Public } from './jwt-auth.guard';
 
 class LoginDto {
-  @IsString() username: string;
-  @IsString() password: string;
+  @IsString() @MaxLength(64) username: string;
+  @IsString() @MaxLength(128) password: string;
 }
 
 @Controller('auth')

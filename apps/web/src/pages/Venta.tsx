@@ -278,8 +278,8 @@ export function Venta() {
             </Notice>
           )}
 
-          <div className="row" style={{ gap: 10 }}>
-            <Button size="lg" style={{ width: 110 }} onClick={pos.clearCart} disabled={cart.lines.length === 0}>
+          <div className="row pay-actions" style={{ gap: 10 }}>
+            <Button size="lg" onClick={pos.clearCart} disabled={cart.lines.length === 0}>
               Cancelar
             </Button>
             <Button variant="primary" size="lg" icon="printer" disabled={!canPay} onClick={pay}>
