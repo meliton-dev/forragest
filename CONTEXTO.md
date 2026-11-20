@@ -82,6 +82,8 @@ No hay un cliente real: se **simula** uno, la **Forrajera San Miguel** (Tulancin
 
 ## Lecciones y trampas (leer antes de tocar)
 
+- **Fechas sin hora en la web** (vencimientos, entrega esperada, `Route.date`): la API las guarda a medianoche UTC. Formatearlas con `toLocaleDateString` en México las muestra **un día antes**. Usar `diaCalendario()` de `apps/web/src/lib/format.ts` (formatea en UTC); para momentos con hora, `diaCorto()`. Se vio en Cuentas por pagar el 19 nov 2026 ("15 nov · hace 3 días" cuando vencía el 16).
+
 - **Fechas:** nunca usar `getDate()`/`getHours()` ni `new Date()` para "hoy" en la API. Usar `businessDate()`, `startOfBusinessDay()`, `atBusinessTime()`. Para probar: `TZ=UTC` en jest y una API aparte en el puerto 3001; la PC de la persona está en hora de México y **oculta** el fallo.
 - **Inyección de dependencias de Nest:** un servicio con un parámetro de constructor que Nest no sabe resolver pasa las pruebas unitarias pero **la API no arranca**. Existe `apps/api/test/int/boot.int-spec.ts` que levanta la aplicación completa; no quitarla.
 - **Probar como el CI en local:** base aparte `forragest_ci` (`docker compose exec -T db psql -U forrajera -d forrajera -c "CREATE DATABASE forragest_ci"`), `prisma migrate deploy`, `db:seed`, `api:test:int`, y la API compilada en el puerto 3001 (`PORT=3001`) para los smokes pasando `http://localhost:3001` como argumento. Todo con `TZ=UTC`.

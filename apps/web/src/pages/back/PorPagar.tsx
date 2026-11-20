@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, errMsg } from '../../lib/api';
 import { PAYABLE_LABEL, PAYABLE_TONE, type Payable, type PayablesData } from '../../lib/compras-types';
-import { mxn } from '../../lib/format';
+import { diaCalendario, mxn } from '../../lib/format';
 import { Badge, Button, Empty, Field, Input, Modal, Notice, Segmented } from '../../ui/kit';
 
 type Scope = 'ABIERTAS' | 'VENCIDA' | 'POR_VENCER' | 'PAGADA';
-const day = (iso: string) => new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
 const due = (p: Payable) =>
   p.status === 'PAGADA'
     ? ''
@@ -102,7 +101,7 @@ export function PorPagar() {
                 <td className="strong">{p.supplier}</td>
                 <td className="muted">{p.folio}</td>
                 <td>
-                  {day(p.dueDate)}
+                  {diaCalendario(p.dueDate)}
                   <div className="caption muted">{due(p)}</div>
                 </td>
                 <td className="right">{mxn(p.amount)}</td>

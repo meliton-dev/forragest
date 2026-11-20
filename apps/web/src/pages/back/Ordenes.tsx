@@ -2,11 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { api, errMsg } from '../../lib/api';
 import { PAYABLE_LABEL, PAYABLE_TONE, PURCHASE_LABEL, PURCHASE_TONE, type OrderDetail, type OrderRow } from '../../lib/compras-types';
-import { mxn } from '../../lib/format';
+import { diaCalendario, diaCorto as day, mxn } from '../../lib/format';
 import { Badge, Button, Empty, Field, Icon, Input, Modal, Notice, Segmented } from '../../ui/kit';
 
 type Scope = 'ABIERTAS' | 'RECIBIDA' | 'TODAS';
-const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—');
 const kg = (n: number) => n.toLocaleString('es-MX', { maximumFractionDigits: 3 });
 
 export function Ordenes() {
@@ -148,7 +147,7 @@ export function Ordenes() {
               <div className="card-b">
                 <div className="caption muted">
                   {detail.supplier.name} · {detail.supplier.paymentDays === 0 ? 'contado' : `crédito ${detail.supplier.paymentDays} días`}
-                  {detail.expectedAt ? ` · entrega esperada ${day(detail.expectedAt)}` : ''}
+                  {detail.expectedAt ? ` · entrega esperada ${diaCalendario(detail.expectedAt)}` : ''}
                 </div>
                 <div className="col">
                   {detail.items.map((i) => (
@@ -212,7 +211,7 @@ export function Ordenes() {
                     {detail.payables.map((p) => (
                       <div key={p.id} className="kv">
                         <span className="small muted2">
-                          {mxn(p.amount)} · vence {day(p.dueDate)}
+                          {mxn(p.amount)} · vence {diaCalendario(p.dueDate)}
                         </span>
                         <Badge tone={PAYABLE_TONE[p.status]}>{PAYABLE_LABEL[p.status]}</Badge>
                       </div>
