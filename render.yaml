@@ -1,6 +1,8 @@
 # Despliegue en Render (https://render.com): "New > Blueprint" y elegir este repositorio.
+# La base gratuita caduca a los 30 días: para cambiarla por una nueva basta con cambiar el nombre aquí y en
+# fromDatabase (el Blueprint la crea y conecta la API). forragest-db (la primera) caduca el 3 dic 2026.
 databases:
-  - name: forragest-db
+  - name: forragest-db-2
     plan: free
     databaseName: forragest
     user: forragest
@@ -17,7 +19,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        fromDatabase: { name: forragest-db, property: connectionString }
+        fromDatabase: { name: forragest-db-2, property: connectionString }
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGINS
