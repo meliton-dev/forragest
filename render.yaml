@@ -24,6 +24,9 @@ services:
         sync: false # URL de las apps, p. ej. https://forragest-repartos.onrender.com
       - key: SEED_PASSWORD
         sync: false
+      # carga la forrajera simulada al arrancar (completa los días que falten); quitarlo con un cliente real
+      - key: SEED_ON_BOOT
+        value: '1'
 
   - type: web
     name: forragest-repartos
