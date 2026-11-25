@@ -1,4 +1,7 @@
-import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
+import { AnimatePresence, LazyMotion, MotionConfig, m } from 'framer-motion';
+
+/** Motion completo pesa ~43 KB; con LazyMotion + m la primera carga es mínima y el resto llega después (motion.dev). */
+const loadMotion = () => import('./lib/motion-features').then((r) => r.default);
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { getToken } from './lib/api';
@@ -44,7 +47,7 @@ function FirstRun() {
 function AnimatedRoutes() {
   const loc = useLocation();
   return (
-    <motion.div
+    <m.div
       key={loc.pathname}
       className="page"
       initial={{ opacity: 0, y: 12 }}
@@ -66,7 +69,7 @@ function AnimatedRoutes() {
         <Route path="/cierre" element={<Cierre />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -84,23 +87,27 @@ export default function App() {
 
   if (!auth) {
     return (
-      <MotionConfig reducedMotion="user">
-        <div className="app">
-          <Login onDone={() => setAuth(true)} />
-        </div>
-      </MotionConfig>
+      <LazyMotion features={loadMotion} strict>
+        <MotionConfig reducedMotion="user">
+          <div className="app">
+            <Login onDone={() => setAuth(true)} />
+          </div>
+        </MotionConfig>
+      </LazyMotion>
     );
   }
   return (
-    <MotionConfig reducedMotion="user">
-      <div className="app">
-        <Tracker />
-        <Toaster />
-        <FirstRun />
-        <BrowserRouter>
-          <AnimatedRoutes />
-        </BrowserRouter>
-      </div>
-    </MotionConfig>
+    <LazyMotion features={loadMotion} strict>
+      <MotionConfig reducedMotion="user">
+        <div className="app">
+          <Tracker />
+          <Toaster />
+          <FirstRun />
+          <BrowserRouter>
+            <AnimatedRoutes />
+          </BrowserRouter>
+        </div>
+      </MotionConfig>
+    </LazyMotion>
   );
 }

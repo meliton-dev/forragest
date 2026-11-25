@@ -1,10 +1,8 @@
-import '@fontsource/fraunces/500.css';
-import '@fontsource/fraunces/500-italic.css';
-import '@fontsource/fraunces/600.css';
-import '@fontsource/fraunces/700.css';
-import '@fontsource/nunito-sans/400.css';
-import '@fontsource/nunito-sans/600.css';
-import '@fontsource/nunito-sans/700.css';
+// Letras variables: un archivo por alfabeto con todos los grosores (antes, uno por grosor y en dos formatos).
+// El navegador solo descarga el alfabeto que la página usa (latín).
+import '@fontsource-variable/fraunces/wght.css';
+import '@fontsource-variable/fraunces/wght-italic.css';
+import '@fontsource-variable/nunito-sans/wght.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';

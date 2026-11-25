@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import { dismissToast, useToast } from '../lib/toast';
 import { Icon } from './kit';
@@ -11,7 +11,7 @@ export function Toaster() {
   return (
     <AnimatePresence>
       {t && (
-        <motion.div
+        <m.div
           key={t.id}
           className="toast"
           role="status"
@@ -24,7 +24,7 @@ export function Toaster() {
           <Icon name={t.tone === 'warn' ? 'alert' : 'check'} size={18} color={t.tone === 'warn' ? '#ffd27a' : '#9be3b2'} sw={2.5} />
           <span className="msg">{t.message}</span>
           {t.undo && (
-            <motion.button
+            <m.button
               className="act"
               whileTap={{ scale: 0.94 }}
               onClick={() => {
@@ -34,12 +34,12 @@ export function Toaster() {
               }}
             >
               Deshacer
-            </motion.button>
+            </m.button>
           )}
           <span className="bar" aria-hidden>
             <i style={{ animationDuration: `${t.ms}ms` }} />
           </span>
-        </motion.div>
+        </m.div>
       )}
     </AnimatePresence>
   );
@@ -53,7 +53,7 @@ export function GpsNotice({ onClose }: { onClose: () => void }) {
   const ok = useRef<HTMLButtonElement>(null);
   useEffect(() => ok.current?.focus(), []);
   return (
-    <motion.div
+    <m.div
       className="sheet-wrap"
       role="dialog"
       aria-modal="true"
@@ -62,21 +62,21 @@ export function GpsNotice({ onClose }: { onClose: () => void }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.2 } }}
     >
-      <motion.div
+      <m.div
         className="sheet"
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%', transition: { duration: 0.22 } }}
         transition={{ type: 'spring', stiffness: 380, damping: 36 }}
       >
-        <motion.div
+        <m.div
           className="ico"
           initial={{ scale: 0.4, rotate: -12 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: 'spring', stiffness: 380, damping: 14, delay: 0.12 }}
         >
           <Icon name="pin" size={26} />
-        </motion.div>
+        </m.div>
         <div>
           <h2 className="h2" style={{ fontSize: 22, lineHeight: '28px' }}>
             Tu ubicación se comparte durante la ruta
@@ -86,13 +86,13 @@ export function GpsNotice({ onClose }: { onClose: () => void }) {
             y se detiene al cerrar la ruta.
           </p>
         </div>
-        <motion.button ref={ok} className="btn primary" whileTap={{ scale: 0.96 }} onClick={onClose}>
+        <m.button ref={ok} className="btn primary" whileTap={{ scale: 0.96 }} onClick={onClose}>
           Entendido
-        </motion.button>
+        </m.button>
         <p className="caption muted" style={{ margin: 0, textAlign: 'center' }}>
           Si el teléfono te pide permiso de ubicación, elige “Permitir”.
         </p>
-      </motion.div>
-    </motion.div>
+      </m.div>
+    </m.div>
   );
 }

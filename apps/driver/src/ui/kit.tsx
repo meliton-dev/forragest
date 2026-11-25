@@ -1,4 +1,4 @@
-import { motion, type HTMLMotionProps } from 'framer-motion';
+import { m, type HTMLMotionProps } from 'framer-motion';
 import {
   AlertTriangle,
   Bell,
@@ -102,7 +102,7 @@ type BtnProps = Omit<HTMLMotionProps<'button'>, 'children'> & {
 /** Botón con respuesta al toque (se hunde ligeramente) y estado de carga. */
 export function Button({ variant = 'primary', icon, small, loading, children, className = '', disabled, ...rest }: BtnProps) {
   return (
-    <motion.button
+    <m.button
       className={`btn ${variant} ${small ? 'sm' : ''} ${className}`}
       whileTap={{ scale: 0.96 }}
       whileHover={{ y: -1 }}
@@ -113,7 +113,7 @@ export function Button({ variant = 'primary', icon, small, loading, children, cl
     >
       {loading ? <Loader2 size={18} strokeWidth={2.25} className="spin" aria-hidden /> : icon && <Icon name={icon} size={18} sw={2.25} />}
       {children}
-    </motion.button>
+    </m.button>
   );
 }
 
@@ -122,9 +122,9 @@ export function Header({ title, sub, back, right }: { title: string; sub?: strin
   return (
     <header className={`header ${back ? 'back' : ''}`}>
       {back && (
-        <motion.button className="icon-btn" aria-label="Atrás" whileTap={{ scale: 0.9 }} onClick={() => (typeof back === 'string' ? nav(back) : nav(-1))}>
+        <m.button className="icon-btn" aria-label="Atrás" whileTap={{ scale: 0.9 }} onClick={() => (typeof back === 'string' ? nav(back) : nav(-1))}>
           <Icon name="left" size={24} />
-        </motion.button>
+        </m.button>
       )}
       <div className="grow">
         <h1 className={back ? 'h2' : 'h1'}>{title}</h1>
@@ -173,7 +173,7 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
     <div className="seg">
       {options.map(([v, l]) => (
         <button key={v} type="button" className={value === v ? 'on' : ''} onClick={() => onChange(v)}>
-          {value === v && <motion.span layoutId={`seg-${id}`} className="seg-thumb" transition={{ type: 'spring', stiffness: 520, damping: 38 }} />}
+          {value === v && <m.span layoutId={`seg-${id}`} className="seg-thumb" transition={{ type: 'spring', stiffness: 520, damping: 38 }} />}
           {l}
         </button>
       ))}
@@ -222,14 +222,14 @@ export function TabBar() {
         <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => `tab ${isActive ? 'on' : ''}`}>
           {({ isActive }) => (
             <>
-              {isActive && <motion.span layoutId="tab-pill" className="tab-pill" transition={{ type: 'spring', stiffness: 460, damping: 34 }} />}
-              <motion.span
+              {isActive && <m.span layoutId="tab-pill" className="tab-pill" transition={{ type: 'spring', stiffness: 460, damping: 34 }} />}
+              <m.span
                 animate={{ y: isActive ? -1 : 0, scale: isActive ? 1.08 : 1 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 26 }}
                 style={{ display: 'grid' }}
               >
                 <Icon name={icon} size={22} />
-              </motion.span>
+              </m.span>
               <span>{label}</span>
             </>
           )}
@@ -242,9 +242,9 @@ export function TabBar() {
 export function Empty({ icon, title, children }: { icon: string; title: string; children?: ReactNode }) {
   return (
     <div className="empty">
-      <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}>
+      <m.div animate={{ y: [0, -6, 0] }} transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}>
         <Icon name={icon} size={36} color="var(--border-strong)" />
-      </motion.div>
+      </m.div>
       <div className="title muted2">{title}</div>
       {children && <div className="small">{children}</div>}
     </div>

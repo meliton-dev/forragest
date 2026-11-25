@@ -78,6 +78,13 @@ Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/sh
 - **Excepción a propósito:** cargar el camión y salir a ruta sigue necesitando conexión (el servidor valida y descuenta el inventario); si falla, el chofer ve "No se pudo registrar la salida del almacén. Intenta de nuevo en un momento." El inicio de sesión también necesita conexión.
 - Al fusionar con `usuarios-contrasenas` habrá conflicto en `apps/driver/src/lib/store.ts` (las dos ramas cambiaron cómo se conserva la cola al vencer la sesión): quedarse con las claves por chofer de esta rama y agregar el manejo del 403 `PASSWORD_CHANGE_REQUIRED` de la otra.
 
+**Rama `rendimiento-letras` (sobre `conexion-automatica`, SIN publicar): mejoras de la revisión con Context7.**
+
+- **Letras variables** (`@fontsource-variable/fraunces` y `nunito-sans`, familias `'Fraunces Variable'` y `'Nunito Sans Variable'`): un archivo por alfabeto con todos los grosores. El service worker del chofer solo guarda las de alfabeto latino (`*-latin-wght-*.woff2`) y el resto al vuelo si alguna vez se usa: **832 KB (54 archivos) → 110 KB (3)**. Se quitaron `@fontsource/inter` (sin uso) y las letras estáticas.
+- **App del chofer con `LazyMotion` + `m`** (`strict`): las funciones de animación (`domMax`, porque hay `layoutId`) llegan en un archivo aparte (`lib/motion-features.ts`). Archivo principal 355 KB → 269 KB. Usar siempre `m.`, nunca `motion.` (con `strict` truena).
+- **Web: oficina bajo demanda** con `React.lazy` en `App.tsx` y `Suspense` dentro de `BackShell`. Archivo principal 441 KB → 228 KB (132 → 72 KB comprimido); Leaflet (154 KB) solo baja al abrir Monitoreo o Nueva ruta. `vite:preloadError` recarga una vez si se publica una versión nueva con la página abierta.
+- **Pendientes de la revisión** (cambian el aspecto: enseñar maquetas antes): contraste de `--text-3` sobre `--bg` (4.33:1), verde de éxito sobre su fondo (4.38:1) y bordes de campos (1.49:1; WCAG pide 4.5 y 3); textos de 12-13 px en la app del chofer; 52 colores escritos a mano y estilos en línea en la web.
+
 ## Datos de demostración: la forrajera simulada
 
 No hay un cliente real: se **simula** uno, la **Forrajera San Miguel** (Tulancingo, Hgo.), para que el sistema se vea como en un negocio en marcha. Todo es inventado (personas, negocios, RFC, teléfonos con el patrón 555-01xx, correos `.example`). Está en `apps/api/prisma/seed-data.ts` (los datos) y `apps/api/prisma/seed.ts` (cómo se cargan). Rama `datos-forrajera`.

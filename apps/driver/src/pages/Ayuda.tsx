@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { Header, Icon, Input } from '../ui/kit';
 import { Onboarding } from '../ui/Onboarding';
@@ -209,13 +209,13 @@ function Faq({ q, a, open: forced }: { q: string; a: string; open?: boolean }) {
     <div className="faq">
       <button aria-expanded={isOpen} onClick={() => setOpen(!open)}>
         <span>{q}</span>
-        <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ type: 'spring', stiffness: 420, damping: 28 }} style={{ display: 'grid' }}>
+        <m.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ type: 'spring', stiffness: 420, damping: 28 }} style={{ display: 'grid' }}>
           <Icon name="down" size={20} color="var(--text-3)" />
-        </motion.span>
+        </m.span>
       </button>
       <AnimatePresence initial={false}>
         {isOpen && (
-          <motion.div
+          <m.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -223,7 +223,7 @@ function Faq({ q, a, open: forced }: { q: string; a: string; open?: boolean }) {
             style={{ overflow: 'hidden' }}
           >
             <div className="ans">{a}</div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>

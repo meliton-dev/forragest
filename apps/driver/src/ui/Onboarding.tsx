@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from './kit';
 
@@ -38,7 +38,15 @@ function ArtFlow() {
     <g>
       <rect x={x} y="70" width="78" height="78" rx="18" fill={S} stroke={B} />
       <g transform={`translate(${x + 39} 109)`}>{children}</g>
-      <text x={x + 39} y="172" textAnchor="middle" fontSize="12" fontWeight="600" fill="var(--text-2)" fontFamily="Nunito Sans, sans-serif">
+      <text
+        x={x + 39}
+        y="172"
+        textAnchor="middle"
+        fontSize="12"
+        fontWeight="600"
+        fill="var(--text-2)"
+        fontFamily="Nunito Sans Variable, Nunito Sans, sans-serif"
+      >
         {label}
       </text>
     </g>
@@ -60,7 +68,7 @@ function ArtFlow() {
       </Step>
       <path d="M96 109h20m-6-6 6 6-6 6M203 109h20m-6-6 6 6-6 6" stroke={B} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       <rect x="94" y="196" width="132" height="26" rx="13" fill={GS} />
-      <text x="160" y="213" textAnchor="middle" fontSize="12" fontWeight="600" fill="var(--ink)" fontFamily="Nunito Sans, sans-serif">
+      <text x="160" y="213" textAnchor="middle" fontSize="12" fontWeight="600" fill="var(--ink)" fontFamily="Nunito Sans Variable, Nunito Sans, sans-serif">
         Todo en una sola pantalla
       </text>
     </svg>
@@ -79,7 +87,7 @@ function ArtPin() {
       <circle cx="169" cy="92" r="3" stroke={G} strokeWidth="2" />
       <rect x="82" y="190" width="156" height="30" rx="15" fill={S} stroke={B} />
       <circle cx="102" cy="205" r="5" fill="var(--ok)" />
-      <text x="116" y="209" fontSize="12" fontWeight="600" fill="var(--text-2)" fontFamily="Nunito Sans, sans-serif">
+      <text x="116" y="209" fontSize="12" fontWeight="600" fill="var(--text-2)" fontFamily="Nunito Sans Variable, Nunito Sans, sans-serif">
         Solo con la ruta en curso
       </text>
     </svg>
@@ -126,7 +134,7 @@ export function Onboarding({ onClose }: { onClose: () => void }) {
   }, [onClose]);
 
   return (
-    <motion.div
+    <m.div
       className="onb"
       role="dialog"
       aria-modal="true"
@@ -145,7 +153,7 @@ export function Onboarding({ onClose }: { onClose: () => void }) {
         </button>
       </div>
       <AnimatePresence mode="wait" custom={dir} initial={false}>
-        <motion.div
+        <m.div
           key={i}
           custom={dir}
           className="onb-step"
@@ -156,24 +164,24 @@ export function Onboarding({ onClose }: { onClose: () => void }) {
           transition={{ type: 'spring', stiffness: 340, damping: 32 }}
         >
           <div className="onb-art">
-            <motion.div
+            <m.div
               animate={{ y: [0, -7, 0] }}
               transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
               style={{ width: '100%', display: 'grid', placeItems: 'center' }}
             >
               {step.art}
-            </motion.div>
+            </m.div>
           </div>
           <div className="onb-body">
             <h2>{step.title}</h2>
             <p>{step.text}</p>
           </div>
-        </motion.div>
+        </m.div>
       </AnimatePresence>
       <div className="onb-foot">
         <div className="dots" aria-hidden>
           {STEPS.map((_, k) => (
-            <motion.i
+            <m.i
               key={k}
               animate={{ width: k === i ? 28 : 8, backgroundColor: k === i ? '#b8482f' : '#d2c5a6' }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
@@ -182,16 +190,16 @@ export function Onboarding({ onClose }: { onClose: () => void }) {
         </div>
         <div className="btn-row">
           {i > 0 && (
-            <motion.button className="btn secondary" style={{ flex: '0 0 110px' }} whileTap={{ scale: 0.96 }} onClick={() => go(i - 1)}>
+            <m.button className="btn secondary" style={{ flex: '0 0 110px' }} whileTap={{ scale: 0.96 }} onClick={() => go(i - 1)}>
               Atrás
-            </motion.button>
+            </m.button>
           )}
-          <motion.button ref={next} className="btn primary" whileTap={{ scale: 0.96 }} onClick={() => (last ? onClose() : go(i + 1))}>
+          <m.button ref={next} className="btn primary" whileTap={{ scale: 0.96 }} onClick={() => (last ? onClose() : go(i + 1))}>
             {last ? 'Empezar' : 'Siguiente'}
             {!last && <Icon name="right" size={18} sw={2.5} />}
-          </motion.button>
+          </m.button>
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 }

@@ -38,7 +38,17 @@ export default defineConfig({
       workbox: {
         // los datos de la API se guardan en IndexedDB desde la app; el service worker solo guarda el cascarón
         navigateFallbackDenylist: [/^\/api/],
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2,woff}'],
+        // De las letras solo se guardan las del alfabeto latino (español): las demás (cirílico, vietnamita, latín
+        // extendido) nunca se usan y antes sumaban cientos de KB en el teléfono. Si algún día se necesitan, se guardan
+        // al vuelo con la regla de abajo.
+        globPatterns: ['**/*.{js,css,html,svg,png}', '**/*-latin-wght-*.woff2'],
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.destination === 'font',
+            handler: 'CacheFirst',
+            options: { cacheName: 'letras', expiration: { maxEntries: 20 } },
+          },
+        ],
       },
     }),
   ],

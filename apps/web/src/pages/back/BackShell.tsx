@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { api, getUser } from '../../lib/api';
 import type { PurchaseAlerts } from '../../lib/compras-types';
@@ -92,7 +92,16 @@ export function BackShell() {
         </div>
       </aside>
       <main className="back-main">
-        <Outlet />
+        {/* las pantallas de oficina se descargan al abrirlas; el menú lateral se queda mientras tanto */}
+        <Suspense
+          fallback={
+            <div className="small muted" role="status">
+              Cargando…
+            </div>
+          }
+        >
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   );

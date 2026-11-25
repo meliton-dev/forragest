@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { usePref, writePref } from '../lib/prefs';
 import { Icon } from './kit';
@@ -9,7 +9,7 @@ export function Hint({ id, children }: { id: string; children: ReactNode }) {
   return (
     <AnimatePresence initial={false}>
       {!seen && (
-        <motion.div
+        <m.div
           className="hint"
           role="note"
           initial={{ opacity: 0, scale: 0.96 }}
@@ -20,7 +20,7 @@ export function Hint({ id, children }: { id: string; children: ReactNode }) {
           <Icon name="info" size={16} />
           <div className="t">{children}</div>
           <button onClick={() => writePref(`hint.${id}`, '1')}>Entendido</button>
-        </motion.div>
+        </m.div>
       )}
     </AnimatePresence>
   );
