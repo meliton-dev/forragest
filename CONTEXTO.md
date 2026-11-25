@@ -69,6 +69,21 @@ Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/sh
 - **Decisión:** para la presentación se crea una **base nueva y vacía** en Render y se carga ahí el seed, en lugar de correrlo sobre la base vieja. Revisión del seed sobre datos existentes: borra rutas ajenas, no usa transacciones y tarda 6-10 min contra Render; solo es seguro en base vacía.
 - La base gratuita vieja caducaba hacia el 3-4 dic 2026 (estimación: creada ~3 nov).
 
+**Rama `usuarios-contrasenas` (commit `fc2215a`, SIN publicar):** cada usuario con su contraseña.
+
+- `User.mustChangePassword` y `User.tokenVersion`. La migración `20261120000000_contrasenas_por_usuario` marca a **todos** los usuarios existentes: al publicar, en producción todos (admin primero) deben elegir su contraseña, y todas las sesiones abiertas se cierran (los tokens viejos no traen `tv`).
+- El guard lee al usuario en cada petición: 401 si está inactivo o el `tv` no coincide; con la bandera solo deja `GET /auth/me` y `POST /auth/change-password` (403 `PASSWORD_CHANGE_REQUIRED`). Rol y username salen de la base, no del token.
+- Módulo `/users` solo admin (listar, crear, editar nombre/rol/activo, poner contraseña con opción de pedir cambio). Página **Usuarios** en la oficina; "Cambiar contraseña" en los menús; pantalla obligatoria "Elige tu contraseña" en web y app del chofer.
+- La app del chofer ya **no pierde la cola sin conexión** si la sesión vence (401) o falta elegir contraseña (403): se conserva por dueño y se envía al volver a entrar.
+- Reglas de contraseña en `packages/shared` (`passwordProblem`, `checkNewPassword`); la API tiene una copia en `apps/api/src/common/password.ts` (compila a CommonJS y no puede importar shared) que una prueba compara.
+- Seed: en local quita la bandera a todos (si no, desarrollo, CI y smokes quedarían bloqueados); en remota los usuarios nuevos nacen con la bandera.
+
+**Rama `copia-local` (sobre `usuarios-contrasenas`, SIN publicar): todo el sistema en la PC con un comando.** Guía en `LOCAL.md`.
+
+- `npm run local` (`scripts/local.mjs`): repara dependencias si el proyecto cambió de carpeta, crea `apps/api/.env` si falta, se niega si `DATABASE_URL` no es localhost, enciende la base (Docker), migra, siembra con `SEED_KEEP_TODAY=1` (no rehace la ruta de hoy si ya salió) y arranca API (`ROUTING_URL` vacío = sin OSRM, salvo `--calles`), web y app del chofer. `npm run local:reiniciar` (pide escribir SI) y `npm run local:detener`.
+- Lo único que necesita internet en local: el fondo del mapa (teselas de OpenStreetMap), la ruta por calles si se pide `--calles` y el botón "Navegar" (Google Maps). El GPS funciona en `localhost`, no desde un celular por IP (requiere HTTPS).
+- `.env.example` ya no trae `VITE_API_URL` activo: copiado tal cual, hacía que la app local hablara con producción.
+
 ## Datos de demostración: la forrajera simulada
 
 No hay un cliente real: se **simula** uno, la **Forrajera San Miguel** (Tulancingo, Hgo.), para que el sistema se vea como en un negocio en marcha. Todo es inventado (personas, negocios, RFC, teléfonos con el patrón 555-01xx, correos `.example`). Está en `apps/api/prisma/seed-data.ts` (los datos) y `apps/api/prisma/seed.ts` (cómo se cargan). Rama `datos-forrajera`.
@@ -94,10 +109,14 @@ No hay un cliente real: se **simula** uno, la **Forrajera San Miguel** (Tulancin
 - **El navegador necesita HTTPS para el GPS:** en local no hay ubicación real; se simula con `navigator.geolocation` falso o con peticiones a `/driver/locations`.
 - Una app web **no puede rastrear en segundo plano**: la ubicación solo funciona con la app abierta, la ruta en curso y el chofer con "Compartir ubicación" activado.
 - Entre ramas apiladas, ambas suelen agregar reglas al final de `apps/web/src/styles.css`: al fusionar, conservar las dos partes.
+- **El proyecto se movió** (nov 2026) de `Desktop\UTTECAM\…` a `Desktop\Proyectos\Escuela\UTTECAM\Proyecto Integrador`. Los enlaces de npm workspaces (`node_modules/@forrajera/*`, uniones de Windows) quedaron apuntando a la carpeta vieja y nada compilaba ("@forrajera/shared could not be resolved"): se arregla con `npm install` (`npm run local` lo hace solo).
+- `prettier --check` en esta PC marca ~25 archivos por CRLF aunque el contenido en git esté bien; para confirmar: `git show :<archivo> | npx prettier --check --stdin-filepath <archivo>`.
 
 ## Comandos útiles
 
 ```bash
+npm run local                        # TODO en local con un comando (ver LOCAL.md); Ctrl+C para detener
+npm run local:reiniciar              # borra la base local y la recarga limpia
 npm install
 docker compose up -d db
 npm run db:seed                      # reinicia datos de demostración y la ruta de hoy
@@ -122,7 +141,7 @@ También excluidos: `docs/informe-u3/` y `scripts/pruebas-informe-u3.mjs`, del r
 ## Pendiente
 
 0. ~~Forrajera simulada en producción~~: hecho el 19 nov 2026 (base nueva `forragest-db-2`, 304 ventas en 21 días hábiles). Falta revisar las pantallas con sesión en producción (la contraseña la tiene la persona) y regenerar `JWT_SECRET` en Render para invalidar tokens emitidos con la base vieja (los ids de usuario coinciden).
-1. **Rotar la contraseña de demostración compartida** y crear usuarios reales: es el mayor riesgo de producción (todos los roles comparten contraseña). Al menos `admin` y `supervisor` con contraseñas propias, y regenerar `JWT_SECRET` para cerrar sesiones (el token dura 12 h y no se revoca al desactivar al usuario).
+1. **Contraseña propia por usuario:** hecho en la rama `usuarios-contrasenas` (probado en local de punta a punta), falta **publicarla** cuando la persona lo pida. Después: entrar como `admin`, elegir contraseña y poner la de cada persona desde Oficina → Usuarios. La contraseña compartida actual de producción quedó expuesta en un chat. Ya no hace falta regenerar `JWT_SECRET` (la versión del token cierra las sesiones).
 2. **Activar los respaldos diarios** agregando los dos secretos en GitHub (`BACKUP_DATABASE_URL` = External URL de `forragest-db-2`).
 3. **Fotos y firmas fuera de la base** (hoy son base64 en `Delivery`/`Incident`): requiere elegir dónde guardarlas (R2, S3 o disco). Hay un límite de 10 MB por petición.
 4. Revisar con un **celular real en la calle** la ubicación en vivo (solo se probó con GPS simulado) y la **ruta por calles en producción** (que la API de Render alcance a OSRM).

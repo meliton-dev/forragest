@@ -13,7 +13,9 @@ Monorepo: API (NestJS + Prisma + PostgreSQL) y app móvil del repartidor (PWA co
 
 ## Primer arranque
 
-Requisitos: Node 22, Docker Desktop.
+**La forma fácil:** `npm run local` arranca todo (base, API, punto de venta y app del chofer) con un solo comando; `npm run local:reiniciar` lo deja limpio. Paso a paso para cualquier persona en [LOCAL.md](LOCAL.md).
+
+Requisitos: Node 22, Docker Desktop. A mano:
 
 ```bash
 npm install

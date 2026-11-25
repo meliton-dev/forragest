@@ -674,8 +674,9 @@ async function todayRoute() {
   const today = businessDate();
   const existing = await prisma.route.findMany({ where: { driverId: driver.id, date: today }, select: { name: true, status: true } });
   // En una base local (desarrollo y CI) la ruta de hoy se rehace siempre: routes:smoke la necesita sin iniciar
-  // aunque api:smoke la haya terminado. En una base remota no se toca una ruta que ya salió o terminó.
-  const local = isLocalDatabaseUrl(process.env.DATABASE_URL);
+  // aunque api:smoke la haya terminado. En una base remota no se toca una ruta que ya salió o terminó, y tampoco
+  // en local con SEED_KEEP_TODAY=1 (lo usa `npm run local`: reiniciar la PC no borra una demostración a medias).
+  const local = isLocalDatabaseUrl(process.env.DATABASE_URL) && process.env.SEED_KEEP_TODAY !== '1';
   const inUse = existing.filter((x) => x.status !== 'PROGRAMADA');
   if (inUse.length && !local) {
     console.warn(`Aviso: "chofer" ya tiene hoy ${inUse.map((x) => `"${x.name}" (${x.status})`).join(', ')}; no se toca y no se crea la ruta de hoy.`);
