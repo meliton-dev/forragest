@@ -83,7 +83,8 @@ function Form({ route }: { route: Route }) {
             <select
               value={stopId}
               onChange={(e) => setStopId(Number(e.target.value))}
-              style={{ flex: 1, border: 0, background: 'none', height: '100%', fontSize: 16 }}
+              // sin la flecha del navegador: la del diseño va al lado (antes se veían dos)
+              style={{ flex: 1, border: 0, background: 'none', height: '100%', fontSize: 16, appearance: 'none', WebkitAppearance: 'none' }}
             >
               {route.stops.map((s) => (
                 <option key={s.id} value={s.id}>

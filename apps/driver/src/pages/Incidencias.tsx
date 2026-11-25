@@ -87,7 +87,8 @@ function Form({ route }: { route: Route }) {
             <select
               value={stopId}
               onChange={(e) => setStopId(e.target.value ? Number(e.target.value) : '')}
-              style={{ flex: 1, border: 0, background: 'none', height: '100%', fontSize: 16 }}
+              // sin la flecha del navegador: la del diseño va al lado (antes se veían dos)
+              style={{ flex: 1, border: 0, background: 'none', height: '100%', fontSize: 16, appearance: 'none', WebkitAppearance: 'none' }}
             >
               <option value="">Ninguna</option>
               {route.stops.map((s) => (

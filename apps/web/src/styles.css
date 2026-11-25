@@ -5,13 +5,16 @@
   --surface-2: #f8f1e2;
   --border: #e6dcc6;
   --border-strong: #d2c5a6;
+  /* borde de los campos de captura: 3:1 contra el fondo para que se vea dónde escribir (WCAG 1.4.11) */
+  --field-border: #9a8a62;
   --text: #22312a;
   --ink: #1f4d3a;
   --f-display: 'Fraunces Variable', 'Fraunces', Georgia, serif;
   --f-body: 'Nunito Sans Variable', 'Nunito Sans', system-ui, 'Segoe UI', sans-serif;
   --f-mono: 'Nunito Sans Variable', 'Nunito Sans', system-ui, sans-serif;
   --text-2: #46544c;
-  --text-3: #66736b;
+  /* versión B (nov 2026): texto tenue y verde de éxito con contraste ≥ 4.5:1 (WCAG AA) */
+  --text-3: #5d6a62;
   --accent: #b8482f;
   --accent-dark: #963a25;
   --accent-soft: #f7e3dc;
@@ -19,7 +22,7 @@
   --gold: #e9b949;
   --gold-dark: #7a5200;
   --gold-soft: #f6ebcb;
-  --ok: #2f7a46;
+  --ok: #2a7040;
   --ok-soft: #e1eedd;
   --warn: #8f5b00;
   --warn-soft: #fbf0da;
@@ -443,7 +446,7 @@ a {
   height: 44px;
   padding: 0 12px;
   background: var(--surface);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--field-border);
   border-radius: var(--r-md);
 }
 .input:focus-within {
@@ -557,7 +560,7 @@ a {
 .stepper {
   display: flex;
   align-items: center;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--field-border);
   border-radius: var(--r-md);
 }
 .stepper button {
@@ -627,7 +630,7 @@ table.t {
 }
 table.t th {
   text-align: left;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -752,7 +755,7 @@ table.t tr.sel td {
 }
 .receipt.mm58 {
   width: 58mm;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 15px;
   padding: 10px;
 }
@@ -1010,12 +1013,12 @@ table.t tr.sel td {
     'Nunito Sans',
     sans-serif;
   background: #fff;
-  color: #1f4d3a;
-  border: 2px solid #1f4d3a;
+  color: var(--ink);
+  border: 2px solid var(--ink);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 .map-stop.done {
-  background: #1f4d3a;
+  background: var(--ink);
   color: #fff;
   border-color: #fff;
 }
@@ -1249,7 +1252,7 @@ table.t tr.sel td {
 /* barra de caja y menú lateral en verde bosque */
 .side {
   background: var(--ink);
-  color: #f4efe4;
+  color: var(--bg);
   border: 0;
 }
 .side .muted {
@@ -1291,7 +1294,7 @@ table.t tr.sel td {
   color: #fff;
 }
 .side a.item.on {
-  background: #f4efe4;
+  background: var(--bg);
   color: var(--ink);
   font-weight: 700;
 }
@@ -1364,7 +1367,7 @@ table.t tr.sel td {
 }
 .sp.ovino,
 .sp-chip.ovino {
-  color: #2f5d47;
+  color: var(--ovino);
 }
 .sp.aves,
 .sp-chip.aves {
@@ -1434,7 +1437,7 @@ table.t tr.sel td {
 }
 .login-brand {
   background: var(--ink);
-  color: #f4efe4;
+  color: var(--bg);
   padding: 44px 52px 0;
   display: flex;
   flex-direction: column;
@@ -1524,7 +1527,7 @@ table.t td.strong {
   width: 96px;
   flex: none;
   background: var(--ink);
-  color: #f4efe4;
+  color: var(--bg);
   display: flex;
   flex-direction: column;
   padding: 14px 8px 12px;
@@ -1575,7 +1578,7 @@ table.t td.strong {
   color: #fff;
 }
 .rail-nav a.on {
-  background: #f4efe4;
+  background: var(--bg);
   color: var(--ink);
   font-weight: 700;
 }
@@ -1593,13 +1596,13 @@ table.t td.strong {
   flex-direction: column;
   align-items: center;
   gap: 1px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 14px;
   color: #b9cdbf;
   text-align: center;
 }
 .shift-pill b {
-  color: #f4efe4;
+  color: var(--bg);
   font-weight: 600;
 }
 .shift-pill .dot {
@@ -1657,7 +1660,7 @@ table.t td.strong {
   }
   .rail-nav a {
     min-height: 64px;
-    font-size: 11px;
+    font-size: 12px;
   }
   .rail-brand img {
     width: 34px;
