@@ -116,12 +116,18 @@ function checkTarget() {
  */
 async function users() {
   const reset = process.env.SEED_RESET_PASSWORDS === '1';
+  const local = isLocalDatabaseUrl(process.env.DATABASE_URL);
   const passwordHash = await bcrypt.hash(process.env.SEED_PASSWORD ?? 'cambiar123', 10);
+  // Base local (desarrollo, CI, smokes): sin obligar a cambiar la contraseña. Base remota: cada quien elige la suya al entrar.
+  const mustChangePassword = !local;
   for (const [username, fullName, role] of STAFF) {
     const exists = await prisma.user.findUnique({ where: { username }, select: { id: true } });
-    if (!exists) await prisma.user.create({ data: { username, fullName, role, passwordHash } });
-    else if (reset) await prisma.user.update({ where: { username }, data: { fullName, passwordHash } });
+    if (!exists) await prisma.user.create({ data: { username, fullName, role, passwordHash, mustChangePassword } });
+    else if (reset) await prisma.user.update({ where: { username }, data: { fullName, passwordHash, mustChangePassword, tokenVersion: { increment: 1 } } });
   }
+  // La migración marca a todos los usuarios existentes; en local eso bloquearía el desarrollo, el CI y los smokes.
+  // En una base remota no se toca a los existentes (salvo con SEED_RESET_PASSWORDS=1, arriba).
+  if (local) await prisma.user.updateMany({ where: { mustChangePassword: true }, data: { mustChangePassword: false } });
 }
 
 async function vehicles() {

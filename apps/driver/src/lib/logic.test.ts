@@ -51,6 +51,25 @@ describe('processQueue', () => {
     expect(r.queue).toHaveLength(2);
   });
 
+  it('403 PASSWORD_CHANGE_REQUIRED detiene el envío sin marcar fallida ni perder ninguna operación', async () => {
+    const r = await processQueue([op('a'), op('b')], async () => {
+      throw new ApiError('Elige tu contraseña', 403, 'PASSWORD_CHANGE_REQUIRED');
+    });
+    expect(r.passwordRequired).toBe(true);
+    expect(r.unauthorized).toBe(false);
+    expect(r.stopped).toBe(true);
+    expect(r.queue.map((o) => o.id)).toEqual(['a', 'b']);
+    expect(r.queue.every((o) => !o.failed)).toBe(true);
+  });
+
+  it('un 403 de permisos sigue marcando la operación como fallida', async () => {
+    const r = await processQueue([op('a')], async () => {
+      throw new ApiError('Sin permiso', 403);
+    });
+    expect(r.passwordRequired).toBe(false);
+    expect(r.queue[0]).toMatchObject({ id: 'a', failed: true });
+  });
+
   it('las operaciones ya fallidas no se reenvían', async () => {
     const seen: string[] = [];
     const r = await processQueue([op('a', { failed: true, error: 'x' }), op('b')], async (o) => void seen.push(o.id));

@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet } from 'react-router-dom';
 import { api, getUser } from '../../lib/api';
 import type { PurchaseAlerts } from '../../lib/compras-types';
 import { Button, Icon } from '../../ui/kit';
+import { ChangePasswordModal } from '../Password';
 
 const ROLE: Record<string, string> = { SUPERVISOR_RUTAS: 'Supervisor de rutas', GERENTE_COMPRAS: 'Gerente de compras', ADMINISTRADOR: 'Administrador' };
 
@@ -10,6 +11,7 @@ type NavItem = [to: string, label: string, icon: string, end: boolean, badge?: n
 
 export function BackShell() {
   const user = getUser()!;
+  const [changing, setChanging] = useState(false);
   const seesRoutes = user.role === 'SUPERVISOR_RUTAS' || user.role === 'ADMINISTRADOR';
   const seesPurchasing = user.role === 'GERENTE_COMPRAS' || user.role === 'ADMINISTRADOR';
   // COM-007: el contador del menú avisa de pagos a proveedores vencidos o próximos a vencer
@@ -75,6 +77,11 @@ export function BackShell() {
         ))}
         {user.role === 'ADMINISTRADOR' && (
           <>
+            <div className="grp overline">Administración</div>
+            <NavLink to="/usuarios" className={({ isActive }) => `item ${isActive ? 'on' : ''}`}>
+              <Icon name="user" size={16} />
+              Usuarios
+            </NavLink>
             <div className="grp overline">Operación</div>
             <Link to="/" className="item">
               <Icon name="receipt" size={16} />
@@ -88,12 +95,14 @@ export function BackShell() {
             <div className="small strong">{user.fullName}</div>
             <div className="caption muted">{ROLE[user.role] ?? user.role}</div>
           </div>
+          <Button size="sm" icon="lock" aria-label="Cambiar contraseña" title="Cambiar contraseña" onClick={() => setChanging(true)} />
           <Button size="sm" icon="logout" aria-label="Salir" onClick={() => window.dispatchEvent(new Event('fw:unauthorized'))} />
         </div>
       </aside>
       <main className="back-main">
         <Outlet />
       </main>
+      {changing && <ChangePasswordModal username={user.username} onClose={() => setChanging(false)} />}
     </div>
   );
 }

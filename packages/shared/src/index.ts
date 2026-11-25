@@ -65,6 +65,56 @@ export const REFUND_LABEL: Record<string, string> = { EFECTIVO: 'Efectivo', TARJ
   string
 >;
 
+// ---------- usuarios y contraseñas ----------
+export const ROLES = ['ADMINISTRADOR', 'CAJERO', 'ALMACENISTA', 'CHOFER', 'GERENTE_COMPRAS', 'SUPERVISOR_RUTAS'] as const;
+export type RoleName = (typeof ROLES)[number];
+export const ROLE_LABEL: Record<string, string> = {
+  ADMINISTRADOR: 'Administrador',
+  CAJERO: 'Cajero',
+  ALMACENISTA: 'Almacenista',
+  CHOFER: 'Chofer',
+  GERENTE_COMPRAS: 'Gerente de compras',
+  SUPERVISOR_RUTAS: 'Supervisor de rutas',
+} satisfies Record<RoleName, string>;
+
+export const PASSWORD_MIN_LENGTH = 10;
+export const PASSWORD_MAX_LENGTH = 128;
+/** Código de error (403) cuando el usuario debe elegir su propia contraseña antes de usar el sistema. */
+export const PASSWORD_CHANGE_REQUIRED = 'PASSWORD_CHANGE_REQUIRED';
+
+/** Qué le falta a una contraseña nueva, en palabras para la persona; null si sirve. La API y las apps usan la misma regla. */
+export function passwordProblem(password: string, username?: string): string | null {
+  if (password.length < PASSWORD_MIN_LENGTH) return `Usa al menos ${PASSWORD_MIN_LENGTH} caracteres.`;
+  if (password.length > PASSWORD_MAX_LENGTH) return `Usa como máximo ${PASSWORD_MAX_LENGTH} caracteres.`;
+  if (username && password.trim().toLowerCase().includes(username.trim().toLowerCase())) return 'No uses tu nombre de usuario dentro de la contraseña.';
+  if (/^(.)\1+$/.test(password)) return 'No repitas el mismo carácter.';
+  if (['cambiar123', '1234567890', '0123456789', 'contraseña', 'contrasena', 'password12', 'qwertyuiop'].includes(password.toLowerCase()))
+    return 'Esa contraseña es demasiado común.';
+  return null;
+}
+
+export interface PasswordCheck {
+  /** qué le falta a la contraseña nueva (null = sirve o todavía no se escribe nada) */
+  problem: string | null;
+  /** la confirmación ya tiene texto y no coincide */
+  mismatch: boolean;
+  /** se puede enviar */
+  ok: boolean;
+}
+
+/** Validación en vivo del formulario de contraseña nueva (web y app del chofer). `current` = null cuando no se pide la actual (el admin pone la de otro). */
+export function checkNewPassword(f: { current: string | null; next: string; confirm: string; username?: string }): PasswordCheck {
+  const problem =
+    f.next === ''
+      ? null
+      : f.current !== null && f.next === f.current
+        ? 'La contraseña nueva debe ser distinta de la que tienes ahora.'
+        : passwordProblem(f.next, f.username);
+  const mismatch = f.confirm !== '' && f.confirm !== f.next;
+  const ok = f.next !== '' && problem === null && f.confirm === f.next && (f.current === null || f.current !== '');
+  return { problem, mismatch, ok };
+}
+
 // ---------- errores de red ----------
 /** No hubo respuesta del servidor (sin señal, tiempo agotado). */
 export class NetworkError extends Error {
@@ -79,6 +129,8 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
+    /** Código de la API cuando lo trae (p. ej. PASSWORD_CHANGE_REQUIRED). */
+    public code?: string,
   ) {
     super(message);
     this.name = 'ApiError';

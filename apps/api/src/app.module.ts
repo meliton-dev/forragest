@@ -10,9 +10,10 @@ import { PosModule } from './pos/pos.module';
 import { PrismaService } from './prisma.service';
 import { PurchasingModule } from './purchasing/purchasing.module';
 import { RoutesModule } from './routes/routes.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
-  imports: [LoggerModule.forRoot(loggerConfig), AuthModule, InventoryModule, DriverModule, PosModule, RoutesModule, PurchasingModule],
+  imports: [LoggerModule.forRoot(loggerConfig), AuthModule, InventoryModule, DriverModule, PosModule, RoutesModule, PurchasingModule, UsersModule],
   controllers: [HealthController],
   providers: [PrismaService, { provide: APP_FILTER, useClass: UnexpectedErrorFilter }],
 })

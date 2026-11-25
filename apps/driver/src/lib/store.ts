@@ -1,7 +1,7 @@
 import { del, get, set as idbSet } from 'idb-keyval';
 import { useSyncExternalStore } from 'react';
-import { clearSession, request } from './api';
-import { ApiError, NetworkError } from '@forrajera/shared';
+import { clearSession, getToken, getUser, markExpired, request } from './api';
+import { ApiError, NetworkError, PASSWORD_CHANGE_REQUIRED } from '@forrajera/shared';
 import { mergeQueue, processQueue, uid } from './logic';
 import { showToast } from './toast';
 import type { FailReason, IncidentType, LocalIncident, LocalPayment, Method, Op, Route } from './types';
@@ -41,9 +41,14 @@ let started = false;
 
 const emit = () => listeners.forEach((l) => l());
 const persist = () => {
+  // sin sesión o sin haber cargado lo guardado no se escribe: un estado vacío pisaría la cola pendiente
+  if (!state.ready || !getToken()) return;
   const { route, payments, incidents, queue, lastSync } = state;
-  void idbSet(KEY, { route, payments, incidents, queue, lastSync });
+  // `owner` = a quién pertenece lo guardado, para no mezclar datos si entra otra persona en el mismo teléfono
+  void idbSet(KEY, { route, payments, incidents, queue, lastSync, owner: getUser()?.id });
 };
+/** Mientras falte elegir contraseña el servidor rechaza todo con 403: no se intenta nada hasta que la cambie. */
+const blocked = () => getUser()?.mustChangePassword === true;
 function patch(p: Partial<State>, save = true) {
   state = { ...state, ...p };
   if (save) persist();
@@ -56,22 +61,30 @@ export const pendingCount = (s: State = state) => s.queue.filter((o) => !o.faile
 
 /** Carga lo guardado en el teléfono y se pone al día con la API. */
 export async function init() {
-  if (started) return;
-  started = true;
   const saved = await get(KEY);
-  if (saved) state = { ...state, ...saved };
+  if (saved) {
+    // lo guardado solo sirve a quien lo guardó (los datos anteriores a esta regla no traen dueño y se respetan)
+    const { owner, ...data } = saved;
+    if (owner === undefined || owner === getUser()?.id) state = { ...state, ...data };
+    else await del(KEY);
+  }
   state = { ...state, ready: true };
   emit();
-  window.addEventListener('online', () => void refresh());
-  window.addEventListener('offline', () => patch({ online: false }, false));
-  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && void refresh());
-  window.addEventListener('fd:unauthorized', () => void logout());
-  setInterval(() => pendingCount() > 0 && void flush(), 20_000);
+  // los oyentes se ponen una sola vez; init se vuelve a llamar cada vez que alguien entra o termina de elegir su contraseña
+  if (!started) {
+    started = true;
+    window.addEventListener('online', () => void refresh());
+    window.addEventListener('offline', () => patch({ online: false }, false));
+    document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && void refresh());
+    window.addEventListener('fd:unauthorized', () => expireSession());
+    setInterval(() => pendingCount() > 0 && void flush(), 20_000);
+  }
   await refresh();
 }
 
 /** Sustituye lo local por lo del servidor (solo si no hay nada pendiente que se pisaría). */
 async function pull() {
+  if (!state.ready || blocked()) return;
   patch({ loading: true, error: null }, false);
   try {
     const route = await request<Route>('GET', '/driver/route');
@@ -93,7 +106,8 @@ async function pull() {
   } catch (e) {
     if (e instanceof NetworkError) patch({ online: false, loading: false }, false);
     else if (e instanceof ApiError && e.status === 404) patch({ route: null, noRoute: true, online: true, loading: false });
-    else if (e instanceof ApiError && e.status === 401) void logout();
+    else if (e instanceof ApiError && e.status === 401) expireSession();
+    else if (e instanceof ApiError && e.status === 403 && e.code === PASSWORD_CHANGE_REQUIRED) patch({ loading: false }, false);
     else patch({ loading: false, error: e instanceof Error ? e.message : 'Error desconocido' }, false);
   }
 }
@@ -102,6 +116,7 @@ let flushing: Promise<void> | null = null;
 /** Envía la cola pendiente en orden; al terminar, si todo salió bien, actualiza desde el servidor. */
 export function flush(): Promise<void> {
   if (flushing) return flushing;
+  if (!state.ready || blocked()) return Promise.resolve();
   flushing = (async () => {
     patch({ syncing: true }, false);
     const snapshot = state.queue;
@@ -110,7 +125,8 @@ export function flush(): Promise<void> {
     const queue = mergeQueue(snapshot, r.queue, state.queue);
     const addedMeanwhile = queue.length > r.queue.length;
     patch({ queue, syncing: false, online: !r.offline });
-    if (r.unauthorized) return void (await logout());
+    if (r.unauthorized) return expireSession();
+    if (r.passwordRequired) return;
     if (addedMeanwhile && !r.stopped) setTimeout(() => void flush(), 50);
     else if (!r.stopped && !queue.some((o) => !o.failed)) await pull();
   })().finally(() => {
@@ -124,6 +140,21 @@ export async function refresh() {
   else await pull();
 }
 
+/**
+ * La sesión dejó de servir (401: el administrador cambió la contraseña, desactivó al usuario o pasó el tiempo).
+ * Se sale de la app pero NO se borra lo guardado en el teléfono (cola sin enviar, cobros, ruta): cuando la misma
+ * persona vuelva a entrar, `init` lo recupera y lo envía. Si entra otra persona, se descarta.
+ */
+export function expireSession() {
+  persist();
+  markExpired();
+  clearSession();
+  state = { ...initial, online: state.online };
+  emit();
+  window.dispatchEvent(new Event('fd:loggedout'));
+}
+
+/** Cerrar sesión a propósito: aquí sí se borra todo lo guardado (la pantalla de Perfil avisa si hay algo sin enviar). */
 export async function logout() {
   clearSession();
   await del(KEY);

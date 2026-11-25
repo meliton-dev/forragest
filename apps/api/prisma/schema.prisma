@@ -26,15 +26,19 @@ model ProductLine {
 }
 
 model User {
-  id           Int        @id @default(autoincrement())
-  username     String     @unique
-  passwordHash String
-  fullName     String
-  role         Role
-  active       Boolean    @default(true)
-  createdAt    DateTime   @default(now())
-  audits       AuditLog[]
-  routes       Route[]
+  id                 Int        @id @default(autoincrement())
+  username           String     @unique
+  passwordHash       String
+  fullName           String
+  role               Role
+  active             Boolean    @default(true)
+  /// Debe elegir su propia contraseña antes de usar el sistema (403 PASSWORD_CHANGE_REQUIRED en todo lo demás).
+  mustChangePassword Boolean    @default(false)
+  /// Sube al cambiar contraseña, desactivar o cambiar de rol: los tokens con otra versión dejan de servir.
+  tokenVersion       Int        @default(0)
+  createdAt          DateTime   @default(now())
+  audits             AuditLog[]
+  routes             Route[]
 }
 
 model AuditLog {

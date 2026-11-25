@@ -192,7 +192,8 @@ check(
   'Autenticación y datos',
   'Inicio de sesión del supervisor contra la API publicada',
   !!supTok,
-  `POST /auth/login → ${supLogin.status} en ${supLogin.ms ?? '—'} ms`,
+  `POST /auth/login → ${supLogin.status} en ${supLogin.ms ?? '—'} ms` +
+    (supLogin.json?.user?.mustChangePassword ? ' · AVISO: este usuario debe elegir su contraseña (entra a la web, cámbiala y pásala con --sup-pass)' : ''),
 );
 const opt = supTok ? (await http('GET', '/routes/options', { token: supTok })).json : null;
 check(

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { request, setSession, type SessionUser } from '../lib/api';
+import { request, setSession, wasExpired, type SessionUser } from '../lib/api';
 import { ApiError, NetworkError } from '@forrajera/shared';
 import { Button, Field, Input, Notice } from '../ui/kit';
 
@@ -9,6 +9,8 @@ export function Login({ onDone }: { onDone: () => void }) {
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // si la sesión terminó sola (p. ej. le cambiaron la contraseña) se explica y se avisa que lo guardado se conserva
+  const [expired] = useState(wasExpired);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -89,6 +91,11 @@ export function Login({ onDone }: { onDone: () => void }) {
             required
           />
         </Field>
+        {expired && !error && (
+          <Notice tone="warn" icon="alert">
+            Tu sesión terminó (puede que te hayan cambiado la contraseña). Entra de nuevo: lo que registraste sin conexión se conserva y se enviará.
+          </Notice>
+        )}
         {error && (
           <Notice tone="danger" icon="alert">
             {error}

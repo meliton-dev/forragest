@@ -3,6 +3,8 @@ import { Observable, tap } from 'rxjs';
 import { PrismaService } from '../prisma.service';
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+/** Campos con contraseñas: nunca se guardan en la bitácora. */
+const SECRET_KEYS = /^(password|currentPassword|newPassword)$/i;
 
 /** Evita guardar imágenes en base64 (firmas, fotos) dentro de la bitácora. */
 function shorten(value: any): any {
@@ -11,7 +13,7 @@ function shorten(value: any): any {
   if (value && typeof value === 'object')
     return Object.fromEntries(
       Object.entries(value)
-        .filter(([k]) => k.toLowerCase() !== 'password')
+        .filter(([k]) => !SECRET_KEYS.test(k))
         .map(([k, v]) => [k, shorten(v)]),
     );
   return value;
@@ -27,7 +29,7 @@ export class AuditInterceptor implements NestInterceptor {
     if (!MUTATING.has(req.method) || req.path === '/auth/login') return next.handle();
     return next.handle().pipe(
       tap(() => {
-        const { password: _password, ...body } = req.body ?? {};
+        const { password: _password, currentPassword: _current, newPassword: _new, ...body } = req.body ?? {};
         this.prisma.auditLog
           .create({ data: { userId: req.user?.sub ?? null, action: req.method, entity: req.path, payload: shorten(body) } })
           .catch(() => undefined);
