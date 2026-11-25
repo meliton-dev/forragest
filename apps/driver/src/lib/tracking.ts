@@ -18,7 +18,8 @@ interface TState {
   pending: number;
 }
 
-const KEY = 'fd.pings.v1';
+/** Ubicaciones guardadas sin enviar, por ruta: no se mezclan con las de otra ruta u otro chofer del mismo teléfono. */
+const pingsKey = (id: number) => `fd.pings.v2.${id}`;
 /** Cada cuánto se guarda una ubicación para el supervisor; el GPS ya está encendido, así que casi no cuesta batería. */
 export const MIN_INTERVAL_MS = 10_000;
 const BATCH = 100;
@@ -38,6 +39,8 @@ const patch = (p: Partial<TState>) => {
   state = { ...state, ...p };
   listeners.forEach((l) => l());
 };
+/** Estado del GPS sin suscribirse (para el aviso que se le manda al supervisor). */
+export const getTracking = () => state;
 export const useTracking = () =>
   useSyncExternalStore(
     (cb) => (listeners.add(cb), () => listeners.delete(cb)),
@@ -69,20 +72,24 @@ function releaseAwake() {
 }
 let buffer: Ping[] = [];
 
-const persist = () => void set(KEY, buffer);
+const persist = (id = routeId) => {
+  if (id !== null) void set(pingsKey(id), buffer);
+};
 
 /** Envía las ubicaciones guardadas; sin conexión se conservan, y un rechazo del servidor las descarta. */
 export async function flushPings() {
-  if (routeId === null || buffer.length === 0) return;
+  // se fija la ruta al empezar: si se detiene el seguimiento a medio envío, lo que quede se guarda en la misma ruta
+  const id = routeId;
+  if (id === null || buffer.length === 0) return;
   for (const batch of splitBatches(buffer)) {
     try {
-      await request('POST', '/driver/locations', { routeId, pings: batch });
+      await request('POST', '/driver/locations', { routeId: id, pings: batch });
     } catch (e) {
       if (e instanceof NetworkError || (e instanceof ApiError && (e.status >= 500 || e.status === 401))) break;
       // 400/403/404: esas ubicaciones no sirven (ruta cerrada o datos inválidos); no se reintentan
     }
     buffer = buffer.slice(batch.length);
-    persist();
+    persist(id);
     patch({ pending: buffer.length });
   }
 }
@@ -108,8 +115,7 @@ export async function startTracking(id: number) {
   if (routeId === id && watchId !== null) return;
   stopTracking();
   routeId = id;
-  const saved = (await get<Ping[]>(KEY)) ?? [];
-  buffer = [...saved, ...buffer];
+  buffer = (await get<Ping[]>(pingsKey(id))) ?? [];
   patch({ pending: buffer.length });
   watchId = navigator.geolocation.watchPosition(onFix, onError, { enableHighAccuracy: true, maximumAge: 10_000, timeout: 30_000 });
   timer = setInterval(() => void flushPings(), 60_000);

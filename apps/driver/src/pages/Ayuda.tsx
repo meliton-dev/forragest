@@ -26,7 +26,7 @@ export const TOPICS: Topic[] = [
       },
       {
         q: 'No me aparece ninguna ruta',
-        a: 'Todavía no te asignaron una ruta para hoy. Avisa a tu supervisor. Si ya te la asignó, ve a Perfil › Sincronización y revisa que haya conexión; luego cierra sesión y vuelve a entrar.',
+        a: 'Todavía no te asignaron una ruta para hoy. Avisa a tu supervisor. Si ya te la asignó, cierra la app, ábrela de nuevo y espera unos segundos.',
       },
     ],
   },
@@ -94,24 +94,16 @@ export const TOPICS: Topic[] = [
     ],
   },
   {
-    title: 'Sin señal y sincronización',
-    icon: 'wifioff',
+    title: 'Si algo se cierra',
+    icon: 'info',
     items: [
       {
-        q: '¿Qué hago si no tengo señal?',
-        a: 'Sigue trabajando normal. Las entregas, cobros e incidencias se guardan en tu teléfono y se envían solos cuando vuelve la señal.',
-      },
-      {
-        q: '¿Cómo sé si ya se envió todo?',
-        a: 'En Perfil › Sincronización dice “Al día” cuando no hay nada pendiente. Si hay pendientes, ahí mismo ves cuáles son.',
-      },
-      {
-        q: 'Un registro aparece con error',
-        a: 'Significa que el sistema lo rechazó (por ejemplo, la ruta ya estaba cerrada). No se pierde: avisa a tu supervisor mostrándole esa pantalla para que lo revise.',
-      },
-      {
         q: 'Cerré la app o se acabó la batería',
-        a: 'Lo que registraste sigue guardado en el teléfono. Abre la app con señal y se enviará. En iPhone el envío solo ocurre con la app abierta, así que ábrela al tener internet.',
+        a: 'Lo que registraste sigue guardado en el teléfono. Vuelve a abrir la app y continúa donde te quedaste.',
+      },
+      {
+        q: 'La app me pidió entrar otra vez',
+        a: 'Entra con tu usuario y contraseña. Lo que ya habías registrado no se pierde.',
       },
     ],
   },
@@ -121,11 +113,11 @@ export const TOPICS: Topic[] = [
     items: [
       {
         q: '¿Quién ve mi ubicación y cuándo?',
-        a: 'Solo tu supervisor de rutas, únicamente mientras la ruta está en curso y con la app abierta. Se detiene al cerrar la ruta.',
+        a: 'Solo tu supervisor de rutas, siempre que la ruta está en curso. Empieza sola al salir del almacén y se detiene al cerrar la ruta.',
       },
       {
         q: 'Negué el permiso de ubicación, ¿cómo lo activo?',
-        a: 'En el navegador abre los permisos del sitio (el candado junto a la dirección), permite “Ubicación” y vuelve a la app. También puedes activarla o desactivarla en Perfil. Requiere conexión segura (https).',
+        a: 'En el navegador abre los permisos del sitio (el candado junto a la dirección), permite “Ubicación” y vuelve a la app. Sin ella tu supervisor no puede seguir la ruta.',
       },
     ],
   },
@@ -166,7 +158,7 @@ export function Ayuda() {
           </div>
           <div className="grow">
             <div className="title">Ver el tutorial otra vez</div>
-            <div className="caption muted">4 pasos, menos de un minuto</div>
+            <div className="caption muted">3 pasos, menos de un minuto</div>
           </div>
           <Icon name="right" size={16} color="var(--text-3)" />
         </button>
@@ -176,7 +168,7 @@ export function Ayuda() {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar: firma, cobro, sin señal…"
+          placeholder="Buscar: firma, cobro, ubicación…"
           aria-label="Buscar en la ayuda"
         />
 

@@ -5,7 +5,7 @@ import { useStore } from '../lib/store';
 import { useTracking } from '../lib/tracking';
 import type { Stop } from '../lib/types';
 import { Hint } from '../ui/Hint';
-import { Badge, Header, Icon, Notice, SyncBanner, TabBar } from '../ui/kit';
+import { Badge, Header, Icon, Notice, TabBar } from '../ui/kit';
 import { mapsUrl, RouteGate } from './common';
 
 export function RouteHome() {
@@ -70,10 +70,9 @@ function Inner({ route }: { route: import('../lib/types').Route }) {
           </div>
         </div>
 
-        <SyncBanner />
         {route.status === 'EN_CURSO' && (
           <Hint id="ruta">
-            Toca la <b>parada destacada</b> para ver qué entregar y cuánto cobrar. Tu avance se guarda aunque no tengas señal.
+            Toca la <b>parada destacada</b> para ver qué entregar y cuánto cobrar.
           </Hint>
         )}
         {route.status === 'EN_CURSO' && ['denied', 'unsupported', 'error'].includes(gps.status) && (

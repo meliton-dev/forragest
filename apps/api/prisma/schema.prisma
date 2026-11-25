@@ -216,6 +216,12 @@ model Route {
   departedAt       DateTime?
   returnedAt       DateTime?
   plannedDeparture String?
+  /// Estado que reporta la app del chofer cada 30 s (solo lo ve el supervisor)
+  lastSeenAt       DateTime?
+  pendingOps       Int            @default(0)
+  oldestPendingAt  DateTime?
+  rejectedOps      Int            @default(0)
+  gpsStatus        String?
   stops            RouteStop[]
   pings            LocationPing[]
   payments         Payment[]

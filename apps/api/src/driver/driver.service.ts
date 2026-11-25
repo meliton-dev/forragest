@@ -152,7 +152,33 @@ export class DriverService {
       data: pings.map((p) => ({ routeId, lat: p.lat, lng: p.lng, accuracy: p.accuracy ?? null, recordedAt: new Date(p.at) })),
       skipDuplicates: true,
     });
+    await this.prisma.route.update({ where: { id: routeId }, data: { lastSeenAt: new Date() } });
     return { ok: true, saved: res.count };
+  }
+
+  /**
+   * Estado que la app del chofer reporta cada 30 s (y al recuperar señal): cuántos registros guarda sin enviar y desde
+   * cuándo, cuántos rechazó el servidor y cómo está el GPS. El chofer no ve nada de esto; lo ve el supervisor.
+   */
+  async reportStatus(
+    userId: number,
+    dto: { routeId: number; pending: number; oldestPendingAt?: string; rejected: number; gps: string },
+  ): Promise<{ ok: true }> {
+    const route = await this.prisma.route.findUnique({ where: { id: dto.routeId }, select: { driverId: true, status: true } });
+    if (!route) throw new NotFoundException('Ruta no encontrada');
+    if (route.driverId !== userId) throw new ForbiddenException('Esta ruta no es tuya');
+    if (route.status !== 'EN_CURSO') return { ok: true };
+    await this.prisma.route.update({
+      where: { id: dto.routeId },
+      data: {
+        lastSeenAt: new Date(),
+        pendingOps: dto.pending,
+        oldestPendingAt: dto.pending > 0 && dto.oldestPendingAt ? new Date(dto.oldestPendingAt) : null,
+        rejectedOps: dto.rejected,
+        gpsStatus: dto.gps,
+      },
+    });
+    return { ok: true };
   }
 
   async deliver(

@@ -34,8 +34,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useId, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { pendingCount, useStore } from '../lib/store';
+import { NavLink, useNavigate } from 'react-router-dom';
 
 /** Una sola biblioteca de iconos (Lucide) para toda la app: mismo trazo, mismas proporciones. */
 const ICONS: Record<string, LucideIcon> = {
@@ -210,29 +209,7 @@ export function Kv({ k, v, strong, tone }: { k: ReactNode; v: ReactNode; strong?
   );
 }
 
-/** Aviso de conexión: aparece sin señal o cuando hay registros por enviar. */
-export function SyncBanner() {
-  const s = useStore();
-  const n = pendingCount(s);
-  if (s.online && n === 0) return null;
-  return (
-    <Link to="/sync" className="banner">
-      <Icon name={s.online ? 'sync' : 'wifioff'} size={16} color="var(--warn)" spin={s.online} />
-      <span className="grow">
-        {s.online
-          ? `Enviando… ${n} registro${n === 1 ? '' : 's'} por sincronizar`
-          : n
-            ? `Sin conexión · ${n} registro${n === 1 ? '' : 's'} por sincronizar`
-            : 'Sin conexión · trabajando con datos guardados'}
-      </span>
-      <Icon name="right" size={14} color="var(--text-3)" />
-    </Link>
-  );
-}
-
 export function TabBar() {
-  const s = useStore();
-  const pending = pendingCount(s);
   const tabs: [string, string, string][] = [
     ['/', 'Ruta', 'route'],
     ['/cobros', 'Cobros', 'wallet'],
@@ -254,7 +231,6 @@ export function TabBar() {
                 <Icon name={icon} size={22} />
               </motion.span>
               <span>{label}</span>
-              {to === '/perfil' && pending > 0 && <span className="pip">{pending}</span>}
             </>
           )}
         </NavLink>

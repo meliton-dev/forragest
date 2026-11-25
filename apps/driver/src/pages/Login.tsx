@@ -97,7 +97,6 @@ export function Login({ onDone }: { onDone: () => void }) {
         <Button type="submit" loading={busy} disabled={!username || !password}>
           {busy ? 'Entrando…' : 'Entrar'}
         </Button>
-        <Notice tone="info">Después de iniciar sesión podrás trabajar sin conexión; tus registros se envían al recuperar señal.</Notice>
       </div>
     </form>
   );

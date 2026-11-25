@@ -2,14 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, errMsg } from '../../lib/api';
 import { hhmm } from '../../lib/format';
-import { mergeLive, movement } from '../../lib/live';
+import { driverStatus, mergeLive, movement, SIGNAL_LOST_MIN } from '../../lib/live';
 import { useRoadPaths, type LatLng } from '../../lib/road';
 import { DEPOT, type LiveRoute, type MonitorRoute } from '../../lib/routes-types';
 import { Badge, Empty, Icon, Notice, Segmented } from '../../ui/kit';
 import { MapView, type MapLine, type MapMarker } from '../../ui/MapView';
 
 const COLORS = ['#b8482f', '#1f4d3a', '#8e5a32', '#94660a'];
-const SIGNAL_LOST_MIN = 3;
 /** El mapa se refresca con la versión ligera; el detalle completo (paradas, eventos) se pide con menos frecuencia. */
 const LIVE_MS = 5000;
 const FULL_MS = 30000;
@@ -162,6 +161,7 @@ export function Monitoreo() {
           {visible.map((r) => {
             const color = COLORS[routes.indexOf(r) % COLORS.length];
             const ageMin = r.lastPing ? (now - new Date(r.lastPing.at).getTime()) / 60000 : null;
+            const phone = driverStatus(now, r, hhmm);
             const next = r.stopsMap.find((s) => s.status === 'PENDIENTE');
             return (
               <div key={r.id} className="card" data-testid="monitor-route">
@@ -190,20 +190,25 @@ export function Monitoreo() {
                     <span className="small muted2">
                       {r.driver.name} · {r.vehicle.plate}
                     </span>
-                    {ageMin === null ? (
+                    {!phone.online ? (
                       <Badge tone="warn">
-                        <Icon name="wifioff" size={12} /> Sin ubicación
+                        <Icon name="wifioff" size={12} /> {phone.lastSeen ? `Sin señal desde las ${hhmm(phone.lastSeen)}` : 'Sin noticias del teléfono'}
                       </Badge>
-                    ) : ageMin > SIGNAL_LOST_MIN ? (
-                      <Badge tone="warn">
-                        <Icon name="wifioff" size={12} /> Sin señal {ago(now, r.lastPing!.at)}
-                      </Badge>
-                    ) : (
+                    ) : ageMin !== null && ageMin <= SIGNAL_LOST_MIN ? (
                       <Badge tone="ok" dot>
                         {movement(r.speedKmh) ? `${movement(r.speedKmh)} · ` : ''}hace {ago(now, r.lastPing!.at)}
                       </Badge>
+                    ) : (
+                      <Badge tone="ok" dot>
+                        Conectado · sin ubicación
+                      </Badge>
                     )}
                   </div>
+                  {phone.notes.map((n) => (
+                    <div key={n.text} className="caption row gap4" style={{ color: n.tone === 'danger' ? 'var(--danger)' : 'var(--warn)' }}>
+                      <Icon name={n.tone === 'danger' ? 'alert' : 'info'} size={12} /> {n.text}
+                    </div>
+                  ))}
                   <div className="small strong">
                     {r.stops.delivered + r.stops.failed} de {r.stops.total} entregas{next ? ` · siguiente ETA ${next.eta ?? '—'}` : ''}
                   </div>

@@ -4,7 +4,7 @@ import { hhmm, METHOD_LABEL, mxn } from '../lib/format';
 import { summarize } from '../lib/logic';
 import { addPayment, useStore } from '../lib/store';
 import type { Method, Route } from '../lib/types';
-import { Badge, Button, Empty, Field, Header, Icon, Input, Kv, Notice, Segmented, SyncBanner, TabBar } from '../ui/kit';
+import { Button, Empty, Field, Header, Icon, Input, Kv, Segmented, TabBar } from '../ui/kit';
 import { RouteGate } from './common';
 
 export function Cobros() {
@@ -30,7 +30,6 @@ function List({ route }: { route: Route }) {
           <Kv k="Transferencia" v={mxn(sum.byMethod.TRANSFERENCIA ?? 0)} />
           <Kv k="Por cobrar en la ruta" v={mxn(sum.pendingToCollect)} tone="var(--warn)" />
         </div>
-        <SyncBanner />
         <div className="row between">
           <span className="title">Cobros registrados</span>
           <span className="small muted">{s.payments.length}</span>
@@ -45,7 +44,6 @@ function List({ route }: { route: Route }) {
               <div className="small strong">{p.customer}</div>
               <div className="caption muted row gap4">
                 {hhmm(p.receivedAt)} · {METHOD_LABEL[p.method]}
-                {!p.synced && <Badge tone="warn">Por sincronizar</Badge>}
               </div>
             </div>
             <span className="title">{mxn(p.amount)}</span>
@@ -116,7 +114,6 @@ function Form({ route }: { route: Route }) {
             ]}
           />
         </Field>
-        <Notice tone="info">El cobro queda guardado en tu teléfono y se envía al sistema en cuanto haya conexión.</Notice>
       </div>
       <div className="bar">
         <Button

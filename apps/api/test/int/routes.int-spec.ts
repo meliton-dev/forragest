@@ -9,12 +9,15 @@ import { LoginLimiter } from '../../src/common/login-limiter';
 import { PosService } from '../../src/pos/pos.service';
 import { purgeOldPings } from '../../src/routes/ping-retention';
 import { RoutesService } from '../../src/routes/routes.service';
+import { DriverService } from '../../src/driver/driver.service';
 import { PrismaService } from '../../src/prisma.service';
 
 const prisma = new PrismaService();
 const routes = new RoutesService(prisma, new PosService(prisma, new InventoryService(prisma), new LoginLimiter()));
 const uid = () => `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 let routeId: number;
+let driverId: number;
+const driverSvc = new DriverService(prisma, new InventoryService(prisma));
 
 beforeAll(async () => {
   const driver = await prisma.user.create({
@@ -25,6 +28,7 @@ beforeAll(async () => {
     data: { name: `Ruta en vivo ${uid()}`, date: new Date(), driverId: driver.id, vehicleId: vehicle.id, status: 'EN_CURSO' },
   });
   routeId = route.id;
+  driverId = driver.id;
 });
 afterAll(async () => {
   await prisma.locationPing.deleteMany({ where: { routeId } });
@@ -69,6 +73,36 @@ describe('ubicación en vivo', () => {
     const deleted = await purgeOldPings(prisma, 45);
     expect(deleted).toBeGreaterThanOrEqual(3);
     expect(await prisma.locationPing.count({ where: { routeId } })).toBe(before - 3);
+  });
+});
+
+describe('estado de la app del chofer (solo lo ve el supervisor)', () => {
+  it('el aviso del teléfono queda en el monitoreo y en la consulta ligera', async () => {
+    const before = Date.now();
+    await driverSvc.reportStatus(driverId, { routeId, pending: 3, oldestPendingAt: '2026-11-24T15:40:00.000Z', rejected: 1, gps: 'denied' });
+    const live = (await routes.live()).routes.find((r) => r.id === routeId)!;
+    expect(live.sync).toMatchObject({ pending: 3, rejected: 1, gps: 'denied' });
+    expect(new Date(live.sync.oldestPendingAt!).toISOString()).toBe('2026-11-24T15:40:00.000Z');
+    expect(new Date(live.sync.lastSeenAt!).getTime()).toBeGreaterThanOrEqual(before - 1000);
+    const mon = (await routes.monitor()).routes.find((r) => r.id === routeId)!;
+    expect(mon.sync.pending).toBe(3);
+  });
+
+  it('al ponerse al día se limpia la hora del más viejo', async () => {
+    await driverSvc.reportStatus(driverId, { routeId, pending: 0, oldestPendingAt: '2026-11-24T15:40:00.000Z', rejected: 0, gps: 'active' });
+    const live = (await routes.live()).routes.find((r) => r.id === routeId)!;
+    expect(live.sync).toMatchObject({ pending: 0, oldestPendingAt: null, rejected: 0, gps: 'active' });
+  });
+
+  it('otro chofer no puede reportar por esta ruta', async () => {
+    await expect(driverSvc.reportStatus(driverId + 100000, { routeId, pending: 0, rejected: 0, gps: 'active' })).rejects.toThrow();
+  });
+
+  it('las ubicaciones también cuentan como contacto del teléfono', async () => {
+    await prisma.route.update({ where: { id: routeId }, data: { lastSeenAt: new Date(Date.now() - 3_600_000) } });
+    await driverSvc.savePings(driverId, routeId, [{ lat: 20, lng: -98, at: new Date().toISOString() }]);
+    const r = await prisma.route.findUniqueOrThrow({ where: { id: routeId } });
+    expect(Date.now() - r.lastSeenAt!.getTime()).toBeLessThan(60_000);
   });
 });
 

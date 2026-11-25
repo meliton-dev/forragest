@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError, NetworkError } from '@forrajera/shared';
-import { deliveredTotal, isPartial, processQueue, summarize, uid } from './logic';
+import { deliveredTotal, isPartial, oldestPending, processQueue, summarize, uid } from './logic';
 import type { LocalPayment, Op, Route } from './types';
 
 const op = (id: string, extra: Partial<Op> = {}): Op => ({ id, label: id, path: '/x/' + id, body: {}, createdAt: '2026-10-30T10:00:00Z', ...extra });
@@ -129,5 +129,18 @@ describe('uid', () => {
     Object.defineProperty(globalThis, 'crypto', { value: original, configurable: true });
     expect(a).not.toBe(b);
     expect(a.length).toBeGreaterThan(10);
+  });
+});
+
+describe('oldestPending', () => {
+  const at = (id: string, createdAt: string, failed = false) => ({ id, label: id, path: '/x', body: {}, createdAt, ...(failed ? { failed } : {}) });
+  it('da la hora del registro más viejo sin enviar e ignora los rechazados', () => {
+    expect(oldestPending([at('a', '2026-11-24T10:05:00Z'), at('b', '2026-11-24T09:00:00Z', true), at('c', '2026-11-24T10:01:00Z')])).toBe(
+      '2026-11-24T10:01:00Z',
+    );
+  });
+  it('sin pendientes es null', () => {
+    expect(oldestPending([])).toBeNull();
+    expect(oldestPending([at('b', '2026-11-24T09:00:00Z', true)])).toBeNull();
   });
 });

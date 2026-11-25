@@ -60,8 +60,21 @@ export interface RouteOptions {
   catalog: CatalogItem[];
 }
 
+/** Lo que la app del chofer reporta cada 30 s de su conexión (el chofer no lo ve; solo el supervisor). */
+export interface DriverSync {
+  /** última vez que el teléfono habló con el sistema */
+  lastSeenAt: string | null;
+  /** registros guardados en el teléfono que aún no llegan */
+  pending: number;
+  oldestPendingAt: string | null;
+  /** registros que el sistema rechazó (no se reintentan) */
+  rejected: number;
+  gps: 'active' | 'idle' | 'denied' | 'unsupported' | 'error' | null;
+}
+
 export interface MonitorRoute extends RouteRow {
   lastPing: { lat: number; lng: number; at: string } | null;
+  sync?: DriverSync;
   /** km/h entre las dos últimas ubicaciones; 0 = detenido; null = sin dato fiable */
   speedKmh?: number | null;
   trail: [number, number][];
@@ -122,6 +135,7 @@ export interface LiveRoute {
   driver: string;
   plate: string;
   lastPing: LivePing | null;
+  sync?: DriverSync;
   speedKmh: number | null;
   recent: LivePing[];
 }

@@ -110,6 +110,12 @@ export function mergeQueue(snapshot: Op[], processed: Op[], current: Op[]): Op[]
   return [...processed.filter((o) => !removedWhileSending.has(o.id)), ...addedWhileSending];
 }
 
+/** Hora del registro más viejo que sigue sin enviarse (los rechazados no cuentan), para avisarle al supervisor. */
+export function oldestPending(queue: Op[]): string | null {
+  const times = queue.filter((o) => !o.failed).map((o) => o.createdAt);
+  return times.length ? times.reduce((a, b) => (a < b ? a : b)) : null;
+}
+
 /** Identificador único; crypto.randomUUID solo existe en HTTPS, por eso el respaldo. */
 export function uid(): string {
   const c = globalThis.crypto as Crypto | undefined;

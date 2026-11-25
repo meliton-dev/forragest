@@ -87,6 +87,17 @@ class LocationsDto {
   @IsArray() @ArrayMinSize(1) @ArrayMaxSize(200) @ValidateNested({ each: true }) @Type(() => PingDto) pings: PingDto[];
 }
 
+/** Estados del GPS en la app del chofer (lib/tracking.ts). */
+const GPS_STATUSES = ['active', 'idle', 'denied', 'unsupported', 'error'] as const;
+
+class StatusDto {
+  @IsInt() routeId: number;
+  @IsInt() @Min(0) @Max(100_000) pending: number;
+  @IsOptional() @IsDateString() oldestPendingAt?: string;
+  @IsInt() @Min(0) @Max(100_000) rejected: number;
+  @IsIn(GPS_STATUSES) gps: (typeof GPS_STATUSES)[number];
+}
+
 class CloseDto {
   @IsOptional() @IsDateString() returnedAt?: string;
 }
@@ -124,6 +135,11 @@ export class DriverController {
   @Post('locations')
   locations(@Body() dto: LocationsDto, @Req() req: AuthedRequest) {
     return this.driver.savePings(req.user.sub, dto.routeId, dto.pings);
+  }
+
+  @Post('status')
+  status(@Body() dto: StatusDto, @Req() req: AuthedRequest) {
+    return this.driver.reportStatus(req.user.sub, dto);
   }
 
   @Post('stops/:id/deliver')

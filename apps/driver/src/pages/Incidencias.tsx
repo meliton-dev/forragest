@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { hhmm, INCIDENT_LABEL } from '../lib/format';
 import { addIncident, useStore } from '../lib/store';
 import type { IncidentType, Route } from '../lib/types';
-import { Badge, Button, Empty, Field, Header, Icon, Notice, SyncBanner, TabBar, TextArea } from '../ui/kit';
+import { Button, Empty, Field, Header, Icon, TabBar, TextArea } from '../ui/kit';
 import { RouteGate } from './common';
 
 const TONE: Record<string, { tone: 'danger' | 'warn' | 'info'; icon: string }> = {
@@ -27,7 +27,6 @@ function List({ route }: { route: Route }) {
     <div className="screen">
       <Header title="Incidencias" sub="Reportes de la ruta de hoy" />
       <div className="content">
-        <SyncBanner />
         {s.incidents.length === 0 && (
           <Empty icon="alert" title="Sin incidencias">
             Reporta aquí cualquier problema durante el reparto.
@@ -45,7 +44,6 @@ function List({ route }: { route: Route }) {
                 <div className="caption muted">{i.description}</div>
                 <div className="row gap8" style={{ paddingTop: 2 }}>
                   <span className="caption muted">{hhmm(i.createdAt)}</span>
-                  <Badge tone={i.synced ? 'ok' : 'warn'}>{i.synced ? 'Enviada' : 'Por sincronizar'}</Badge>
                 </div>
               </div>
             </div>
@@ -104,7 +102,6 @@ function Form({ route }: { route: Route }) {
         <Field label="Descripción">
           <TextArea value={text} onChange={(e) => setText(e.target.value)} placeholder="¿Qué ocurrió?" maxLength={500} />
         </Field>
-        <Notice tone="info">Se guarda en tu teléfono y se envía al supervisor cuando haya conexión.</Notice>
       </div>
       <div className="bar">
         <Button

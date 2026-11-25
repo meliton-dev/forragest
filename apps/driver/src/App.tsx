@@ -15,27 +15,23 @@ import { NoEntrega } from './pages/NoEntrega';
 import { Parada } from './pages/Parada';
 import { Perfil } from './pages/Perfil';
 import { RouteHome } from './pages/RouteHome';
-import { Sync } from './pages/Sync';
 import { Ayuda } from './pages/Ayuda';
 import { Onboarding } from './ui/Onboarding';
-import { GpsPrimer, Toaster } from './ui/Overlays';
+import { GpsNotice, Toaster } from './ui/Overlays';
 
-/** Comparte la ubicación del camión mientras la ruta esté en curso. */
+/**
+ * Comparte la ubicación del camión siempre que la ruta esté en curso, sin interruptor. La primera vez se le avisa al
+ * chofer qué se comparte y cuándo; después el teléfono pide su permiso de ubicación (eso no se puede saltar).
+ */
 function Tracker() {
   const s = useStore();
-  const gps = usePref('gps');
+  const informed = usePref('gpsNotice') === '1';
   const id = s.route?.status === 'EN_CURSO' ? s.route.id : null;
-  const allowed = gps === '1';
   useEffect(() => {
-    if (id && allowed) void startTracking(id);
+    if (id && informed) void startTracking(id);
     else stopTracking();
-  }, [id, allowed]);
-  // se explica para qué sirve antes de que el sistema pida el permiso (que solo se muestra una vez)
-  return (
-    <AnimatePresence>
-      {id && gps === null && <GpsPrimer key="primer" onAccept={() => writePref('gps', '1')} onDecline={() => writePref('gps', '0')} />}
-    </AnimatePresence>
-  );
+  }, [id, informed]);
+  return <AnimatePresence>{id && !informed && <GpsNotice key="gps-notice" onClose={() => writePref('gpsNotice', '1')} />}</AnimatePresence>;
 }
 
 /** Tutorial de bienvenida: solo la primera vez que entra cada usuario. */
@@ -65,7 +61,6 @@ function AnimatedRoutes() {
         <Route path="/cobros/nuevo" element={<NuevoCobro />} />
         <Route path="/incidencias" element={<Incidencias />} />
         <Route path="/incidencias/nueva" element={<NuevaIncidencia />} />
-        <Route path="/sync" element={<Sync />} />
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/ayuda" element={<Ayuda />} />
         <Route path="/cierre" element={<Cierre />} />

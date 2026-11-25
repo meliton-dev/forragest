@@ -45,8 +45,11 @@ export function Toaster() {
   );
 }
 
-/** Explica para qué se usa la ubicación antes de mostrar el permiso del sistema (que solo aparece una vez). */
-export function GpsPrimer({ onAccept, onDecline }: { onAccept: () => void; onDecline: () => void }) {
+/**
+ * Aviso (una sola vez por chofer) de que la ubicación se comparte durante la ruta. Va antes del permiso del sistema,
+ * que solo aparece una vez: así el chofer sabe por qué se le pide.
+ */
+export function GpsNotice({ onClose }: { onClose: () => void }) {
   const ok = useRef<HTMLButtonElement>(null);
   useEffect(() => ok.current?.focus(), []);
   return (
@@ -76,21 +79,18 @@ export function GpsPrimer({ onAccept, onDecline }: { onAccept: () => void; onDec
         </motion.div>
         <div>
           <h2 className="h2" style={{ fontSize: 22, lineHeight: '28px' }}>
-            ¿Compartir tu ubicación?
+            Tu ubicación se comparte durante la ruta
           </h2>
           <p className="small muted2" style={{ margin: '6px 0 0', fontSize: 15, lineHeight: '22px' }}>
-            Tu supervisor verá dónde va el camión para avisar a los clientes y ayudarte si hay un problema. Se comparte{' '}
-            <b>solo mientras la ruta está en curso</b> y con la app abierta; se detiene al cerrar la ruta.
+            Tu supervisor ve dónde va el camión para avisar a los clientes y ayudarte si hay un problema. Se comparte <b>solo mientras la ruta está en curso</b>{' '}
+            y se detiene al cerrar la ruta.
           </p>
         </div>
-        <motion.button ref={ok} className="btn primary" whileTap={{ scale: 0.96 }} onClick={onAccept}>
-          Activar ubicación
-        </motion.button>
-        <motion.button className="btn ghost" whileTap={{ scale: 0.96 }} onClick={onDecline}>
-          Ahora no
+        <motion.button ref={ok} className="btn primary" whileTap={{ scale: 0.96 }} onClick={onClose}>
+          Entendido
         </motion.button>
         <p className="caption muted" style={{ margin: 0, textAlign: 'center' }}>
-          Puedes cambiarlo después en Perfil.
+          Si el teléfono te pide permiso de ubicación, elige “Permitir”.
         </p>
       </motion.div>
     </motion.div>

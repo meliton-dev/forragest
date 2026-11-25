@@ -66,8 +66,7 @@ function Inner({ route }: { route: Route }) {
         <Notice tone="info">El almacenista confirmará la recepción; el producto en tránsito vuelve al inventario.</Notice>
         {closed && (
           <Notice tone="ok" icon="check">
-            La ruta quedó cerrada
-            {s.queue.some((o) => o.path.endsWith('/close')) ? ' en tu teléfono y se enviará al sistema al recuperar conexión' : ' y registrada en el sistema'}.
+            La ruta quedó cerrada.
           </Notice>
         )}
       </div>

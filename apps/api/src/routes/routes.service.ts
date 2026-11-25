@@ -12,6 +12,15 @@ export const LATE_TOLERANCE_MIN = 15;
 
 /** "Hoy" en la hora del negocio (no la del servidor, que está en UTC). */
 const todayUtc = () => businessDate();
+
+/** Lo que la app del chofer reportó de su conexión (POST /driver/status), para el monitoreo del supervisor. */
+export const syncState = (r: { lastSeenAt: Date | null; pendingOps: number; oldestPendingAt: Date | null; rejectedOps: number; gpsStatus: string | null }) => ({
+  lastSeenAt: r.lastSeenAt,
+  pending: r.pendingOps,
+  oldestPendingAt: r.oldestPendingAt,
+  rejected: r.rejectedOps,
+  gps: r.gpsStatus,
+});
 const parseDate = (s: string) => new Date(s + 'T00:00:00.000Z');
 
 /** ¿Llegó/entregó después de su hora estimada + tolerancia? (eta "HH:MM" en la hora local del negocio, el día de la ruta) */
@@ -231,6 +240,7 @@ export class RoutesService {
       out.push({
         ...this.row(r),
         lastPing: last ? { lat: last.lat, lng: last.lng, at: last.recordedAt } : null,
+        sync: syncState(r),
         speedKmh: speedKmh(ordered.map((p) => ({ lat: p.lat, lng: p.lng, at: p.recordedAt }))),
         trail: ordered.map((p) => [p.lat, p.lng]),
         stopsMap: r.stops.map((s) => ({
@@ -254,7 +264,17 @@ export class RoutesService {
   async live() {
     const rows = await this.prisma.route.findMany({
       where: { status: 'EN_CURSO' },
-      select: { id: true, name: true, driver: { select: { fullName: true } }, vehicle: { select: { plate: true } } },
+      select: {
+        id: true,
+        name: true,
+        driver: { select: { fullName: true } },
+        vehicle: { select: { plate: true } },
+        lastSeenAt: true,
+        pendingOps: true,
+        oldestPendingAt: true,
+        rejectedOps: true,
+        gpsStatus: true,
+      },
       orderBy: { id: 'asc' },
     });
     const routes = [];
@@ -267,6 +287,7 @@ export class RoutesService {
         driver: r.driver.fullName,
         plate: r.vehicle.plate,
         lastPing: recent.length ? recent[recent.length - 1] : null,
+        sync: syncState(r),
         speedKmh: speedKmh(recent),
         recent,
       });

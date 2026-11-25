@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getUser } from '../lib/api';
-import { usePref, writePref } from '../lib/prefs';
-import { logout, pendingCount, useStore } from '../lib/store';
+import { logout, useStore } from '../lib/store';
 import { useTracking } from '../lib/tracking';
 import { Button, Header, Icon, Notice, TabBar } from '../ui/kit';
 
@@ -12,10 +11,8 @@ const standalone = window.matchMedia('(display-mode: standalone)').matches || (n
 export function Perfil() {
   const s = useStore();
   const gps = useTracking();
-  const gpsPref = usePref('gps');
   const user = getUser();
   const [prompt, setPrompt] = useState<any>(null);
-  const pending = pendingCount(s);
   const initials = (user?.fullName ?? '?')
     .split(' ')
     .map((p) => p[0])
@@ -77,41 +74,18 @@ export function Perfil() {
 
         <div className="card" style={{ padding: 0, gap: 0, overflow: 'hidden' }}>
           <Row
-            icon="wifioff"
-            label="Modo sin conexión"
-            right={
-              <span className="switch on">
-                <i />
-              </span>
-            }
-          />
-          <Row
             icon="pin"
-            label="Compartir ubicación"
+            label="Ubicación"
             value={
-              gpsPref === '0'
-                ? 'Desactivada'
-                : {
-                    idle: 'Solo en ruta',
-                    active: gps.pending ? `Activa · ${gps.pending} por enviar` : 'Activa',
-                    denied: 'Sin permiso',
-                    unsupported: 'No disponible',
-                    error: 'Sin señal GPS',
-                  }[gps.status]
-            }
-            right={
-              <button
-                role="switch"
-                aria-checked={gpsPref !== '0'}
-                aria-label="Compartir ubicación durante la ruta"
-                className={'switch' + (gpsPref !== '0' ? ' on' : '')}
-                onClick={() => writePref('gps', gpsPref === '0' ? '1' : '0')}
-              >
-                <i />
-              </button>
+              {
+                idle: 'Se comparte durante la ruta',
+                active: 'Compartiendo',
+                denied: 'Sin permiso',
+                unsupported: 'No disponible',
+                error: 'Sin señal GPS',
+              }[gps.status]
             }
           />
-          <Row icon="sync" label="Sincronización" to="/sync" value={pending ? `${pending} pendiente${pending === 1 ? '' : 's'}` : 'Al día'} />
           <Row icon="map" label="Navegación" value="Google Maps" />
           <Row icon="info" label="Ayuda y tutorial" to="/ayuda" />
           <Row icon="info" label="Versión de la app" value="1.0" last />
@@ -121,11 +95,6 @@ export function Perfil() {
           <Icon name="logout" size={17} color="var(--danger)" />
           <span style={{ color: 'var(--danger)' }}>Cerrar sesión</span>
         </button>
-        {pending > 0 && (
-          <Notice tone="warn" icon="alert">
-            Tienes {pending} registro{pending === 1 ? '' : 's'} sin enviar. Al cerrar sesión se perderían.
-          </Notice>
-        )}
       </div>
       <TabBar />
     </div>

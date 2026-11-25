@@ -67,24 +67,6 @@ function ArtFlow() {
   );
 }
 
-function ArtOffline() {
-  return (
-    <svg viewBox="0 0 320 240" fill="none" role="img" aria-label="Sin señal: los registros se guardan y se envían solos">
-      <circle cx="160" cy="92" r="52" fill="var(--warn-soft)" />
-      <g stroke="var(--warn)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M128 84a45 45 0 0 1 14-8M192 84a45 45 0 0 0-28-9M140 100a28 28 0 0 1 9-6M180 99a28 28 0 0 0-6-5M150 114a14 14 0 0 1 20 0M160 126h.1M130 62l60 60" />
-      </g>
-      <rect x="52" y="168" width="216" height="20" rx="10" fill={S} stroke={B} />
-      <circle cx="68" cy="178" r="5" fill="var(--warn)" />
-      <rect x="82" y="174" width="110" height="8" rx="4" fill={B} />
-      <rect x="52" y="196" width="216" height="20" rx="10" fill={S} stroke={B} />
-      <circle cx="68" cy="206" r="5" fill="var(--warn)" />
-      <rect x="82" y="202" width="86" height="8" rx="4" fill={B} />
-      <path d="M244 178a9 9 0 0 1 9 9m-9-9v6m0-6h6" stroke={G} strokeWidth="2.5" strokeLinecap="round" opacity="0" />
-    </svg>
-  );
-}
-
 function ArtPin() {
   return (
     <svg viewBox="0 0 320 240" fill="none" role="img" aria-label="Ubicación compartida durante la ruta">
@@ -112,22 +94,17 @@ export const STEPS: { title: string; text: string; art: ReactNode }[] = [
   },
   {
     title: 'Cargar, llegar, entregar',
-    text: 'Primero confirma la carga del camión. Al llegar a cada parada toca “Entregar”: pide la firma (o toma una foto) y registra el cobro, todo en la misma pantalla.',
+    text: 'Primero confirma la carga del camión. Al llegar a cada parada toca “Entregar”: pide la firma (o toma una foto) y registra el cobro, todo en la misma pantalla. Si te equivocas, tienes unos segundos para tocar “Deshacer”.',
     art: <ArtFlow />,
   },
   {
-    title: 'Sin señal, sin problema',
-    text: 'Si pierdes la conexión sigue trabajando: tus entregas y cobros se guardan en el teléfono y se envían solos al volver la señal. Lo ves en “Perfil › Sincronización”.',
-    art: <ArtOffline />,
-  },
-  {
-    title: 'Puedes deshacer',
-    text: 'Si te equivocas, después de registrar una entrega o un cobro tienes unos segundos para tocar “Deshacer”. Tu ubicación solo se comparte mientras la ruta está en curso.',
+    title: 'Tu ubicación, solo en ruta',
+    text: 'Al salir del almacén tu ubicación se comparte con tu supervisor para que sepa dónde va el camión. Se detiene al cerrar la ruta.',
     art: <ArtPin />,
   },
 ];
 
-/** Tutorial de bienvenida: 4 pasos cortos, se puede omitir y volver a ver desde Ayuda. */
+/** Tutorial de bienvenida: 3 pasos cortos, se puede omitir y volver a ver desde Ayuda. */
 export function Onboarding({ onClose }: { onClose: () => void }) {
   const [i, setI] = useState(0);
   const [dir, setDir] = useState(1);

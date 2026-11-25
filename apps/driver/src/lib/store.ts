@@ -1,9 +1,10 @@
 import { del, get, set as idbSet } from 'idb-keyval';
 import { useSyncExternalStore } from 'react';
-import { clearSession, request } from './api';
+import { clearSession, getToken, getUser, request } from './api';
 import { ApiError, NetworkError } from '@forrajera/shared';
-import { mergeQueue, processQueue, uid } from './logic';
+import { mergeQueue, oldestPending, processQueue, uid } from './logic';
 import { showToast } from './toast';
+import { getTracking } from './tracking';
 import type { FailReason, IncidentType, LocalIncident, LocalPayment, Method, Op, Route } from './types';
 
 export interface State {
@@ -20,7 +21,16 @@ export interface State {
   error: string | null;
 }
 
-const KEY = 'fd.state.v1';
+/**
+ * Lo guardado en el teléfono va por chofer: si la sesión vence o alguien cierra sesión, lo que no se envió se
+ * conserva y sale en cuanto esa misma persona vuelve a entrar. Otro chofer en el mismo teléfono no lo ve ni lo envía.
+ */
+const LEGACY_KEY = 'fd.state.v1';
+export const stateKey = (userId: number | string) => `fd.state.v2.${userId}`;
+const currentKey = () => {
+  const u = getUser();
+  return u ? stateKey(u.id) : null;
+};
 const initial: State = {
   ready: false,
   loading: false,
@@ -37,12 +47,15 @@ const initial: State = {
 
 let state: State = initial;
 const listeners = new Set<() => void>();
-let started = false;
+/** Clave del chofer cuyos datos están cargados (null = nadie: no se guarda nada para no pisar lo de otro). */
+let loadedKey: string | null = null;
+let wired = false;
 
 const emit = () => listeners.forEach((l) => l());
 const persist = () => {
+  if (!loadedKey) return;
   const { route, payments, incidents, queue, lastSync } = state;
-  void idbSet(KEY, { route, payments, incidents, queue, lastSync });
+  void idbSet(loadedKey, { route, payments, incidents, queue, lastSync });
 };
 function patch(p: Partial<State>, save = true) {
   state = { ...state, ...p };
@@ -54,19 +67,56 @@ export const getState = () => state;
 export const useStore = () => useSyncExternalStore((cb) => (listeners.add(cb), () => listeners.delete(cb)), getState);
 export const pendingCount = (s: State = state) => s.queue.filter((o) => !o.failed).length;
 
-/** Carga lo guardado en el teléfono y se pone al día con la API. */
+/** Cada cuánto la app le cuenta al supervisor cómo va (registros sin enviar, GPS). */
+export const STATUS_EVERY_MS = 30_000;
+
+/**
+ * Le cuenta al supervisor el estado de la app: registros guardados sin enviar, rechazados y GPS. El chofer no ve
+ * nada de esto. Sin señal simplemente no llega, y el supervisor ve desde cuándo no hay noticias del teléfono.
+ */
+export async function reportStatus() {
+  const r = state.route;
+  if (!r || r.status !== 'EN_CURSO' || !getToken()) return;
+  try {
+    await request('POST', '/driver/status', {
+      routeId: r.id,
+      pending: pendingCount(),
+      oldestPendingAt: oldestPending(state.queue) ?? undefined,
+      rejected: state.queue.filter((o) => o.failed).length,
+      gps: getTracking().status,
+    });
+  } catch {
+    // sin señal o error del servidor: se vuelve a intentar en el siguiente aviso
+  }
+}
+
+/** Carga lo guardado en el teléfono para el chofer que entró y se pone al día con la API. */
 export async function init() {
-  if (started) return;
-  started = true;
-  const saved = await get(KEY);
-  if (saved) state = { ...state, ...saved };
-  state = { ...state, ready: true };
+  const key = currentKey();
+  if (!key || key === loadedKey) return;
+  let saved = await get(key);
+  // antes de que los datos fueran por chofer: lo que hubiera era de quien tiene la sesión abierta
+  if (!saved) {
+    saved = await get(LEGACY_KEY);
+    if (saved) await del(LEGACY_KEY);
+  }
+  loadedKey = key;
+  state = { ...initial, online: state.online, ...(saved ?? {}), ready: true };
+  persist();
   emit();
-  window.addEventListener('online', () => void refresh());
-  window.addEventListener('offline', () => patch({ online: false }, false));
-  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && void refresh());
-  window.addEventListener('fd:unauthorized', () => void logout());
-  setInterval(() => pendingCount() > 0 && void flush(), 20_000);
+  if (!wired) {
+    wired = true;
+    window.addEventListener('online', () => {
+      patch({ online: true }, false);
+      void reportStatus();
+      void refresh();
+    });
+    window.addEventListener('offline', () => patch({ online: false }, false));
+    document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && void refresh());
+    window.addEventListener('fd:unauthorized', () => void expireSession());
+    setInterval(() => loadedKey && pendingCount() > 0 && void flush(), 20_000);
+    setInterval(() => loadedKey && void reportStatus(), STATUS_EVERY_MS);
+  }
   await refresh();
 }
 
@@ -93,7 +143,7 @@ async function pull() {
   } catch (e) {
     if (e instanceof NetworkError) patch({ online: false, loading: false }, false);
     else if (e instanceof ApiError && e.status === 404) patch({ route: null, noRoute: true, online: true, loading: false });
-    else if (e instanceof ApiError && e.status === 401) void logout();
+    else if (e instanceof ApiError && e.status === 401) void expireSession();
     else patch({ loading: false, error: e instanceof Error ? e.message : 'Error desconocido' }, false);
   }
 }
@@ -110,7 +160,8 @@ export function flush(): Promise<void> {
     const queue = mergeQueue(snapshot, r.queue, state.queue);
     const addedMeanwhile = queue.length > r.queue.length;
     patch({ queue, syncing: false, online: !r.offline });
-    if (r.unauthorized) return void (await logout());
+    if (r.unauthorized) return void (await expireSession());
+    if (r.sent > 0) void reportStatus();
     if (addedMeanwhile && !r.stopped) setTimeout(() => void flush(), 50);
     else if (!r.stopped && !queue.some((o) => !o.failed)) await pull();
   })().finally(() => {
@@ -124,17 +175,27 @@ export async function refresh() {
   else await pull();
 }
 
+/**
+ * Cierra la sesión SIN borrar lo guardado en el teléfono: lo que falte por enviar sale cuando el mismo chofer vuelva
+ * a entrar. Antes de salir intenta mandarlo (si hay señal).
+ */
 export async function logout() {
+  if (getToken() && state.queue.length) await flush().catch(() => undefined);
+  endSession();
+}
+
+/** La sesión dejó de servir (token vencido o cambiado): mismo trato que cerrar sesión, sin intentar enviar. */
+export async function expireSession() {
+  endSession();
+}
+
+function endSession() {
+  persist();
   clearSession();
-  await del(KEY);
+  loadedKey = null;
   state = { ...initial, ready: true, online: state.online };
   emit();
   window.dispatchEvent(new Event('fd:loggedout'));
-}
-
-export function discardOp(id: string) {
-  patch({ queue: state.queue.filter((o) => o.id !== id) });
-  void refresh();
 }
 
 const mapStop = (id: number, fn: (s: Route['stops'][number]) => Route['stops'][number]): Route => ({
@@ -150,7 +211,8 @@ export async function startRoute() {
     const route = await request<Route>('POST', `/driver/routes/${r.id}/start`);
     patch({ route, online: true });
   } catch (e) {
-    if (e instanceof NetworkError) throw new Error('Necesitas conexión para cargar el camión y salir a ruta.');
+    // única acción que no puede esperar: el servidor valida y descuenta el inventario del almacén al salir
+    if (e instanceof NetworkError) throw new Error('No se pudo registrar la salida del almacén. Intenta de nuevo en un momento.');
     throw e;
   }
 }

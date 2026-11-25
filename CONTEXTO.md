@@ -69,6 +69,15 @@ Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/sh
 - **Decisión:** para la presentación se crea una **base nueva y vacía** en Render y se carga ahí el seed, en lugar de correrlo sobre la base vieja. Revisión del seed sobre datos existentes: borra rutas ajenas, no usa transacciones y tarda 6-10 min contra Render; solo es seguro en base vacía.
 - La base gratuita vieja caducaba hacia el 3-4 dic 2026 (estimación: creada ~3 nov).
 
+**Rama `conexion-automatica` (desde `main`, SIN publicar): la app del chofer no muestra nada de conexión.**
+
+- Se quitaron el interruptor "Modo sin conexión" (era decorativo), la pantalla Sincronización, el aviso amarillo de "Sin conexión / por sincronizar", las etiquetas "Por sincronizar", el globito de pendientes en la pestaña Perfil y los textos de ayuda/tutorial sobre señal. El tutorial ahora tiene 3 pasos.
+- **Ubicación siempre en ruta:** sin interruptor ni "Ahora no". La primera vez (por chofer, preferencia `gpsNotice`) sale un aviso informativo "Tu ubicación se comparte durante la ruta" con "Entendido"; después el teléfono pide su permiso (no se puede saltar). Si el permiso se niega, el chofer sí ve el aviso para activarlo.
+- **Nada se pierde:** lo guardado va por chofer (`fd.state.v2.<userId>`; lo de `fd.state.v1` se adopta al entrar). Un 401 o "Cerrar sesión" ya NO borran la cola: se envía cuando la misma persona vuelve a entrar; otro chofer en el mismo teléfono no la ve. Las ubicaciones pendientes van por ruta (`fd.pings.v2.<routeId>`).
+- **El supervisor sí ve el estado:** la app manda `POST /driver/status` cada 30 s, al recuperar señal y tras enviar algo (`pending`, `oldestPendingAt`, `rejected`, `gps`). Se guarda en `Route` (`lastSeenAt`, `pendingOps`, `oldestPendingAt`, `rejectedOps`, `gpsStatus`, migración `20261124000000_estado_app_chofer`); las ubicaciones también actualizan `lastSeenAt`. `/routes/live` y `/routes/monitor` traen `sync`; el monitoreo muestra "Sin señal desde las HH:MM" (más de 3 min sin noticias), "N registros guardados en el teléfono sin enviar desde las HH:MM", rechazados y GPS sin permiso (`driverStatus()` en `apps/web/src/lib/live.ts`).
+- **Excepción a propósito:** cargar el camión y salir a ruta sigue necesitando conexión (el servidor valida y descuenta el inventario); si falla, el chofer ve "No se pudo registrar la salida del almacén. Intenta de nuevo en un momento." El inicio de sesión también necesita conexión.
+- Al fusionar con `usuarios-contrasenas` habrá conflicto en `apps/driver/src/lib/store.ts` (las dos ramas cambiaron cómo se conserva la cola al vencer la sesión): quedarse con las claves por chofer de esta rama y agregar el manejo del 403 `PASSWORD_CHANGE_REQUIRED` de la otra.
+
 ## Datos de demostración: la forrajera simulada
 
 No hay un cliente real: se **simula** uno, la **Forrajera San Miguel** (Tulancingo, Hgo.), para que el sistema se vea como en un negocio en marcha. Todo es inventado (personas, negocios, RFC, teléfonos con el patrón 555-01xx, correos `.example`). Está en `apps/api/prisma/seed-data.ts` (los datos) y `apps/api/prisma/seed.ts` (cómo se cargan). Rama `datos-forrajera`.
@@ -125,7 +134,7 @@ También excluidos: `docs/informe-u3/` y `scripts/pruebas-informe-u3.mjs`, del r
 1. **Rotar la contraseña de demostración compartida** y crear usuarios reales: es el mayor riesgo de producción (todos los roles comparten contraseña). Al menos `admin` y `supervisor` con contraseñas propias, y regenerar `JWT_SECRET` para cerrar sesiones (el token dura 12 h y no se revoca al desactivar al usuario).
 2. **Activar los respaldos diarios** agregando los dos secretos en GitHub (`BACKUP_DATABASE_URL` = External URL de `forragest-db-2`).
 3. **Fotos y firmas fuera de la base** (hoy son base64 en `Delivery`/`Incident`): requiere elegir dónde guardarlas (R2, S3 o disco). Hay un límite de 10 MB por petición.
-4. Revisar con un **celular real en la calle** la ubicación en vivo (solo se probó con GPS simulado) y la **ruta por calles en producción** (que la API de Render alcance a OSRM).
+4. Revisar con un **celular real en la calle** la ubicación en vivo y el envío automático al recuperar señal (solo se probó con GPS y cortes de red simulados) y la **ruta por calles en producción** (que la API de Render alcance a OSRM).
 5. Consultas de ventas por rol: hoy cualquier cajero ve las ventas de hoy de todos los cajeros (hace falta para devoluciones por folio); decidir si se restringe.
 6. Si el uso crece: servidor propio o de pago para rutas por calles, plan de pago en Render, y monitoreo de errores con alertas (p. ej. Sentry).
 7. El día de la presentación: abrir `https://forragest-api.onrender.com/health` 10 min antes (el arranque en frío tardó 33 s).
