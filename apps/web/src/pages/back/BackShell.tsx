@@ -78,6 +78,10 @@ export function BackShell() {
         {user.role === 'ADMINISTRADOR' && (
           <>
             <div className="grp overline">Administración</div>
+            <NavLink to="/oficina/ventas" className={({ isActive }) => `item ${isActive ? 'on' : ''}`}>
+              <Icon name="chart" size={16} />
+              Ventas
+            </NavLink>
             <NavLink to="/usuarios" className={({ isActive }) => `item ${isActive ? 'on' : ''}`}>
               <Icon name="user" size={16} />
               Usuarios

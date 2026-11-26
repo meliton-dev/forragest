@@ -16,6 +16,7 @@ const NAV: [to: string, label: string, icon: string][] = [
 /** El administrador entra por el punto de venta: desde aquí llega a la oficina y a los usuarios. */
 const ADMIN_NAV: [to: string, label: string, icon: string][] = [
   ['/rutas', 'Oficina', 'route'],
+  ['/oficina/ventas', 'Ventas', 'chart'],
   ['/usuarios', 'Usuarios', 'user'],
 ];
 

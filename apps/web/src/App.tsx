@@ -26,6 +26,7 @@ const Proveedores = page(() => import('./pages/back/Proveedores'), 'Proveedores'
 const RutasLista = page(() => import('./pages/back/RutasLista'), 'RutasLista');
 const Sugerencias = page(() => import('./pages/back/Sugerencias'), 'Sugerencias');
 const Usuarios = page(() => import('./pages/back/Usuarios'), 'Usuarios');
+const Ventas = page(() => import('./pages/back/Ventas'), 'Ventas');
 
 // Qué ve cada perfil: el cajero el punto de venta, el supervisor de rutas el módulo de rutas y el administrador ambos.
 const canPos = (role?: string) => role === 'CAJERO' || role === 'ADMINISTRADOR';
@@ -107,6 +108,9 @@ export default function App() {
         </Route>
         <Route path="/usuarios" element={role === 'ADMINISTRADOR' ? <BackShell /> : <Navigate to={home} replace />}>
           <Route index element={<Usuarios />} />
+        </Route>
+        <Route path="/oficina/ventas" element={role === 'ADMINISTRADOR' ? <BackShell /> : <Navigate to={home} replace />}>
+          <Route index element={<Ventas />} />
         </Route>
         <Route path="*" element={<Navigate to={home} replace />} />
       </Routes>

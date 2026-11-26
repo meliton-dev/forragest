@@ -414,18 +414,24 @@ export class PosService {
     return this.getSale(s.id);
   }
 
-  async listSales(q?: string, status?: string) {
+  async listSales(q?: string, status?: string, register?: string) {
     const folio = q && /^\d+$/.test(q) ? Number(q) : undefined;
     const rows = await this.prisma.sale.findMany({
       where: {
         createdAt: { gte: startOfToday() },
         ...(status ? { status: status as any } : {}),
+        ...(register ? { shift: { register } } : {}),
         ...(q ? { OR: [...(folio ? [{ folio }] : []), { customer: { name: { contains: q, mode: 'insensitive' as const } } }] } : {}),
       },
-      include: { customer: true },
+      include: { customer: true, shift: { select: { register: true } } },
       orderBy: { id: 'desc' },
       take: 100,
     });
+    const cashiers = new Map(
+      (await this.prisma.user.findMany({ where: { id: { in: [...new Set(rows.map((s) => s.cashierId))] } }, select: { id: true, fullName: true } })).map(
+        (u) => [u.id, u.fullName],
+      ),
+    );
     return rows.map((s) => ({
       id: s.id,
       folio: s.folio,
@@ -434,6 +440,8 @@ export class PosService {
       paymentMethod: s.paymentMethod,
       total: num(s.total),
       status: s.status,
+      register: s.shift.register,
+      cashier: cashiers.get(s.cashierId) ?? '—',
     }));
   }
 

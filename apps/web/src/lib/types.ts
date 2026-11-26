@@ -81,6 +81,9 @@ export interface SaleRow {
   paymentMethod: PayMethod;
   total: number;
   status: SaleStatus;
+  /** caja del turno en que se vendió (Caja 1, Caja 2…) */
+  register: string;
+  cashier: string;
 }
 
 export interface ShiftSummary {

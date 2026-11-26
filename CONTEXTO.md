@@ -101,6 +101,11 @@ Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/sh
 - Lo único que necesita internet en local: el fondo del mapa (teselas de OpenStreetMap), la ruta por calles si se pide `--calles` y el botón "Navegar" (Google Maps). El GPS funciona en `localhost`, no desde un celular por IP (requiere HTTPS).
 - `.env.example` ya no trae `VITE_API_URL` activo: copiado tal cual, hacía que la app local hablara con producción.
 
+**Ventas (rama `ventas-oficina`, 26 nov 2026):**
+
+- **Oficina → Ventas** (`/oficina/ventas`, solo administrador; también en el riel del cajero-admin): por día (selector, ‹ › y "Hoy"), total del día = mostrador neto + entregado en ruta; mostrador por caja (formas de pago, canceladas, devoluciones), turnos y cortes (efectivo esperado, contado, diferencia; un turno abierto se calcula igual que el corte) y reparto por ruta (paradas, entregado con lo que realmente se dejó, cobrado en efectivo y transferencia). API `GET /reports/sales?date=AAAA-MM-DD` (`apps/api/src/reports/`), "día" del negocio con `atBusinessTime`.
+- **Ventas del día** (caja): columna Caja con el cajero debajo y filtro por caja; `GET /pos/sales` acepta `register` y devuelve `register` y `cashier`.
+
 ## Datos de demostración: la forrajera simulada
 
 No hay un cliente real: se **simula** uno, la **Forrajera San Miguel** (Tulancingo, Hgo.), para que el sistema se vea como en un negocio en marcha. Todo es inventado (personas, negocios, RFC, teléfonos con el patrón 555-01xx, correos `.example`). Está en `apps/api/prisma/seed-data.ts` (los datos) y `apps/api/prisma/seed.ts` (cómo se cargan). Rama `datos-forrajera`.

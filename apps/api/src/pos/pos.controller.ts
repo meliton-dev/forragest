@@ -94,8 +94,8 @@ export class PosController {
   }
 
   @Get('sales')
-  list(@Query('q') q?: string, @Query('status') status?: string) {
-    return this.pos.listSales(q, status);
+  list(@Query('q') q?: string, @Query('status') status?: string, @Query('register') register?: string) {
+    return this.pos.listSales(q, status, register);
   }
 
   @Post('authorize')

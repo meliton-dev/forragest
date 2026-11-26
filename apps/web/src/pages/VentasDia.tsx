@@ -18,6 +18,9 @@ export function VentasDia() {
   const pos = usePos();
   const [status, setStatus] = useState('');
   const [q, setQ] = useState('');
+  const [register, setRegister] = useState('');
+  // cajas que han vendido hoy (se recuerdan aunque el filtro esconda las demás)
+  const [registers, setRegisters] = useState<string[]>([]);
   const [rows, setRows] = useState<SaleRow[]>([]);
   const [selId, setSelId] = useState<number | null>(null);
   const [sale, setSale] = useState<Sale | null>(null);
@@ -27,14 +30,15 @@ export function VentasDia() {
 
   const load = useCallback(async () => {
     try {
-      const r = await api<SaleRow[]>('GET', `/pos/sales?q=${encodeURIComponent(q)}&status=${status}`);
+      const r = await api<SaleRow[]>('GET', `/pos/sales?q=${encodeURIComponent(q)}&status=${status}&register=${encodeURIComponent(register)}`);
       setRows(r);
+      setRegisters((cur) => [...new Set([...cur, ...r.map((x) => x.register)])].sort((a, b) => a.localeCompare(b, 'es', { numeric: true })));
       setError(null);
       setSelId((cur) => (cur && r.some((x) => x.id === cur) ? cur : (r[0]?.id ?? null)));
     } catch (e) {
       setError(errMsg(e));
     }
-  }, [q, status]);
+  }, [q, status, register]);
 
   useEffect(() => {
     const t = setTimeout(() => void load(), 200);
@@ -51,8 +55,18 @@ export function VentasDia() {
   return (
     <div className="page">
       <div className="grow">
-        <div className="row between">
+        <div className="row between gap8" style={{ flexWrap: 'wrap' }}>
           <Segmented value={status} onChange={setStatus} options={FILTERS} />
+          <div className="input" style={{ width: 150, height: 38 }}>
+            <select value={register} onChange={(e) => setRegister(e.target.value)} aria-label="Filtrar por caja">
+              <option value="">Todas las cajas</option>
+              {registers.map((x) => (
+                <option key={x} value={x}>
+                  {x}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="input" style={{ width: 240, height: 38 }}>
             <Icon name="search" size={15} color="var(--text-3)" />
             <input placeholder="Folio o cliente" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Buscar venta" />
@@ -69,6 +83,7 @@ export function VentasDia() {
               <tr>
                 <th style={{ width: 90 }}>Folio</th>
                 <th style={{ width: 70 }}>Hora</th>
+                <th style={{ width: 130 }}>Caja</th>
                 <th>Cliente</th>
                 <th style={{ width: 130 }}>Pago</th>
                 <th className="right" style={{ width: 110 }}>
@@ -82,6 +97,10 @@ export function VentasDia() {
                 <tr key={r.id} className={`click ${selId === r.id ? 'sel' : ''}`} onClick={() => setSelId(r.id)}>
                   <td className="muted">{folio(r.folio)}</td>
                   <td className="muted">{hhmm(r.createdAt)}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    {r.register}
+                    <div className="caption muted">{r.cashier}</div>
+                  </td>
                   <td className="strong">{r.customer}</td>
                   <td>
                     <Badge>{PAY_LABEL[r.paymentMethod]}</Badge>
