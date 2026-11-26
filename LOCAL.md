@@ -32,7 +32,7 @@ Para **detenerlo**: en esa ventana de PowerShell presiona **Ctrl + C**. Lo que h
 
 | Usuario              | Quién (ficticio)         | Qué ve                                               |
 | -------------------- | ------------------------ | ---------------------------------------------------- |
-| `admin`              | Dueño                    | Todo: punto de venta, oficina y **Usuarios**         |
+| `admin`              | Dueño                    | Oficina: rutas, compras, **Ventas** y **Usuarios**   |
 | `cajero`             | Cajera, caja 1           | Punto de venta, ventas del día, devoluciones, corte  |
 | `cajero2`            | Cajera, caja 2           | Lo mismo que `cajero`                                |
 | `supervisor`         | Supervisor de rutas      | Rutas, nueva ruta, monitoreo en vivo, eficiencia     |

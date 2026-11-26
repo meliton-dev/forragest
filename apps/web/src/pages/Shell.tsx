@@ -13,12 +13,6 @@ const NAV: [to: string, label: string, icon: string][] = [
   ['/devoluciones', 'Devoluciones', 'undo'],
   ['/corte', 'Corte de caja', 'wallet'],
 ];
-/** El administrador entra por el punto de venta: desde aquí llega a la oficina y a los usuarios. */
-const ADMIN_NAV: [to: string, label: string, icon: string][] = [
-  ['/rutas', 'Oficina', 'route'],
-  ['/oficina/ventas', 'Ventas', 'chart'],
-  ['/usuarios', 'Usuarios', 'user'],
-];
 
 const initialsOf = (name: string) =>
   name
@@ -32,7 +26,6 @@ export function Shell() {
   const pos = usePos();
   const open = pos.shift?.shift;
   const [changing, setChanging] = useState(false);
-  const nav = pos.user.role === 'ADMINISTRADOR' ? [...NAV, ...ADMIN_NAV] : NAV;
   return (
     <div className="pos">
       <aside className="rail" aria-label="Menú del punto de venta">
@@ -41,7 +34,7 @@ export function Shell() {
           <span>{open?.register ?? 'Caja 1'}</span>
         </div>
         <nav className="rail-nav">
-          {nav.map(([to, label, icon]) => (
+          {NAV.map(([to, label, icon]) => (
             <NavLink key={to} to={to} end={to === '/'} title={label} className={({ isActive }) => (isActive ? 'on' : '')}>
               <Icon name={icon} size={24} sw={1.8} />
               <span>{label}</span>

@@ -28,8 +28,8 @@ const Sugerencias = page(() => import('./pages/back/Sugerencias'), 'Sugerencias'
 const Usuarios = page(() => import('./pages/back/Usuarios'), 'Usuarios');
 const Ventas = page(() => import('./pages/back/Ventas'), 'Ventas');
 
-// Qué ve cada perfil: el cajero el punto de venta, el supervisor de rutas el módulo de rutas y el administrador ambos.
-const canPos = (role?: string) => role === 'CAJERO' || role === 'ADMINISTRADOR';
+// Qué ve cada perfil: el cajero el punto de venta, el supervisor de rutas el módulo de rutas y el administrador la oficina.
+const canPos = (role?: string) => role === 'CAJERO';
 const canRoutes = (role?: string) => role === 'SUPERVISOR_RUTAS' || role === 'ADMINISTRADOR';
 const canPurchasing = (role?: string) => role === 'GERENTE_COMPRAS' || role === 'ADMINISTRADOR';
 
@@ -71,7 +71,7 @@ export default function App() {
   if (user.mustChangePassword) return <ForcePassword user={user} onLogout={clearSession} />;
   const role = user.role;
   if (!canPos(role) && !canRoutes(role) && !canPurchasing(role)) return <SinPantallas user={user} onLogout={clearSession} />;
-  const home = canPos(role) ? '/' : canRoutes(role) ? '/rutas' : '/compras';
+  const home = canPos(role) ? '/' : role === 'ADMINISTRADOR' ? '/oficina/ventas' : canRoutes(role) ? '/rutas' : '/compras';
 
   return (
     <BrowserRouter>

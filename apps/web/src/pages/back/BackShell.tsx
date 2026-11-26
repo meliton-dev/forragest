@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 import { api, getUser } from '../../lib/api';
 import type { PurchaseAlerts } from '../../lib/compras-types';
 import { Button, Icon } from '../../ui/kit';
@@ -12,6 +12,7 @@ type NavItem = [to: string, label: string, icon: string, end: boolean, badge?: n
 export function BackShell() {
   const user = getUser()!;
   const [changing, setChanging] = useState(false);
+  const isAdmin = user.role === 'ADMINISTRADOR';
   const seesRoutes = user.role === 'SUPERVISOR_RUTAS' || user.role === 'ADMINISTRADOR';
   const seesPurchasing = user.role === 'GERENTE_COMPRAS' || user.role === 'ADMINISTRADOR';
   // COM-007: el contador del menú avisa de pagos a proveedores vencidos o próximos a vencer
@@ -30,11 +31,12 @@ export function BackShell() {
     ['/rutas', 'Rutas de reparto', 'route', true],
     ['/rutas/nueva', 'Nueva ruta', 'truck', false],
     ['/rutas/mapa', 'Monitoreo en vivo', 'map', false],
-    ['/rutas/eficiencia', 'Eficiencia de entregas', 'chart', false],
+    // el administrador no lleva Eficiencia ni Sugerencias en su menú: son del trabajo diario de supervisor y compras
+    ...(isAdmin ? [] : [['/rutas/eficiencia', 'Eficiencia de entregas', 'chart', false] as NavItem]),
   ];
   const purchaseItems: NavItem[] = [
     ['/compras', 'Órdenes de compra', 'receipt', true],
-    ['/compras/sugerencias', 'Sugerencias', 'refresh', false, alerts?.toReorder],
+    ...(isAdmin ? [] : [['/compras/sugerencias', 'Sugerencias', 'refresh', false, alerts?.toReorder] as NavItem]),
     ['/compras/proveedores', 'Proveedores', 'truck', false],
     ['/compras/por-pagar', 'Cuentas por pagar', 'wallet', false, alerts ? alerts.overdue.length + alerts.dueSoon.length : undefined],
     ['/compras/precios', 'Historial y precios', 'chart', false],
@@ -75,7 +77,7 @@ export function BackShell() {
             ))}
           </div>
         ))}
-        {user.role === 'ADMINISTRADOR' && (
+        {isAdmin && (
           <>
             <div className="grp overline">Administración</div>
             <NavLink to="/oficina/ventas" className={({ isActive }) => `item ${isActive ? 'on' : ''}`}>
@@ -86,11 +88,6 @@ export function BackShell() {
               <Icon name="user" size={16} />
               Usuarios
             </NavLink>
-            <div className="grp overline">Operación</div>
-            <Link to="/" className="item">
-              <Icon name="receipt" size={16} />
-              Punto de venta
-            </Link>
           </>
         )}
         <div className="user">

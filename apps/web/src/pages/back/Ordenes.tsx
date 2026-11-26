@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { api, errMsg } from '../../lib/api';
+import { api, errMsg, getUser } from '../../lib/api';
 import { PAYABLE_LABEL, PAYABLE_TONE, PURCHASE_LABEL, PURCHASE_TONE, type OrderDetail, type OrderRow } from '../../lib/compras-types';
 import { diaCalendario, diaCorto as day, mxn } from '../../lib/format';
 import { Badge, Button, Empty, Field, Icon, Input, Modal, Notice, Segmented } from '../../ui/kit';
@@ -65,9 +65,11 @@ export function Ordenes() {
           <div className="small muted">Pedidos a proveedores y recepción de mercancía.</div>
         </div>
         <div className="row gap8">
-          <Link to="/compras/sugerencias" className="btn secondary">
-            <Icon name="refresh" size={16} /> Sugerencias
-          </Link>
+          {getUser()?.role !== 'ADMINISTRADOR' && (
+            <Link to="/compras/sugerencias" className="btn secondary">
+              <Icon name="refresh" size={16} /> Sugerencias
+            </Link>
+          )}
           <Link to="/compras/nueva" className="btn primary">
             <Icon name="plus" size={16} sw={2} /> Nueva orden
           </Link>

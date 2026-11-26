@@ -74,7 +74,7 @@ Entra con `cajero` / `cambiar123`. Flujo: **abrir turno** (fondo de caja) → ve
 
 ## Rutas de reparto (supervisor)
 
-Entra a la misma app web (`npm run web:dev`) con `supervisor` / `cambiar123`; te lleva directo a **Rutas**. El administrador ve también el punto de venta.
+Entra a la misma app web (`npm run web:dev`) con `supervisor` / `cambiar123`; te lleva directo a **Rutas**. El administrador entra a la oficina (**Ventas**); el punto de venta es solo del cajero.
 
 - **Rutas de reparto:** lista del día con indicadores y detalle de cada parada (hora estimada, llegada, entrega, cobros, incidencias).
 - **Nueva ruta:** elige repartidor, camión, paradas (en orden), productos y forma de pago de cada una; la vista previa traza la ruta en el mapa y avisa si falta existencia para cargar.
