@@ -1,4 +1,4 @@
-import { passwordProblem } from '@forrajera/shared';
+import { passwordProblem, ROLE_LABEL } from '@forrajera/shared';
 
 export interface UserRow {
   id: number;
@@ -26,3 +26,13 @@ export function newUserProblem(f: { fullName: string; username: string; password
 /** Orden de la tabla: primero los activos, luego por nombre. */
 export const sortUsers = (list: UserRow[]): UserRow[] =>
   [...list].sort((a, b) => Number(b.active) - Number(a.active) || a.fullName.localeCompare(b.fullName, 'es'));
+
+/** Sin acentos ni mayúsculas, para buscar "hector" y encontrar "Héctor". */
+const plain = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+/** Usuarios que coinciden con lo escrito en el buscador (nombre, usuario o perfil). */
+export function filterUsers(list: UserRow[], query: string): UserRow[] {
+  const q = plain(query.trim());
+  if (!q) return list;
+  return list.filter((x) => [x.fullName, x.username, ROLE_LABEL[x.role] ?? x.role].some((s) => plain(s).includes(q)));
+}

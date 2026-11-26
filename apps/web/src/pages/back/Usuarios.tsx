@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ROLES, ROLE_LABEL } from '@forrajera/shared';
 import { api, errMsg, getUser, setSession, type SessionUser } from '../../lib/api';
 import { checkNewPassword } from '../../lib/password';
-import { newUserProblem, sortUsers, type UserRow } from '../../lib/users';
+import { filterUsers, newUserProblem, sortUsers, type UserRow } from '../../lib/users';
 import { Badge, Button, Empty, Field, Input, Modal, Notice, Select } from '../../ui/kit';
 
 type Dialog = { kind: 'new' } | { kind: 'edit'; user: UserRow } | { kind: 'password'; user: UserRow } | { kind: 'active'; user: UserRow };
@@ -13,6 +13,10 @@ export function Usuarios() {
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  // usuario recién creado: la lista baja hasta él y lo resalta un momento (va en orden alfabético, no al final)
+  const [highlight, setHighlight] = useState<string | null>(null);
+  const table = useRef<HTMLTableSectionElement>(null);
 
   const load = useCallback(async () => {
     try {
@@ -24,11 +28,25 @@ export function Usuarios() {
   }, []);
   useEffect(() => void load(), [load]);
 
-  const saved = (msg: string) => {
+  const saved = (msg: string, created?: string) => {
     setDialog(null);
     setDone(msg);
+    if (created) {
+      setQuery('');
+      setHighlight(created);
+    }
     void load();
   };
+
+  useEffect(() => {
+    if (!highlight || !users?.some((u) => u.username === highlight)) return;
+    table.current?.querySelector(`[data-username="${CSS.escape(highlight)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const t = setTimeout(() => setHighlight(null), 4000);
+    return () => clearTimeout(t);
+  }, [highlight, users]);
+
+  const shown = filterUsers(users ?? [], query);
+  const inactive = (users ?? []).filter((u) => !u.active).length;
 
   return (
     <>
@@ -51,6 +69,23 @@ export function Usuarios() {
           {done}
         </Notice>
       )}
+      <div className="row between gap12" style={{ flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 260px', maxWidth: 380 }}>
+          <Input
+            icon="search"
+            placeholder="Buscar por nombre, usuario o perfil"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Buscar usuarios"
+          />
+        </div>
+        {users && (
+          <span className="small muted" role="status">
+            {query.trim() ? `${shown.length} de ${users.length} usuarios` : `${users.length} usuario${users.length === 1 ? '' : 's'}`}
+            {inactive > 0 && ` · ${inactive} inactivo${inactive === 1 ? '' : 's'}`}
+          </span>
+        )}
+      </div>
       <div className="tw">
         <table className="t">
           <thead>
@@ -62,11 +97,11 @@ export function Usuarios() {
               <th style={{ width: 330 }}>Acciones</th>
             </tr>
           </thead>
-          <tbody>
-            {(users ?? []).map((u) => {
+          <tbody ref={table}>
+            {shown.map((u) => {
               const itsMe = u.id === me.id;
               return (
-                <tr key={u.id}>
+                <tr key={u.id} data-username={u.username} className={u.username === highlight ? 'flash' : undefined}>
                   <td className="strong">
                     {u.fullName}
                     {itsMe && <span className="caption muted"> (tú)</span>}
@@ -104,8 +139,15 @@ export function Usuarios() {
             Crea el primero con «Nuevo usuario».
           </Empty>
         )}
+        {users && users.length > 0 && shown.length === 0 && (
+          <Empty icon="search" title="Nadie coincide">
+            Revisa lo que escribiste en el buscador.
+          </Empty>
+        )}
       </div>
-      {dialog?.kind === 'new' && <NewUser onClose={() => setDialog(null)} onSaved={() => saved('Usuario creado. Entrégale su contraseña en persona.')} />}
+      {dialog?.kind === 'new' && (
+        <NewUser onClose={() => setDialog(null)} onSaved={(username) => saved('Usuario creado. Entrégale su contraseña en persona.', username)} />
+      )}
       {dialog?.kind === 'edit' && (
         <EditUser user={dialog.user} itsMe={dialog.user.id === me.id} onClose={() => setDialog(null)} onSaved={() => saved('Cambios guardados.')} />
       )}
@@ -173,10 +215,11 @@ function MustChange({ value, onChange }: { value: boolean; onChange: (v: boolean
   );
 }
 
-function NewUser({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+function NewUser({ onClose, onSaved }: { onClose: () => void; onSaved: (username: string) => void }) {
   const [f, setF] = useState({ fullName: '', username: '', role: 'CAJERO', password: '', confirm: '', mustChange: true });
   const [show, setShow] = useState(false);
-  const { busy, error, run } = useSave(onSaved);
+  // la API guarda el usuario en minúsculas
+  const { busy, error, run } = useSave(() => onSaved(f.username.trim().toLowerCase()));
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
   const problem = newUserProblem(f);
   const check = checkNewPassword({ current: null, next: f.password, confirm: f.confirm, username: f.username.trim() });

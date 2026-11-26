@@ -1825,3 +1825,9 @@ table.t td.strong {
     font-size: 16px;
   }
 }
+
+/* página Usuarios: el recién creado se resalta unos segundos */
+.t tr.flash td {
+  background: var(--gold-soft);
+  transition: background 0.6s ease;
+}
