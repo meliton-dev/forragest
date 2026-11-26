@@ -62,7 +62,7 @@ export const TOPICS: Topic[] = [
       },
       {
         q: 'El cliente quiere recibir menos de lo pedido',
-        a: 'Todavía no se puede registrar una entrega parcial en la app. Registra la entrega y describe la diferencia en Incidencias, o toca “No se pudo entregar” si no recibe nada. Avisa a tu supervisor.',
+        a: 'Haz una entrega parcial: en la parada toca “Llegué · Entregar” y, en “Cantidad entregada”, usa − y + para dejar en cada producto solo lo que recibe. Revisa el cobro, pide la firma o toma la foto y toca “Confirmar entrega”. Lo que no dejes regresa al almacén al cerrar la ruta. Si no recibe nada, usa “Registrar no entrega”.',
       },
       {
         q: 'El cliente no quiere firmar',
