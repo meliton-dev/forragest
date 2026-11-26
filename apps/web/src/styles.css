@@ -660,7 +660,9 @@ table.t tr.sel td {
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow);
-  overflow: hidden;
+  /* si la tabla no cabe a lo ancho se desliza de lado en vez de apretar las columnas */
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .overlay {
@@ -889,6 +891,10 @@ table.t tr.sel td {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+/* cada bloque conserva su alto y la página se desliza; si se encogen, las tablas largas quedan cortadas sin barra */
+.back-main > * {
+  flex-shrink: 0;
 }
 .kpis {
   display: grid;
@@ -1830,4 +1836,15 @@ table.t td.strong {
 .t tr.flash td {
   background: var(--gold-soft);
   transition: background 0.6s ease;
+}
+
+/* página Usuarios: los botones de cada fila en una sola línea */
+.user-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+.users-table {
+  min-width: 860px;
 }

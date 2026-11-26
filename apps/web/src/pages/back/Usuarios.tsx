@@ -87,14 +87,14 @@ export function Usuarios() {
         )}
       </div>
       <div className="tw">
-        <table className="t">
+        <table className="t users-table">
           <thead>
             <tr>
               <th>Nombre</th>
               <th style={{ width: 150 }}>Usuario</th>
               <th style={{ width: 170 }}>Perfil</th>
               <th style={{ width: 200 }}>Estado</th>
-              <th style={{ width: 330 }}>Acciones</th>
+              <th style={{ width: 340 }}>Acciones</th>
             </tr>
           </thead>
           <tbody ref={table}>
@@ -115,12 +115,12 @@ export function Usuarios() {
                     {u.mustChangePassword && <div className="caption muted">Debe elegir su contraseña</div>}
                   </td>
                   <td>
-                    <div className="row gap8" style={{ flexWrap: 'wrap' }}>
+                    <div className="user-actions">
                       <Button size="sm" onClick={() => setDialog({ kind: 'edit', user: u })}>
                         Editar
                       </Button>
-                      <Button size="sm" icon="lock" onClick={() => setDialog({ kind: 'password', user: u })}>
-                        Nueva contraseña
+                      <Button size="sm" icon="lock" title="Poner una contraseña nueva" onClick={() => setDialog({ kind: 'password', user: u })}>
+                        Contraseña
                       </Button>
                       {!itsMe && (
                         <Button size="sm" variant={u.active ? 'danger' : 'secondary'} onClick={() => setDialog({ kind: 'active', user: u })}>
