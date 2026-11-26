@@ -106,6 +106,12 @@ Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/sh
 - **Oficina → Ventas** (`/oficina/ventas`, solo administrador; también en el riel del cajero-admin): por día (selector, ‹ › y "Hoy"), total del día = mostrador neto + entregado en ruta; mostrador por caja (formas de pago, canceladas, devoluciones), turnos y cortes (efectivo esperado, contado, diferencia; un turno abierto se calcula igual que el corte) y reparto por ruta (paradas, entregado con lo que realmente se dejó, cobrado en efectivo y transferencia). API `GET /reports/sales?date=AAAA-MM-DD` (`apps/api/src/reports/`), "día" del negocio con `atBusinessTime`.
 - **Ventas del día** (caja): columna Caja con el cajero debajo y filtro por caja; `GET /pos/sales` acepta `register` y devuelve `register` y `cashier`.
 
+### Tickets completos (rama ticket-completo, 26 nov 2026)
+
+- En la vista previa el fondo blanco se cortaba y al imprimir solo salía la primera hoja (con 40 productos, 25; sin total). Era solo CSS (`styles.css`).
+- Trampa: al imprimir solo queda lo marcado con `.print-area`; sus contenedores se sueltan (sin altura fija ni scroll). Lo usan el ticket, la nota de crédito y el corte de caja.
+- Probado con API simulada y PDF desde Edge (playwright-core), no con una impresora térmica real.
+
 ## Datos de demostración: la forrajera simulada
 
 No hay un cliente real: se **simula** uno, la **Forrajera San Miguel** (Tulancingo, Hgo.), para que el sistema se vea como en un negocio en marcha. Todo es inventado (personas, negocios, RFC, teléfonos con el patrón 555-01xx, correos `.example`). Está en `apps/api/prisma/seed-data.ts` (los datos) y `apps/api/prisma/seed.ts` (cómo se cargan). Rama `datos-forrajera`.

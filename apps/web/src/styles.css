@@ -798,6 +798,8 @@ table.t tr.sel td {
 .receipt-wrap {
   display: flex;
   justify-content: center;
+  /* sin esto el papel mide lo que la ventanita y el texto se sale del fondo blanco al deslizar */
+  align-items: flex-start;
   padding: 16px;
   background: var(--bg);
   border-radius: var(--r-md);
@@ -805,25 +807,43 @@ table.t tr.sel td {
   max-height: 52dvh;
 }
 
+/* Imprimir: solo queda lo marcado con .print-area (ticket o corte de caja) y todo su largo. */
 @media print {
   body {
     background: #fff !important;
   }
-  body * {
-    visibility: hidden !important;
+  body:has(.print-area) *:not(:has(.print-area), .print-area, .print-area *) {
+    display: none !important;
   }
-  .print-area,
-  .print-area * {
-    visibility: visible !important;
+  /* los contenedores de la pantalla y del diálogo tienen altura fija y recortaban lo que no cabía en una hoja */
+  html:has(.print-area),
+  body:has(.print-area),
+  body *:has(.print-area) {
+    display: block !important;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
   }
   .print-area {
-    position: absolute !important;
-    left: 0;
-    top: 0;
     max-height: none !important;
     overflow: visible !important;
     padding: 0 !important;
     background: #fff !important;
+  }
+  .receipt-wrap.print-area {
+    display: block;
+  }
+  /* un renglón del ticket no se parte entre dos hojas */
+  .receipt > * {
+    break-inside: avoid;
   }
   @page {
     margin: 0;
