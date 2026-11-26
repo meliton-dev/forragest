@@ -1,7 +1,7 @@
 import { del, get, set as idbSet } from 'idb-keyval';
 import { useSyncExternalStore } from 'react';
-import { clearSession, getToken, getUser, request } from './api';
-import { ApiError, NetworkError } from '@forrajera/shared';
+import { clearSession, getToken, getUser, markExpired, request } from './api';
+import { ApiError, NetworkError, PASSWORD_CHANGE_REQUIRED } from '@forrajera/shared';
 import { mergeQueue, oldestPending, processQueue, uid } from './logic';
 import { showToast } from './toast';
 import { getTracking } from './tracking';
@@ -57,6 +57,8 @@ const persist = () => {
   const { route, payments, incidents, queue, lastSync } = state;
   void idbSet(loadedKey, { route, payments, incidents, queue, lastSync });
 };
+/** Mientras falte elegir contraseña el servidor rechaza todo con 403: no se intenta nada hasta que la cambie. */
+const blocked = () => getUser()?.mustChangePassword === true;
 function patch(p: Partial<State>, save = true) {
   state = { ...state, ...p };
   if (save) persist();
@@ -76,7 +78,7 @@ export const STATUS_EVERY_MS = 30_000;
  */
 export async function reportStatus() {
   const r = state.route;
-  if (!r || r.status !== 'EN_CURSO' || !getToken()) return;
+  if (!r || r.status !== 'EN_CURSO' || !getToken() || blocked()) return;
   try {
     await request('POST', '/driver/status', {
       routeId: r.id,
@@ -93,7 +95,9 @@ export async function reportStatus() {
 /** Carga lo guardado en el teléfono para el chofer que entró y se pone al día con la API. */
 export async function init() {
   const key = currentKey();
-  if (!key || key === loadedKey) return;
+  if (!key) return;
+  // mismo chofer (por ejemplo, acaba de elegir su contraseña): solo ponerse al día y enviar lo pendiente
+  if (key === loadedKey) return void (await refresh());
   let saved = await get(key);
   // antes de que los datos fueran por chofer: lo que hubiera era de quien tiene la sesión abierta
   if (!saved) {
@@ -122,6 +126,7 @@ export async function init() {
 
 /** Sustituye lo local por lo del servidor (solo si no hay nada pendiente que se pisaría). */
 async function pull() {
+  if (!state.ready || blocked()) return;
   patch({ loading: true, error: null }, false);
   try {
     const route = await request<Route>('GET', '/driver/route');
@@ -144,6 +149,7 @@ async function pull() {
     if (e instanceof NetworkError) patch({ online: false, loading: false }, false);
     else if (e instanceof ApiError && e.status === 404) patch({ route: null, noRoute: true, online: true, loading: false });
     else if (e instanceof ApiError && e.status === 401) void expireSession();
+    else if (e instanceof ApiError && e.status === 403 && e.code === PASSWORD_CHANGE_REQUIRED) patch({ loading: false }, false);
     else patch({ loading: false, error: e instanceof Error ? e.message : 'Error desconocido' }, false);
   }
 }
@@ -152,6 +158,7 @@ let flushing: Promise<void> | null = null;
 /** Envía la cola pendiente en orden; al terminar, si todo salió bien, actualiza desde el servidor. */
 export function flush(): Promise<void> {
   if (flushing) return flushing;
+  if (!state.ready || blocked()) return Promise.resolve();
   flushing = (async () => {
     patch({ syncing: true }, false);
     const snapshot = state.queue;
@@ -161,6 +168,7 @@ export function flush(): Promise<void> {
     const addedMeanwhile = queue.length > r.queue.length;
     patch({ queue, syncing: false, online: !r.offline });
     if (r.unauthorized) return void (await expireSession());
+    if (r.passwordRequired) return;
     if (r.sent > 0) void reportStatus();
     if (addedMeanwhile && !r.stopped) setTimeout(() => void flush(), 50);
     else if (!r.stopped && !queue.some((o) => !o.failed)) await pull();
@@ -184,8 +192,12 @@ export async function logout() {
   endSession();
 }
 
-/** La sesión dejó de servir (token vencido o cambiado): mismo trato que cerrar sesión, sin intentar enviar. */
+/**
+ * La sesión dejó de servir (401: contraseña cambiada, usuario desactivado o pasó el tiempo): mismo trato que cerrar
+ * sesión, sin intentar enviar. La pantalla de entrada avisa que lo registrado se conserva.
+ */
 export async function expireSession() {
+  markExpired();
   endSession();
 }
 

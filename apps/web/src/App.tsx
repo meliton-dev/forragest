@@ -1,11 +1,13 @@
 import { lazy, useEffect, useState, type ComponentType } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { clearSession, getToken, getUser } from './lib/api';
+import { api, clearSession, getToken, getUser, SESSION_EVENT, setSession, type SessionUser } from './lib/api';
 import { BackShell } from './pages/back/BackShell';
 import { Corte } from './pages/Corte';
 import { Devoluciones } from './pages/Devoluciones';
 import { Login } from './pages/Login';
+import { ForcePassword } from './pages/Password';
 import { Shell } from './pages/Shell';
+import { SinPantallas } from './pages/SinPantallas';
 import { Venta } from './pages/Venta';
 import { VentasDia } from './pages/VentasDia';
 import { PosProvider } from './pos-context';
@@ -23,6 +25,7 @@ const Precios = page(() => import('./pages/back/Precios'), 'Precios');
 const Proveedores = page(() => import('./pages/back/Proveedores'), 'Proveedores');
 const RutasLista = page(() => import('./pages/back/RutasLista'), 'RutasLista');
 const Sugerencias = page(() => import('./pages/back/Sugerencias'), 'Sugerencias');
+const Usuarios = page(() => import('./pages/back/Usuarios'), 'Usuarios');
 
 // Qué ve cada perfil: el cajero el punto de venta, el supervisor de rutas el módulo de rutas y el administrador ambos.
 const canPos = (role?: string) => role === 'CAJERO' || role === 'ADMINISTRADOR';
@@ -30,19 +33,43 @@ const canRoutes = (role?: string) => role === 'SUPERVISOR_RUTAS' || role === 'AD
 const canPurchasing = (role?: string) => role === 'GERENTE_COMPRAS' || role === 'ADMINISTRADOR';
 
 export default function App() {
-  const [auth, setAuth] = useState(!!getToken());
+  // la sesión vive en localStorage; este contador hace que la pantalla se repinte cuando cambia (entrar, salir, nueva contraseña)
+  const [, setVersion] = useState(0);
+  const auth = !!getToken();
 
   useEffect(() => {
-    const out = () => {
-      clearSession();
-      setAuth(false);
+    const out = () => clearSession();
+    const again = () => setVersion((v) => v + 1);
+    // el servidor dijo que hay que elegir contraseña antes de seguir: se muestra esa pantalla
+    const mustChange = () => {
+      const token = getToken();
+      const user = getUser();
+      if (token && user && !user.mustChangePassword) setSession(token, { ...user, mustChangePassword: true });
     };
     window.addEventListener('fw:unauthorized', out);
-    return () => window.removeEventListener('fw:unauthorized', out);
+    window.addEventListener('fw:password-required', mustChange);
+    window.addEventListener(SESSION_EVENT, again);
+    // al abrir se confirma con el servidor quién es y si debe cambiar su contraseña
+    if (getToken()) {
+      api<SessionUser>('GET', '/auth/me')
+        .then((me) => {
+          const token = getToken();
+          if (token) setSession(token, me);
+        })
+        .catch(() => undefined);
+    }
+    return () => {
+      window.removeEventListener('fw:unauthorized', out);
+      window.removeEventListener('fw:password-required', mustChange);
+      window.removeEventListener(SESSION_EVENT, again);
+    };
   }, []);
 
-  if (!auth) return <Login onDone={() => setAuth(true)} />;
-  const role = getUser()?.role;
+  const user = getUser();
+  if (!auth || !user) return <Login onDone={() => setVersion((v) => v + 1)} />;
+  if (user.mustChangePassword) return <ForcePassword user={user} onLogout={clearSession} />;
+  const role = user.role;
+  if (!canPos(role) && !canRoutes(role) && !canPurchasing(role)) return <SinPantallas user={user} onLogout={clearSession} />;
   const home = canPos(role) ? '/' : canRoutes(role) ? '/rutas' : '/compras';
 
   return (
@@ -51,7 +78,7 @@ export default function App() {
         <Route
           element={
             canPos(role) ? (
-              <PosProvider onLogout={() => setAuth(false)}>
+              <PosProvider onLogout={() => undefined}>
                 <Shell />
               </PosProvider>
             ) : (
@@ -77,6 +104,9 @@ export default function App() {
           <Route path="proveedores" element={<Proveedores />} />
           <Route path="por-pagar" element={<PorPagar />} />
           <Route path="precios" element={<Precios />} />
+        </Route>
+        <Route path="/usuarios" element={role === 'ADMINISTRADOR' ? <BackShell /> : <Navigate to={home} replace />}>
+          <Route index element={<Usuarios />} />
         </Route>
         <Route path="*" element={<Navigate to={home} replace />} />
       </Routes>

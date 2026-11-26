@@ -7,7 +7,7 @@ import type { Op } from './types';
  * teléfono (idb-keyval), la API y el GPS simulados.
  */
 const idb = new Map<string, unknown>();
-let user: { id: number } | null;
+let user: { id: number; mustChangePassword?: boolean } | null;
 let token: string | null;
 const request = vi.fn();
 const events: string[] = [];
@@ -26,13 +26,14 @@ vi.mock('./api', () => ({
     token = null;
     user = null;
   },
+  markExpired: () => events.push('expired'),
 }));
 vi.mock('./tracking', () => ({ getTracking: () => ({ status: gps, lastFixAt: null, pending: 0 }) }));
 
 /** Error de la API creado con la misma copia del paquete que usa el almacén (vi.resetModules crea una nueva en cada prueba). */
-async function apiError(message: string, status: number) {
+async function apiError(message: string, status: number, code?: string) {
   const { ApiError } = await import('@forrajera/shared');
-  return new ApiError(message, status);
+  return new ApiError(message, status, code);
 }
 async function networkError() {
   const { NetworkError } = await import('@forrajera/shared');
@@ -115,6 +116,7 @@ describe('registros sin enviar', () => {
     await store.init();
     expect(token).toBeNull();
     expect(events).toContain('fd:loggedout');
+    expect(events).toContain('expired'); // la pantalla de entrada avisa que lo registrado se conserva
     expect(queueOf(7)).toEqual(['a', 'b']);
   });
 
@@ -175,6 +177,46 @@ describe('registros sin enviar', () => {
     await store.init();
     expect(queueOf(7)).toEqual(['viejo']);
     expect(idb.has('fd.state.v1')).toBe(false);
+  });
+});
+
+describe('contraseña propia obligatoria', () => {
+  it('un 403 PASSWORD_CHANGE_REQUIRED no borra ni marca como fallida la cola, ni cierra la sesión', async () => {
+    idb.set(key(7), saved([op('a')]));
+    server(async () => {
+      throw await apiError('Elige tu contraseña', 403, 'PASSWORD_CHANGE_REQUIRED');
+    });
+    const store = await import('./store');
+    await store.init();
+    expect(token).toBe('token');
+    expect(events).not.toContain('fd:loggedout');
+    const q = store.getState().queue;
+    expect(q.map((o) => o.id)).toEqual(['a']);
+    expect(q[0].failed).toBeUndefined();
+    expect(queueOf(7)).toEqual(['a']);
+  });
+
+  it('mientras falta elegir contraseña no se envía nada, ni siquiera el aviso al supervisor', async () => {
+    idb.set(key(7), saved([op('a')]));
+    user = { id: 7, mustChangePassword: true };
+    server(() => undefined);
+    const store = await import('./store');
+    await store.init();
+    await store.reportStatus();
+    expect(request).not.toHaveBeenCalled();
+    expect(store.getState().queue).toHaveLength(1);
+  });
+
+  it('al terminar de elegir contraseña (mismo chofer) se envía lo pendiente', async () => {
+    idb.set(key(7), saved([op('a')]));
+    user = { id: 7, mustChangePassword: true };
+    server(async () => ({ ok: true }));
+    const store = await import('./store');
+    await store.init();
+    expect(queueOf(7)).toEqual(['a']);
+    user = { id: 7 }; // ya eligió su contraseña
+    await store.init();
+    expect(queueOf(7)).toEqual([]);
   });
 });
 

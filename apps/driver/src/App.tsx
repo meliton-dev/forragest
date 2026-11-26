@@ -1,10 +1,7 @@
 import { AnimatePresence, LazyMotion, MotionConfig, m } from 'framer-motion';
-
-/** Motion completo pesa ~43 KB; con LazyMotion + m la primera carga es mínima y el resto llega después (motion.dev). */
-const loadMotion = () => import('./lib/motion-features').then((r) => r.default);
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { getToken } from './lib/api';
+import { clearSession, getToken, getUser, SESSION_EVENT, setSession } from './lib/api';
 import { init, useStore } from './lib/store';
 import { usePref, writePref } from './lib/prefs';
 import { startTracking, stopTracking } from './lib/tracking';
@@ -16,11 +13,15 @@ import { Incidencias, NuevaIncidencia } from './pages/Incidencias';
 import { Login } from './pages/Login';
 import { NoEntrega } from './pages/NoEntrega';
 import { Parada } from './pages/Parada';
+import { CambiarPassword, ForcePassword } from './pages/Password';
 import { Perfil } from './pages/Perfil';
 import { RouteHome } from './pages/RouteHome';
 import { Ayuda } from './pages/Ayuda';
 import { Onboarding } from './ui/Onboarding';
 import { GpsNotice, Toaster } from './ui/Overlays';
+
+/** Motion completo pesa ~43 KB; con LazyMotion + m la primera carga es mínima y el resto llega después (motion.dev). */
+const loadMotion = () => import('./lib/motion-features').then((r) => r.default);
 
 /**
  * Comparte la ubicación del camión siempre que la ruta esté en curso, sin interruptor. La primera vez se le avisa al
@@ -65,6 +66,7 @@ function AnimatedRoutes() {
         <Route path="/incidencias" element={<Incidencias />} />
         <Route path="/incidencias/nueva" element={<NuevaIncidencia />} />
         <Route path="/perfil" element={<Perfil />} />
+        <Route path="/perfil/contrasena" element={<CambiarPassword />} />
         <Route path="/ayuda" element={<Ayuda />} />
         <Route path="/cierre" element={<Cierre />} />
         <Route path="*" element={<Navigate to="/" replace />} />
@@ -74,23 +76,40 @@ function AnimatedRoutes() {
 }
 
 export default function App() {
-  const [auth, setAuth] = useState(!!getToken());
+  // la sesión vive en localStorage; este contador repinta la pantalla cuando cambia (entrar, salir, nueva contraseña)
+  const [, setVersion] = useState(0);
+  const auth = !!getToken();
+  const user = getUser();
+  const mustChange = auth && user?.mustChangePassword === true;
 
   useEffect(() => {
-    const out = () => setAuth(false);
-    window.addEventListener('fd:loggedout', out);
-    return () => window.removeEventListener('fd:loggedout', out);
+    const again = () => setVersion((v) => v + 1);
+    // el servidor dijo que hay que elegir contraseña antes de seguir: se muestra esa pantalla (la cola pendiente no se toca)
+    const required = () => {
+      const token = getToken();
+      const u = getUser();
+      if (token && u && !u.mustChangePassword) setSession(token, { ...u, mustChangePassword: true });
+    };
+    window.addEventListener('fd:loggedout', again);
+    window.addEventListener(SESSION_EVENT, again);
+    window.addEventListener('fd:password-required', required);
+    return () => {
+      window.removeEventListener('fd:loggedout', again);
+      window.removeEventListener(SESSION_EVENT, again);
+      window.removeEventListener('fd:password-required', required);
+    };
   }, []);
+  // solo se sincroniza con la sesión completa: al elegir contraseña se vuelve a llamar y se envía lo pendiente
   useEffect(() => {
-    if (auth) void init();
-  }, [auth]);
+    if (auth && !mustChange) void init();
+  }, [auth, mustChange]);
 
-  if (!auth) {
+  if (!auth || !user || mustChange) {
     return (
       <LazyMotion features={loadMotion} strict>
         <MotionConfig reducedMotion="user">
           <div className="app">
-            <Login onDone={() => setAuth(true)} />
+            {mustChange && user ? <ForcePassword user={user} onLogout={clearSession} /> : <Login onDone={() => setVersion((v) => v + 1)} />}
           </div>
         </MotionConfig>
       </LazyMotion>

@@ -87,6 +87,7 @@ export function Perfil() {
             }
           />
           <Row icon="map" label="Navegación" value="Google Maps" />
+          <Row icon="lock" label="Cambiar contraseña" to="/perfil/contrasena" />
           <Row icon="info" label="Ayuda y tutorial" to="/ayuda" />
           <Row icon="info" label="Versión de la app" value="1.0" last />
         </div>

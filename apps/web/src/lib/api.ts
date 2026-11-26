@@ -1,14 +1,18 @@
-import { ApiError, NetworkError } from '@forrajera/shared';
+import { ApiError, NetworkError, PASSWORD_CHANGE_REQUIRED } from '@forrajera/shared';
 
 const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api';
 const TOKEN_KEY = 'fw.token';
 const USER_KEY = 'fw.user';
+/** Se avisa cada vez que cambia la sesión (entrar, salir, nueva contraseña) para que la pantalla se actualice. */
+export const SESSION_EVENT = 'fw:session';
 
 export interface SessionUser {
   id: number;
   username: string;
   fullName: string;
   role: string;
+  /** true = debe elegir su propia contraseña antes de usar el sistema */
+  mustChangePassword?: boolean;
 }
 
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
@@ -22,13 +26,15 @@ export const getUser = (): SessionUser | null => {
 export function setSession(token: string, user: SessionUser) {
   localStorage.setItem(TOKEN_KEY, token);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
+  window.dispatchEvent(new Event(SESSION_EVENT));
 }
 export function clearSession() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  window.dispatchEvent(new Event(SESSION_EVENT));
 }
 
-export async function api<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
+export async function api<T>(method: 'GET' | 'POST' | 'PATCH', path: string, body?: unknown): Promise<T> {
   let res: Response;
   try {
     const token = getToken();
@@ -48,9 +54,12 @@ export async function api<T>(method: 'GET' | 'POST', path: string, body?: unknow
     if (!res.ok) throw new ApiError(res.status >= 500 ? 'El servidor no está disponible' : 'Respuesta inesperada', res.status);
   }
   if (!res.ok) {
-    if (res.status === 401 && !path.startsWith('/auth/login')) window.dispatchEvent(new Event('fw:unauthorized'));
+    const code = typeof data?.code === 'string' ? data.code : undefined;
+    // al cambiar la contraseña un 401 significa «la actual no es correcta», no «sesión vencida»
+    if (res.status === 401 && !path.startsWith('/auth/login') && !path.startsWith('/auth/change-password')) window.dispatchEvent(new Event('fw:unauthorized'));
+    if (res.status === 403 && code === PASSWORD_CHANGE_REQUIRED) window.dispatchEvent(new Event('fw:password-required'));
     const msg = Array.isArray(data?.message) ? data.message.join(', ') : data?.message;
-    throw new ApiError(msg ?? 'Error del servidor', res.status);
+    throw new ApiError(msg ?? 'Error del servidor', res.status, code);
   }
   return data as T;
 }

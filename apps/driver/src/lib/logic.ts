@@ -1,4 +1,4 @@
-import { ApiError, NetworkError } from '@forrajera/shared';
+import { ApiError, NetworkError, PASSWORD_CHANGE_REQUIRED } from '@forrajera/shared';
 import type { LocalPayment, Op, Route, Summary } from './types';
 
 /** Resumen de la ruta calculado en el teléfono (funciona sin conexión). */
@@ -50,11 +50,15 @@ export interface QueueResult {
   stopped: boolean;
   offline: boolean;
   unauthorized: boolean;
+  /** el servidor pide elegir contraseña antes de seguir (403): nada se pierde ni se marca fallido */
+  passwordRequired: boolean;
 }
 
 /**
  * Envía las operaciones en orden. Un rechazo definitivo del servidor (400/403/404…) marca la operación
  * como fallida y sigue con las demás; sin conexión o error 5xx detiene el envío sin perder nada.
+ * Dos casos no son culpa de la operación y la conservan intacta: 401 (la sesión dejó de servir) y
+ * 403 PASSWORD_CHANGE_REQUIRED (falta elegir contraseña): se detiene el envío y se reintenta al volver a entrar.
  */
 export async function processQueue(queue: Op[], send: (op: Op) => Promise<unknown>, now = Date.now()): Promise<QueueResult> {
   const out: Op[] = [];
@@ -62,6 +66,7 @@ export async function processQueue(queue: Op[], send: (op: Op) => Promise<unknow
   let stopped = false;
   let offline = false;
   let unauthorized = false;
+  let passwordRequired = false;
   for (let i = 0; i < queue.length; i++) {
     const op = queue[i];
     if (stopped) {
@@ -86,6 +91,10 @@ export async function processQueue(queue: Op[], send: (op: Op) => Promise<unknow
         unauthorized = true;
         stopped = true;
         out.push(op);
+      } else if (e instanceof ApiError && e.status === 403 && e.code === PASSWORD_CHANGE_REQUIRED) {
+        passwordRequired = true;
+        stopped = true;
+        out.push(op);
       } else if (e instanceof ApiError && e.status < 500) {
         out.push({ ...op, failed: true, error: e.message });
       } else {
@@ -95,7 +104,7 @@ export async function processQueue(queue: Op[], send: (op: Op) => Promise<unknow
       }
     }
   }
-  return { queue: out, sent, stopped, offline, unauthorized };
+  return { queue: out, sent, stopped, offline, unauthorized, passwordRequired };
 }
 
 /**
