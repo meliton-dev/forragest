@@ -123,6 +123,13 @@ Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/sh
 - Decisión: solo se borra a quien no tiene registros (turnos, ventas, rutas, compras, inventario, cambios en la bitácora); si los tiene responde 409 y se debe **desactivar**. Las ventas no tienen llave foránea al usuario: borrarlo a la fuerza dejaría el historial sin nombre.
 - Sus anotaciones de cambio de contraseña y avisos de la app se conservan sin `userId`, con `usuarioBorrado` en el detalle. Si se agrega una tabla que guarde usuarios, sumarla a `UsersService.history`.
 
+### Puntos de entrega nuevos (rama punto-entrega, 26 nov 2026)
+
+- En **Nueva ruta** cada parada tiene **Nuevo punto de entrega**: nombre, dirección, contacto/teléfono opcionales y un toque en el mapa. `POST /routes/points` (supervisor y administrador).
+- El punto es un `Customer` sin crédito (también sale en los clientes del punto de venta). No se repite el nombre (409). No hay pantalla para editar o borrar puntos.
+
+- Después se quitó **Eficiencia de entregas** para todos (menú, pantalla y ruta web). `GET /routes/efficiency` sigue en la API (la usa `routes:smoke`).
+
 ## Datos de demostración: la forrajera simulada
 
 No hay un cliente real: se **simula** uno, la **Forrajera San Miguel** (Tulancingo, Hgo.), para que el sistema se vea como en un negocio en marcha. Todo es inventado (personas, negocios, RFC, teléfonos con el patrón 555-01xx, correos `.example`). Está en `apps/api/prisma/seed-data.ts` (los datos) y `apps/api/prisma/seed.ts` (cómo se cargan). Rama `datos-forrajera`.

@@ -152,3 +152,14 @@ describe('"hoy" es el día del negocio, no el del servidor (UTC)', () => {
     }
   });
 });
+
+describe('puntos de entrega nuevos', () => {
+  it('se crean con su ubicación, aparecen al armar rutas y no se repiten', async () => {
+    const name = `Rancho nuevo ${uid()}`;
+    const point = await routes.createPoint({ name, address: 'Camino de prueba s/n', lat: 19.5, lng: -97.9 });
+    expect(point).toMatchObject({ name, address: 'Camino de prueba s/n', lat: 19.5, lng: -97.9, creditDays: 0, creditLimit: 0 });
+    expect((await routes.options()).customers).toContainEqual(point);
+    await expect(routes.createPoint({ name: name.toUpperCase(), address: 'Otra', lat: 19, lng: -97 })).rejects.toThrow('Ya existe');
+    await prisma.customer.delete({ where: { id: point.id } });
+  });
+});

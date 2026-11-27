@@ -6,6 +6,7 @@ import { DEPOT, type RouteDetail, type RouteOptions } from '../../lib/routes-typ
 import { Badge, Button, Field, Icon, Input, Notice, Segmented, Select, TextArea } from '../../ui/kit';
 import { useRoadPaths } from '../../lib/road';
 import { MapView, type MapLine, type MapMarker } from '../../ui/MapView';
+import { NuevoPunto } from './NuevoPunto';
 
 interface StopForm {
   uid: number;
@@ -31,6 +32,8 @@ export function NuevaRuta() {
   const [stops, setStops] = useState<StopForm[]>([blankStop()]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // parada para la que se está creando un punto de entrega nuevo
+  const [newPointFor, setNewPointFor] = useState<number | null>(null);
 
   useEffect(() => {
     api<RouteOptions>('GET', '/routes/options')
@@ -242,6 +245,11 @@ export function NuevaRuta() {
                   </button>
                 </div>
                 <div className="card-b">
+                  <div>
+                    <button type="button" className="link row gap4" onClick={() => setNewPointFor(s.uid)}>
+                      <Icon name="pin" size={14} color="var(--accent)" /> Nuevo punto de entrega
+                    </button>
+                  </div>
                   {c && (
                     <div className="caption muted">
                       <Icon name="pin" size={12} /> {c.address}
@@ -404,6 +412,16 @@ export function NuevaRuta() {
           </div>
         </aside>
       </div>
+      {newPointFor !== null && (
+        <NuevoPunto
+          onClose={() => setNewPointFor(null)}
+          onSaved={(point) => {
+            setOpt({ ...opt, customers: [...opt.customers, point].sort((a, b) => a.name.localeCompare(b.name, 'es')) });
+            setStop(newPointFor, (x) => ({ ...x, customerId: point.id, paymentTerms: 'CONTADO' }));
+            setNewPointFor(null);
+          }}
+        />
+      )}
     </>
   );
 }

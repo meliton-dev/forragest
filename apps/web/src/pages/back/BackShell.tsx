@@ -31,11 +31,10 @@ export function BackShell() {
     ['/rutas', 'Rutas de reparto', 'route', true],
     ['/rutas/nueva', 'Nueva ruta', 'truck', false],
     ['/rutas/mapa', 'Monitoreo en vivo', 'map', false],
-    // el administrador no lleva Eficiencia ni Sugerencias en su menú: son del trabajo diario de supervisor y compras
-    ...(isAdmin ? [] : [['/rutas/eficiencia', 'Eficiencia de entregas', 'chart', false] as NavItem]),
   ];
   const purchaseItems: NavItem[] = [
     ['/compras', 'Órdenes de compra', 'receipt', true],
+    // Sugerencias es del trabajo diario de compras: el administrador no la lleva en su menú
     ...(isAdmin ? [] : [['/compras/sugerencias', 'Sugerencias', 'refresh', false, alerts?.toReorder] as NavItem]),
     ['/compras/proveedores', 'Proveedores', 'truck', false],
     ['/compras/por-pagar', 'Cuentas por pagar', 'wallet', false, alerts ? alerts.overdue.length + alerts.dueSoon.length : undefined],

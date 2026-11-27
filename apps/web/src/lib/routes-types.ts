@@ -89,36 +89,6 @@ export interface MonitorRoute extends RouteRow {
   }[];
 }
 
-export interface Efficiency {
-  from: string;
-  to: string;
-  toleranceMin: number;
-  kpis: {
-    stops: number;
-    delivered: number;
-    onTime: number;
-    late: number;
-    failed: number;
-    onTimePct: number | null;
-    latePct: number | null;
-    avgMinutes: number | null;
-  };
-  perDay: { date: string; onTime: number; late: number; failed: number }[];
-  perDriver: {
-    driverId: number;
-    name: string;
-    routes: number;
-    stops: number;
-    onTime: number;
-    late: number;
-    failed: number;
-    onTimePct: number | null;
-    avgMinutes: number | null;
-    collected: number;
-  }[];
-  reasons: Record<string, number>;
-}
-
 /** Almacén de salida (referencia para trazar las rutas en el mapa). */
 export const DEPOT: [number, number] = [20.0833, -98.3631];
 export { FAIL_LABEL, ROUTE_STATUS_LABEL } from '@forrajera/shared';

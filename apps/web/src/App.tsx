@@ -15,7 +15,6 @@ import { PosProvider } from './pos-context';
 // La oficina (rutas, mapa y compras) se carga al entrar a ella: el punto de venta abre sin bajar el mapa (Leaflet)
 // ni pantallas que el cajero nunca usa. Patrón de React Router con React.lazy.
 const page = <K extends string>(load: () => Promise<Record<K, ComponentType>>, name: K) => lazy(() => load().then((m) => ({ default: m[name] })));
-const Eficiencia = page(() => import('./pages/back/Eficiencia'), 'Eficiencia');
 const Monitoreo = page(() => import('./pages/back/Monitoreo'), 'Monitoreo');
 const NuevaOrden = page(() => import('./pages/back/NuevaOrden'), 'NuevaOrden');
 const NuevaRuta = page(() => import('./pages/back/NuevaRuta'), 'NuevaRuta');
@@ -96,7 +95,6 @@ export default function App() {
           <Route index element={<RutasLista />} />
           <Route path="nueva" element={<NuevaRuta />} />
           <Route path="mapa" element={<Monitoreo />} />
-          <Route path="eficiencia" element={<Eficiencia />} />
         </Route>
         <Route path="/compras" element={canPurchasing(role) ? <BackShell /> : <Navigate to={home} replace />}>
           <Route index element={<Ordenes />} />

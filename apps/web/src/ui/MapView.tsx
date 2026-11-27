@@ -51,6 +51,7 @@ export function MapView({
   fitKey,
   height = 360,
   focus,
+  onPick,
 }: {
   markers: MapMarker[];
   lines?: MapLine[];
@@ -58,7 +59,11 @@ export function MapView({
   height?: number | string;
   /** Centra el mapa en un punto cada vez que cambia n (p. ej. al pulsar "Ver en el mapa"). */
   focus?: { lat: number; lng: number; n: number } | null;
+  /** Al tocar el mapa avisa las coordenadas (para marcar un punto). */
+  onPick?: (lat: number, lng: number) => void;
 }) {
+  const pick = useRef(onPick);
+  pick.current = onPick;
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const layer = useRef<L.LayerGroup | null>(null);
@@ -73,6 +78,11 @@ export function MapView({
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(m);
     layer.current = L.layerGroup().addTo(m);
+    // wrap(): si se dio la vuelta al mapa, la longitud vuelve a quedar entre -180 y 180
+    m.on('click', (e) => {
+      const p = e.latlng.wrap();
+      pick.current?.(p.lat, p.lng);
+    });
     map.current = m;
     // el contenedor cambia de tamaño al cargar la página: sin esto Leaflet calcula mal el encuadre y los tiles
     const ro = new ResizeObserver(() => m.invalidateSize());

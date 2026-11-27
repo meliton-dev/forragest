@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 import { RoadPathService } from './road-path';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -20,6 +20,17 @@ import {
 } from 'class-validator';
 import { Roles } from '../common/roles';
 import { RoutesService } from './routes.service';
+
+const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
+
+class NewPointDto {
+  @Transform(trim) @IsString() @IsNotEmpty({ message: 'Escribe el nombre del punto de entrega' }) @MaxLength(120) name: string;
+  @Transform(trim) @IsString() @IsNotEmpty({ message: 'Escribe la dirección o una referencia' }) @MaxLength(200) address: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(120) contact?: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(30) phone?: string;
+  @IsNumber({}, { message: 'Marca el punto en el mapa' }) @Min(-90) @Max(90) lat: number;
+  @IsNumber({}, { message: 'Marca el punto en el mapa' }) @Min(-180) @Max(180) lng: number;
+}
 
 class ItemDto {
   @IsInt() productId: number;
@@ -63,6 +74,12 @@ export class RoutesController {
   @Get('options')
   options() {
     return this.routes.options();
+  }
+
+  /** Nuevo punto de entrega marcado en el mapa por quien arma la ruta. */
+  @Post('points')
+  createPoint(@Body() dto: NewPointDto) {
+    return this.routes.createPoint(dto);
   }
 
   /** Ruta por calles pasando por los puntos en orden (vista previa al crear una ruta y mapa en vivo). */

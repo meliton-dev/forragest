@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Customer, Prisma } from '@prisma/client';
 import { PosService } from '../pos/pos.service';
 import { PrismaService } from '../prisma.service';
 import { atBusinessTime, businessDate } from '../common/time';
@@ -61,17 +61,23 @@ export class RoutesService {
     return {
       drivers,
       vehicles,
-      customers: customers.map((c) => ({
-        id: c.id,
-        name: c.name,
-        address: c.address,
-        lat: c.lat,
-        lng: c.lng,
-        creditDays: c.creditDays,
-        creditLimit: num(c.creditLimit),
-      })),
+      customers: customers.map((c) => this.point(c)),
       catalog,
     };
+  }
+
+  private point(c: Customer) {
+    return { id: c.id, name: c.name, address: c.address, lat: c.lat, lng: c.lng, creditDays: c.creditDays, creditLimit: num(c.creditLimit) };
+  }
+
+  /** Alta de un punto de entrega: es un cliente de contado (el crédito no se autoriza desde las rutas). */
+  async createPoint(dto: { name: string; address: string; contact?: string; phone?: string; lat: number; lng: number }) {
+    const same = await this.prisma.customer.findFirst({ where: { name: { equals: dto.name, mode: 'insensitive' } } });
+    if (same) throw new ConflictException(`Ya existe “${same.name}”. Elígelo en la lista o usa otro nombre.`);
+    const created = await this.prisma.customer.create({
+      data: { name: dto.name, address: dto.address, contact: dto.contact || null, phone: dto.phone || null, lat: dto.lat, lng: dto.lng },
+    });
+    return this.point(created);
   }
 
   async create(dto: {

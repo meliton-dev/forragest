@@ -35,7 +35,7 @@ Para **detenerlo**: en esa ventana de PowerShell presiona **Ctrl + C**. Lo que h
 | `admin`              | Dueño                    | Oficina: rutas, compras, **Ventas** y **Usuarios**   |
 | `cajero`             | Cajera, caja 1           | Punto de venta, ventas del día, devoluciones, corte  |
 | `cajero2`            | Cajera, caja 2           | Lo mismo que `cajero`                                |
-| `supervisor`         | Supervisor de rutas      | Rutas, nueva ruta, monitoreo en vivo, eficiencia     |
+| `supervisor`         | Supervisor de rutas      | Rutas, nueva ruta y monitoreo en vivo                |
 | `compras`            | Gerente de compras       | Órdenes, sugerencias, proveedores, cuentas por pagar |
 | `almacen`            | Almacenista              | Aún no tiene pantallas (solo cambiar contraseña)     |
 | `chofer`             | Repartidor (ruta de hoy) | App del chofer (`localhost:5173`)                    |
