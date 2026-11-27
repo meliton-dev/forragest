@@ -1,3 +1,4 @@
+import { AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NetworkError, PASSWORD_MAX_LENGTH } from '@forrajera/shared';
@@ -5,6 +6,7 @@ import { getUser, request, setSession, type SessionUser } from '../lib/api';
 import { checkNewPassword } from '../lib/password';
 import { AuthTop } from '../ui/AuthTop';
 import { Button, EyeToggle, Field, Header, Input, Notice } from '../ui/kit';
+import { ConfirmLogout } from '../ui/Overlays';
 
 const NEEDS_SIGNAL = 'Necesitas conexión a internet para cambiar la contraseña. Busca señal e inténtalo de nuevo.';
 
@@ -99,6 +101,7 @@ function PasswordForm({ username, currentLabel, onDone }: { username: string; cu
 
 /** Pantalla obligatoria después de entrar con la contraseña temporal. No se manda nada pendiente hasta terminar. */
 export function ForcePassword({ user, onLogout }: { user: SessionUser; onLogout: () => void }) {
+  const [leaving, setLeaving] = useState(false);
   return (
     <div className="screen login auth">
       <AuthTop title="Protege tu cuenta" text="Elige una contraseña que solo tú conozcas." />
@@ -106,10 +109,11 @@ export function ForcePassword({ user, onLogout }: { user: SessionUser; onLogout:
         <div className="small muted">Hola, {user.fullName}. La que te dieron es temporal: escribe una nueva que solo tú conozcas. Se hace una sola vez.</div>
         <PasswordForm username={user.username} currentLabel="Contraseña que te dieron" onDone={() => undefined} />
         <Notice tone="info">Necesitas conexión a internet para este paso. Lo que tengas guardado sin enviar se conserva.</Notice>
-        <button type="button" className="link small" style={{ alignSelf: 'center' }} onClick={onLogout}>
+        <button type="button" className="link small" style={{ alignSelf: 'center' }} onClick={() => setLeaving(true)}>
           Salir
         </button>
       </div>
+      <AnimatePresence>{leaving && <ConfirmLogout onConfirm={onLogout} onCancel={() => setLeaving(false)} />}</AnimatePresence>
     </div>
   );
 }

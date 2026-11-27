@@ -1,5 +1,5 @@
 import { AnimatePresence, m } from 'framer-motion';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { dismissToast, useToast } from '../lib/toast';
 import { Icon } from './kit';
 
@@ -92,6 +92,57 @@ export function GpsNotice({ onClose }: { onClose: () => void }) {
         <p className="caption muted" style={{ margin: 0, textAlign: 'center' }}>
           Si el teléfono te pide permiso de ubicación, elige “Permitir”.
         </p>
+      </m.div>
+    </m.div>
+  );
+}
+
+/** Pregunta antes de cerrar la sesión, para que un toque por error no saque al chofer en plena ruta. */
+export function ConfirmLogout({ sharing, onConfirm, onCancel }: { sharing?: boolean; onConfirm: () => void | Promise<void>; onCancel: () => void }) {
+  const cancel = useRef<HTMLButtonElement>(null);
+  // salir puede tardar unos segundos (primero intenta mandar lo registrado)
+  const [busy, setBusy] = useState(false);
+  useEffect(() => cancel.current?.focus(), []);
+  return (
+    <m.div
+      className="sheet-wrap"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Cerrar sesión"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, transition: { duration: 0.2 } }}
+    >
+      <m.div
+        className="sheet"
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%', transition: { duration: 0.22 } }}
+        transition={{ type: 'spring', stiffness: 380, damping: 36 }}
+      >
+        <div>
+          <h2 className="h2" style={{ fontSize: 22, lineHeight: '28px' }}>
+            ¿Cerrar sesión?
+          </h2>
+          <p className="small muted2" style={{ margin: '6px 0 0', fontSize: 15, lineHeight: '22px' }}>
+            {sharing && 'Tu ruta está en curso: tu ubicación dejará de compartirse. '}
+            Lo que registraste no se pierde. Para volver a entrar necesitarás tu usuario y contraseña.
+          </p>
+        </div>
+        <m.button
+          className="btn primary"
+          whileTap={{ scale: 0.96 }}
+          disabled={busy}
+          onClick={() => {
+            setBusy(true);
+            void onConfirm();
+          }}
+        >
+          {busy ? 'Cerrando…' : 'Sí, cerrar sesión'}
+        </m.button>
+        <m.button ref={cancel} className="btn secondary" whileTap={{ scale: 0.96 }} disabled={busy} onClick={onCancel}>
+          Cancelar
+        </m.button>
       </m.div>
     </m.div>
   );

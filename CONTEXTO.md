@@ -141,6 +141,11 @@ Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/sh
 
 - Mismo estilo que la web: franja verde con retícula (`ui/AuthTop.tsx`), formulario en tarjeta, transiciones CSS y ojito en las contraseñas. Aplica a Entrar y a Elige tu contraseña.
 
+### Confirmar al cerrar sesión (rama confirmar-salida, 27 nov 2026)
+
+- Todos los botones de salir preguntan antes, en la web (`ui/ConfirmLogout.tsx`) y en la app del chofer (`ConfirmLogout` en `ui/Overlays.tsx`). La sesión vencida sigue cerrando sola, sin preguntar.
+- Trampa al probar la app del chofer publicada: llama a `https://forragest-api.onrender.com` (URL absoluta); para simular la API hay que interceptar ese dominio, no `/api`.
+
 ## Datos de demostración: la forrajera simulada
 
 No hay un cliente real: se **simula** uno, la **Forrajera San Miguel** (Tulancingo, Hgo.), para que el sistema se vea como en un negocio en marcha. Todo es inventado (personas, negocios, RFC, teléfonos con el patrón 555-01xx, correos `.example`). Está en `apps/api/prisma/seed-data.ts` (los datos) y `apps/api/prisma/seed.ts` (cómo se cargan). Rama `datos-forrajera`.

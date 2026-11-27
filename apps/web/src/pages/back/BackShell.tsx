@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { api, getUser } from '../../lib/api';
 import type { PurchaseAlerts } from '../../lib/compras-types';
 import { Button, Icon } from '../../ui/kit';
+import { ConfirmLogout } from '../../ui/ConfirmLogout';
 import { ChangePasswordModal } from '../Password';
 
 const ROLE: Record<string, string> = { SUPERVISOR_RUTAS: 'Supervisor de rutas', GERENTE_COMPRAS: 'Gerente de compras', ADMINISTRADOR: 'Administrador' };
@@ -12,6 +13,7 @@ type NavItem = [to: string, label: string, icon: string, end: boolean, badge?: n
 export function BackShell() {
   const user = getUser()!;
   const [changing, setChanging] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const isAdmin = user.role === 'ADMINISTRADOR';
   const seesRoutes = user.role === 'SUPERVISOR_RUTAS' || user.role === 'ADMINISTRADOR';
   const seesPurchasing = user.role === 'GERENTE_COMPRAS' || user.role === 'ADMINISTRADOR';
@@ -96,7 +98,7 @@ export function BackShell() {
             <div className="caption muted">{ROLE[user.role] ?? user.role}</div>
           </div>
           <Button size="sm" icon="lock" aria-label="Cambiar contraseña" title="Cambiar contraseña" onClick={() => setChanging(true)} />
-          <Button size="sm" icon="logout" aria-label="Salir" onClick={() => window.dispatchEvent(new Event('fw:unauthorized'))} />
+          <Button size="sm" icon="logout" aria-label="Salir" title="Salir" onClick={() => setLeaving(true)} />
         </div>
       </aside>
       <main className="back-main">
@@ -112,6 +114,7 @@ export function BackShell() {
         </Suspense>
       </main>
       {changing && <ChangePasswordModal username={user.username} onClose={() => setChanging(false)} />}
+      {leaving && <ConfirmLogout onConfirm={() => window.dispatchEvent(new Event('fw:unauthorized'))} onCancel={() => setLeaving(false)} />}
     </div>
   );
 }

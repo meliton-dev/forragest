@@ -3,6 +3,7 @@ import { NetworkError, PASSWORD_MAX_LENGTH } from '@forrajera/shared';
 import { api, setSession, type SessionUser } from '../lib/api';
 import { checkNewPassword } from '../lib/password';
 import { AuthLayout } from '../ui/AuthLayout';
+import { ConfirmLogout } from '../ui/ConfirmLogout';
 import { Button, EyeToggle, Field, Input, Modal, Notice } from '../ui/kit';
 
 /** Formulario para elegir la contraseña propia: la actual, la nueva y su confirmación, con validación mientras se escribe. */
@@ -128,6 +129,7 @@ export function ChangePasswordModal({ username, onClose }: { username: string; o
 
 /** Pantalla obligatoria: antes de usar el sistema hay que cambiar la contraseña que dio la administración. */
 export function ForcePassword({ user, onLogout }: { user: SessionUser; onLogout: () => void }) {
+  const [leaving, setLeaving] = useState(false);
   return (
     <AuthLayout
       title="Protege tu cuenta"
@@ -139,10 +141,11 @@ export function ForcePassword({ user, onLogout }: { user: SessionUser; onLogout:
           <div className="small muted">Hola, {user.fullName}. Necesitas hacerlo una sola vez para continuar.</div>
         </div>
         <ChangePasswordForm username={user.username} currentLabel="Contraseña que te dieron" onDone={() => undefined} />
-        <button type="button" className="link" style={{ alignSelf: 'center' }} onClick={onLogout}>
+        <button type="button" className="link" style={{ alignSelf: 'center' }} onClick={() => setLeaving(true)}>
           Salir
         </button>
       </div>
+      {leaving && <ConfirmLogout onConfirm={onLogout} onCancel={() => setLeaving(false)} />}
     </AuthLayout>
   );
 }

@@ -1,9 +1,11 @@
+import { AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getUser } from '../lib/api';
 import { logout, useStore } from '../lib/store';
 import { useTracking } from '../lib/tracking';
 import { Button, Header, Icon, Notice, TabBar } from '../ui/kit';
+import { ConfirmLogout } from '../ui/Overlays';
 
 const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
 const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
@@ -13,6 +15,7 @@ export function Perfil() {
   const gps = useTracking();
   const user = getUser();
   const [prompt, setPrompt] = useState<any>(null);
+  const [leaving, setLeaving] = useState(false);
   const initials = (user?.fullName ?? '?')
     .split(' ')
     .map((p) => p[0])
@@ -92,12 +95,15 @@ export function Perfil() {
           <Row icon="info" label="Versión de la app" value="1.0" last />
         </div>
 
-        <button className="btn secondary" onClick={() => void logout()}>
+        <button className="btn secondary" onClick={() => setLeaving(true)}>
           <Icon name="logout" size={17} color="var(--danger)" />
           <span style={{ color: 'var(--danger)' }}>Cerrar sesión</span>
         </button>
       </div>
       <TabBar />
+      <AnimatePresence>
+        {leaving && <ConfirmLogout sharing={s.route?.status === 'EN_CURSO'} onConfirm={logout} onCancel={() => setLeaving(false)} />}
+      </AnimatePresence>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { api, errMsg } from '../lib/api';
 import { hhmm } from '../lib/format';
 import { usePos } from '../pos-context';
 import { Button, Field, Icon, Input, Modal, Notice } from '../ui/kit';
+import { ConfirmLogout } from '../ui/ConfirmLogout';
 import { ChangePasswordModal } from './Password';
 
 /** Menú lateral del punto de venta: riel angosto con icono y nombre, como los cajeros de Square, Shopify POS o Toast. */
@@ -26,6 +27,7 @@ export function Shell() {
   const pos = usePos();
   const open = pos.shift?.shift;
   const [changing, setChanging] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   return (
     <div className="pos">
       <aside className="rail" aria-label="Menú del punto de venta">
@@ -61,7 +63,7 @@ export function Shell() {
             <Icon name="lock" size={20} sw={1.8} />
             <span>Contraseña</span>
           </button>
-          <button className="rail-out" onClick={pos.logout} aria-label="Salir">
+          <button className="rail-out" onClick={() => setLeaving(true)} aria-label="Salir">
             <Icon name="logout" size={20} sw={1.8} />
             <span>Salir</span>
           </button>
@@ -80,6 +82,19 @@ export function Shell() {
         )}
       </div>
       {changing && <ChangePasswordModal username={pos.user.username} onClose={() => setChanging(false)} />}
+      {leaving && (
+        <ConfirmLogout
+          detail={
+            pos.cart.lines.length > 0
+              ? 'La venta que estás armando se perderá. Tu turno de caja queda abierto.'
+              : open
+                ? 'Tu turno de caja queda abierto: al volver a entrar sigues donde estabas.'
+                : undefined
+          }
+          onConfirm={pos.logout}
+          onCancel={() => setLeaving(false)}
+        />
+      )}
     </div>
   );
 }
