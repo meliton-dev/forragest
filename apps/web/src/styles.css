@@ -1479,6 +1479,52 @@ table.t tr.sel td {
     grid-template-columns: 1fr;
   }
 }
+/* ojito de las contraseñas: al cambiar, un ojo se cierra mientras se abre el otro */
+.eye {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  margin-right: -8px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-3);
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
+}
+.eye:hover {
+  color: var(--ink);
+  background: var(--info-soft);
+}
+.eye:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+.eye g {
+  transform-box: view-box;
+  transform-origin: 12px 12px;
+  transition:
+    opacity 0.18s ease,
+    transform 0.25s ease;
+}
+/* Edge pone su propio ojo en los campos de contraseña: sin esto salen dos */
+input::-ms-reveal {
+  display: none;
+}
+.eye .eye-open,
+.eye.open .eye-closed {
+  opacity: 0;
+  transform: scaleY(0.1);
+}
+.eye.open .eye-open {
+  opacity: 1;
+  transform: none;
+}
+
 /* ===== acceso (entrar y elegir contraseña) ===== */
 .auth {
   --auth-ink: #10271e;

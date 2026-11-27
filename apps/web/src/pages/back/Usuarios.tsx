@@ -3,7 +3,7 @@ import { ROLES, ROLE_LABEL } from '@forrajera/shared';
 import { api, errMsg, getUser, setSession, type SessionUser } from '../../lib/api';
 import { checkNewPassword } from '../../lib/password';
 import { filterUsers, newUserProblem, sortUsers, type UserRow } from '../../lib/users';
-import { Badge, Button, Empty, Field, Input, Modal, Notice, Select } from '../../ui/kit';
+import { Badge, Button, Empty, EyeToggle, Field, Input, Modal, Notice, Select } from '../../ui/kit';
 
 type Dialog =
   | { kind: 'new' }
@@ -236,11 +236,6 @@ function NewUser({ onClose, onSaved }: { onClose: () => void; onSaved: (username
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
   const problem = newUserProblem(f);
   const check = checkNewPassword({ current: null, next: f.password, confirm: f.confirm, username: f.username.trim() });
-  const toggle = (
-    <button type="button" className="link" onClick={() => setShow(!show)}>
-      {show ? 'Ocultar' : 'Mostrar'}
-    </button>
-  );
   const save = () =>
     run(async () => {
       await api('POST', '/users', {
@@ -282,8 +277,14 @@ function NewUser({ onClose, onSaved }: { onClose: () => void; onSaved: (username
             </Field>
           </div>
         </div>
-        <Field label="Contraseña inicial" link={toggle}>
-          <Input type={show ? 'text' : 'password'} value={f.password} onChange={(e) => set('password', e.target.value)} autoComplete="new-password" />
+        <Field label="Contraseña inicial">
+          <Input
+            type={show ? 'text' : 'password'}
+            suffix={<EyeToggle shown={show} onToggle={() => setShow(!show)} />}
+            value={f.password}
+            onChange={(e) => set('password', e.target.value)}
+            autoComplete="new-password"
+          />
         </Field>
         {check.problem && (
           <Notice tone="warn" icon="alert">
@@ -291,7 +292,13 @@ function NewUser({ onClose, onSaved }: { onClose: () => void; onSaved: (username
           </Notice>
         )}
         <Field label="Repite la contraseña">
-          <Input type={show ? 'text' : 'password'} value={f.confirm} onChange={(e) => set('confirm', e.target.value)} autoComplete="new-password" />
+          <Input
+            type={show ? 'text' : 'password'}
+            suffix={<EyeToggle shown={show} onToggle={() => setShow(!show)} />}
+            value={f.confirm}
+            onChange={(e) => set('confirm', e.target.value)}
+            autoComplete="new-password"
+          />
         </Field>
         {check.mismatch && (
           <Notice tone="warn" icon="alert">
@@ -361,11 +368,6 @@ function ResetPassword({ user, itsMe, onClose, onSaved }: { user: UserRow; itsMe
   const [show, setShow] = useState(false);
   const { busy, error, run } = useSave(onSaved);
   const check = checkNewPassword({ current: null, next: password, confirm, username: user.username });
-  const toggle = (
-    <button type="button" className="link" onClick={() => setShow(!show)}>
-      {show ? 'Ocultar' : 'Mostrar'}
-    </button>
-  );
   const save = () =>
     run(async () => {
       const res = await api<{ accessToken?: string; user?: SessionUser } | null>('POST', `/users/${user.id}/password`, {
@@ -391,8 +393,15 @@ function ResetPassword({ user, itsMe, onClose, onSaved }: { user: UserRow; itsMe
     >
       <div className="col gap12">
         <Notice tone="neutral">La contraseña anterior deja de servir y se cierran las sesiones abiertas de esta persona.</Notice>
-        <Field label="Contraseña nueva" link={toggle}>
-          <Input type={show ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" autoFocus />
+        <Field label="Contraseña nueva">
+          <Input
+            type={show ? 'text' : 'password'}
+            suffix={<EyeToggle shown={show} onToggle={() => setShow(!show)} />}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+            autoFocus
+          />
         </Field>
         {check.problem && (
           <Notice tone="warn" icon="alert">
@@ -400,7 +409,13 @@ function ResetPassword({ user, itsMe, onClose, onSaved }: { user: UserRow; itsMe
           </Notice>
         )}
         <Field label="Repite la contraseña">
-          <Input type={show ? 'text' : 'password'} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
+          <Input
+            type={show ? 'text' : 'password'}
+            suffix={<EyeToggle shown={show} onToggle={() => setShow(!show)} />}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            autoComplete="new-password"
+          />
         </Field>
         {check.mismatch && (
           <Notice tone="warn" icon="alert">

@@ -3,7 +3,7 @@ import { NetworkError, PASSWORD_MAX_LENGTH } from '@forrajera/shared';
 import { api, setSession, type SessionUser } from '../lib/api';
 import { checkNewPassword } from '../lib/password';
 import { AuthLayout } from '../ui/AuthLayout';
-import { Button, Field, Input, Modal, Notice } from '../ui/kit';
+import { Button, EyeToggle, Field, Input, Modal, Notice } from '../ui/kit';
 
 /** Formulario para elegir la contraseña propia: la actual, la nueva y su confirmación, con validación mientras se escribe. */
 function ChangePasswordForm({
@@ -24,12 +24,8 @@ function ChangePasswordForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const check = checkNewPassword({ current, next, confirm, username });
-  const toggle = (
-    <button type="button" className="link" onClick={() => setShow(!show)}>
-      {show ? 'Ocultar' : 'Mostrar'}
-    </button>
-  );
   const type = show ? 'text' : 'password';
+  const eye = <EyeToggle shown={show} onToggle={() => setShow(!show)} />;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -55,10 +51,11 @@ function ChangePasswordForm({
 
   return (
     <form className="col gap12" onSubmit={submit}>
-      <Field label={currentLabel} link={toggle}>
+      <Field label={currentLabel}>
         <Input
           icon="lock"
           type={type}
+          suffix={eye}
           value={current}
           onChange={(e) => setCurrent(e.target.value)}
           autoComplete="current-password"
@@ -71,6 +68,7 @@ function ChangePasswordForm({
         <Input
           icon="lock"
           type={type}
+          suffix={eye}
           value={next}
           onChange={(e) => setNext(e.target.value)}
           autoComplete="new-password"
@@ -87,6 +85,7 @@ function ChangePasswordForm({
         <Input
           icon="lock"
           type={type}
+          suffix={eye}
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           autoComplete="new-password"

@@ -108,6 +108,35 @@ export function Input({ icon, prefix, suffix, ...rest }: InputHTMLAttributes<HTM
   );
 }
 
+/** Ojito para ver u ocultar una contraseña: abierto cuando se ve el texto, cerrado cuando está oculto. */
+export function EyeToggle({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
+  const label = shown ? 'Ocultar contraseña' : 'Mostrar contraseña';
+  return (
+    <button type="button" className={`eye ${shown ? 'open' : ''}`} aria-label={label} aria-pressed={shown} title={label} onClick={onToggle}>
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <g className="eye-open">
+          <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" />
+          <circle cx="12" cy="12" r="2.8" />
+        </g>
+        <g className="eye-closed">
+          <path d="M2 10s3.6 5.5 10 5.5S22 10 22 10" />
+          <path d="M12 15.5V19M6.5 14l-2 3M17.5 14l2 3" />
+        </g>
+      </svg>
+    </button>
+  );
+}
+
 export function TextArea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <div className="input area">

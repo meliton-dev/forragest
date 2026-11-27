@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api, setSession, type SessionUser } from '../lib/api';
 import { ApiError, NetworkError } from '@forrajera/shared';
 import { AuthLayout } from '../ui/AuthLayout';
-import { Button, Field, Input, Notice } from '../ui/kit';
+import { Button, EyeToggle, Field, Input, Notice } from '../ui/kit';
 
 /** Lo que dura la salida (igual que la transición `.auth.leaving` de styles.css). */
 const LEAVE_MS = 320;
@@ -61,17 +61,11 @@ export function Login({ onDone }: { onDone: () => void }) {
             required
           />
         </Field>
-        <Field
-          label="Contraseña"
-          link={
-            <button type="button" className="link" onClick={() => setShow(!show)}>
-              {show ? 'Ocultar' : 'Mostrar'}
-            </button>
-          }
-        >
+        <Field label="Contraseña">
           <Input
             icon="lock"
             type={show ? 'text' : 'password'}
+            suffix={<EyeToggle shown={show} onToggle={() => setShow(!show)} />}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Tu contraseña"

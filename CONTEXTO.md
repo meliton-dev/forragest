@@ -135,6 +135,7 @@ Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/sh
 - A petición ("menos infantil, de empresa, con transiciones"): sin ilustración ni lema; panel verde oscuro con retícula, las tres áreas del sistema y tarjeta de formulario. `ui/AuthLayout.tsx` lo usan Entrar y Elige tu contraseña. La app del chofer no cambió.
 - Transiciones solo con CSS: entrada escalonada y salida de 320 ms (`LEAVE_MS` en Login.tsx = `.auth.leaving`). Respeta "reducir movimiento".
 - Los guiones (`scripts/*.mjs`) siguen encontrando el botón **Entrar**.
+- Mostrar/Ocultar contraseña ahora es un ojito (`EyeToggle` en `ui/kit.tsx`) en todos los campos de contraseña de la web. Trampa: Edge agrega su propio ojo (`::-ms-reveal`, oculto en CSS).
 
 ## Datos de demostración: la forrajera simulada
 
