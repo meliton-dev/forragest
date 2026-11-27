@@ -146,6 +146,8 @@ Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/sh
 - Todos los botones de salir preguntan antes, en la web (`ui/ConfirmLogout.tsx`) y en la app del chofer (`ConfirmLogout` en `ui/Overlays.tsx`). La sesión vencida sigue cerrando sola, sin preguntar.
 - Trampa al probar la app del chofer publicada: llama a `https://forragest-api.onrender.com` (URL absoluta); para simular la API hay que interceptar ese dominio, no `/api`.
 
+- 27 nov: el administrador tampoco lleva **Historial y precios** en su menú (compras la conserva).
+
 ## Datos de demostración: la forrajera simulada
 
 No hay un cliente real: se **simula** uno, la **Forrajera San Miguel** (Tulancingo, Hgo.), para que el sistema se vea como en un negocio en marcha. Todo es inventado (personas, negocios, RFC, teléfonos con el patrón 555-01xx, correos `.example`). Está en `apps/api/prisma/seed-data.ts` (los datos) y `apps/api/prisma/seed.ts` (cómo se cargan). Rama `datos-forrajera`.

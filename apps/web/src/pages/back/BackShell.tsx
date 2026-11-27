@@ -36,11 +36,11 @@ export function BackShell() {
   ];
   const purchaseItems: NavItem[] = [
     ['/compras', 'Órdenes de compra', 'receipt', true],
-    // Sugerencias es del trabajo diario de compras: el administrador no la lleva en su menú
+    // Sugerencias e Historial y precios son del trabajo diario de compras: el administrador no los lleva en su menú
     ...(isAdmin ? [] : [['/compras/sugerencias', 'Sugerencias', 'refresh', false, alerts?.toReorder] as NavItem]),
     ['/compras/proveedores', 'Proveedores', 'truck', false],
     ['/compras/por-pagar', 'Cuentas por pagar', 'wallet', false, alerts ? alerts.overdue.length + alerts.dueSoon.length : undefined],
-    ['/compras/precios', 'Historial y precios', 'chart', false],
+    ...(isAdmin ? [] : [['/compras/precios', 'Historial y precios', 'chart', false] as NavItem]),
   ];
   const groups: [string, NavItem[]][] = [
     ...(seesRoutes ? [['Finanzas y logística', routeItems] as [string, NavItem[]]] : []),
