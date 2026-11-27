@@ -13,6 +13,9 @@ const ROLE_ORDER: Role[] = ['ADMINISTRADOR', 'SUPERVISOR_RUTAS', 'GERENTE_COMPRA
 const byRoleThenName = (a: { role: Role; fullName: string }, b: { role: Role; fullName: string }) =>
   ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role) || a.fullName.localeCompare(b.fullName, 'es');
 
+/** Anotaciones de la bitácora que no son trabajo hecho en el negocio: no impiden borrar al usuario. */
+const OWN_SESSION_AUDITS = ['/auth/change-password', '/driver/status'];
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -60,6 +63,45 @@ export class UsersService {
       data: { fullName: dto.fullName, role: dto.role, active: dto.active, ...(closeSessions ? { tokenVersion: { increment: 1 } } : {}) },
       select: PUBLIC,
     });
+  }
+
+  /**
+   * Borra para siempre un usuario que nunca trabajó en el sistema (creado por error o de prueba). Si tiene ventas,
+   * turnos, rutas u otros registros responde 409: borrarlo dejaría ese historial sin nombre, así que se desactiva.
+   */
+  async remove(id: number, actorId: number) {
+    if (id === actorId) throw new BadRequestException('No puedes borrarte a ti mismo.');
+    return this.prisma.$transaction(async (tx) => {
+      const current = await tx.user.findUnique({ where: { id } });
+      if (!current) throw new NotFoundException('Usuario no encontrado.');
+      const history = await this.history(tx, id);
+      if (history.length)
+        throw new ConflictException(
+          `No se puede borrar a ${current.fullName} porque tiene registros en el sistema (${history.join(', ')}). Desactívalo: ya no podrá entrar y su historial se conserva.`,
+        );
+      // lo que quede en la bitácora (su cambio de contraseña, avisos de la app) se conserva y anota quién era
+      await tx.auditLog.updateMany({ where: { userId: id }, data: { userId: null, payload: { usuarioBorrado: current.username } } });
+      await tx.user.delete({ where: { id } });
+      return { id, username: current.username };
+    });
+  }
+
+  /** Qué registros del negocio llevan a esta persona; vacío si nunca trabajó en el sistema. */
+  private async history(tx: Prisma.TransactionClient, id: number): Promise<string[]> {
+    const found: [string, number][] = [
+      ['turnos de caja', await tx.cashShift.count({ where: { cashierId: id } })],
+      ['ventas', await tx.sale.count({ where: { OR: [{ cashierId: id }, { discountAuthorizedById: id }, { cancelAuthorizedById: id }] } })],
+      ['devoluciones', await tx.creditNote.count({ where: { userId: id } })],
+      ['rutas', await tx.route.count({ where: { driverId: id } })],
+      ['cobros en ruta', await tx.payment.count({ where: { userId: id } })],
+      ['incidencias', await tx.incident.count({ where: { userId: id } })],
+      ['movimientos de inventario', await tx.inventoryMovement.count({ where: { userId: id } })],
+      ['conteos de inventario', await tx.inventoryCount.count({ where: { createdBy: id } })],
+      ['órdenes de compra', await tx.purchaseOrder.count({ where: { createdBy: id } })],
+      ['recepciones de compra', await tx.purchaseReceipt.count({ where: { receivedBy: id } })],
+      ['cambios en la bitácora', await tx.auditLog.count({ where: { userId: id, entity: { notIn: OWN_SESSION_AUDITS } } })],
+    ];
+    return found.filter(([, n]) => n > 0).map(([label, n]) => `${label}: ${n}`);
   }
 
   /**

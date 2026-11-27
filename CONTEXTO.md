@@ -117,6 +117,12 @@ Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/sh
 - A petición: el administrador ya no tiene **Punto de venta** (ni la sección Operación), **Eficiencia de entregas** ni **Sugerencias**. Entra directo a Oficina → Ventas; `/`, `/ventas`, `/corte` y `/devoluciones` son solo del cajero.
 - Eficiencia sigue para el supervisor y Sugerencias para compras. La API no cambió (permisos iguales).
 
+### Borrar usuarios (rama borrar-usuarios, 26 nov 2026)
+
+- `DELETE /users/:id` (solo administrador) y botón **Borrar** en Usuarios. Nadie se borra a sí mismo.
+- Decisión: solo se borra a quien no tiene registros (turnos, ventas, rutas, compras, inventario, cambios en la bitácora); si los tiene responde 409 y se debe **desactivar**. Las ventas no tienen llave foránea al usuario: borrarlo a la fuerza dejaría el historial sin nombre.
+- Sus anotaciones de cambio de contraseña y avisos de la app se conservan sin `userId`, con `usuarioBorrado` en el detalle. Si se agrega una tabla que guarde usuarios, sumarla a `UsersService.history`.
+
 ## Datos de demostración: la forrajera simulada
 
 No hay un cliente real: se **simula** uno, la **Forrajera San Miguel** (Tulancingo, Hgo.), para que el sistema se vea como en un negocio en marcha. Todo es inventado (personas, negocios, RFC, teléfonos con el patrón 555-01xx, correos `.example`). Está en `apps/api/prisma/seed-data.ts` (los datos) y `apps/api/prisma/seed.ts` (cómo se cargan). Rama `datos-forrajera`.

@@ -34,6 +34,16 @@ async function seedUser(role: 'ADMINISTRADOR' | 'CAJERO', password: string, must
   return { ...user, password };
 }
 
+/** La bitácora se escribe después de responder: se espera a que aparezca. */
+async function waitForAudit(userId: number) {
+  for (let i = 0; i < 50; i++) {
+    const row = await prisma.auditLog.findFirst({ where: { userId } });
+    if (row) return row;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  throw new Error('No apareció la anotación en la bitácora');
+}
+
 beforeAll(async () => {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
   app = moduleRef.createNestApplication();
@@ -142,6 +152,28 @@ describe('administración de usuarios', () => {
     expect((await api('PATCH', `/users/${admin.id}`, adminToken, { active: false })).status).toBe(400);
     expect((await api('PATCH', `/users/${admin.id}`, adminToken, { role: 'CAJERO' })).status).toBe(400);
     expect((await api('PATCH', '/users/999999999', adminToken, { active: false })).status).toBe(404);
+
+    // borrar: solo quien nunca trabajó en el sistema
+    expect((await api('DELETE', `/users/${admin.id}`, adminToken)).status).toBe(400);
+    expect((await api('DELETE', '/users/999999999', adminToken)).status).toBe(404);
+    const worker = await seedUser('CAJERO', 'clave-cajero-123', false);
+    await prisma.cashShift.create({ data: { register: `Caja borrar ${uid()}`, cashierId: worker.id, openingFloat: 0, status: 'CERRADO' } });
+    const refused = await api('DELETE', `/users/${worker.id}`, adminToken);
+    expect(refused.status).toBe(409);
+    expect(refused.json.message).toContain('turnos de caja: 1');
+    expect(await prisma.user.findUnique({ where: { id: worker.id } })).not.toBeNull();
+
+    // quien solo cambió su contraseña sí se puede borrar y la bitácora conserva quién era
+    const spare = await seedUser('CAJERO', 'clave-cajero-123', true);
+    const spareToken = (await login(spare.username, spare.password)).accessToken;
+    expect((await api('DELETE', `/users/${admin.id}`, spareToken)).status).toBe(403);
+    await api('POST', '/auth/change-password', spareToken, { currentPassword: spare.password, newPassword: 'una-clave-nueva-2' });
+    const audit = await waitForAudit(spare.id);
+    const removed = await api('DELETE', `/users/${spare.id}`, adminToken);
+    expect(removed.status).toBe(200);
+    expect(removed.json).toEqual({ id: spare.id, username: spare.username });
+    expect(await prisma.user.findUnique({ where: { id: spare.id } })).toBeNull();
+    expect(await prisma.auditLog.findUnique({ where: { id: audit.id } })).toMatchObject({ userId: null, payload: { usuarioBorrado: spare.username } });
 
     // si se cambia su propia contraseña recibe un token nuevo y su sesión sigue
     const own = await api('POST', `/users/${admin.id}/password`, adminToken, { password: 'mi-clave-nueva-99' });

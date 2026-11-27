@@ -34,7 +34,7 @@ export function clearSession() {
   window.dispatchEvent(new Event(SESSION_EVENT));
 }
 
-export async function api<T>(method: 'GET' | 'POST' | 'PATCH', path: string, body?: unknown): Promise<T> {
+export async function api<T>(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T> {
   let res: Response;
   try {
     const token = getToken();

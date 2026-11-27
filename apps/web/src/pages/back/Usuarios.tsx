@@ -5,7 +5,12 @@ import { checkNewPassword } from '../../lib/password';
 import { filterUsers, newUserProblem, sortUsers, type UserRow } from '../../lib/users';
 import { Badge, Button, Empty, Field, Input, Modal, Notice, Select } from '../../ui/kit';
 
-type Dialog = { kind: 'new' } | { kind: 'edit'; user: UserRow } | { kind: 'password'; user: UserRow } | { kind: 'active'; user: UserRow };
+type Dialog =
+  | { kind: 'new' }
+  | { kind: 'edit'; user: UserRow }
+  | { kind: 'password'; user: UserRow }
+  | { kind: 'active'; user: UserRow }
+  | { kind: 'delete'; user: UserRow };
 
 export function Usuarios() {
   const me = getUser()!;
@@ -91,10 +96,10 @@ export function Usuarios() {
           <thead>
             <tr>
               <th>Nombre</th>
-              <th style={{ width: 150 }}>Usuario</th>
-              <th style={{ width: 170 }}>Perfil</th>
-              <th style={{ width: 200 }}>Estado</th>
-              <th style={{ width: 340 }}>Acciones</th>
+              <th style={{ width: 130 }}>Usuario</th>
+              <th style={{ width: 160 }}>Perfil</th>
+              <th style={{ width: 170 }}>Estado</th>
+              <th style={{ width: 410 }}>Acciones</th>
             </tr>
           </thead>
           <tbody ref={table}>
@@ -125,6 +130,11 @@ export function Usuarios() {
                       {!itsMe && (
                         <Button size="sm" variant={u.active ? 'danger' : 'secondary'} onClick={() => setDialog({ kind: 'active', user: u })}>
                           {u.active ? 'Desactivar' : 'Activar'}
+                        </Button>
+                      )}
+                      {!itsMe && (
+                        <Button size="sm" variant="danger" onClick={() => setDialog({ kind: 'delete', user: u })}>
+                          Borrar
                         </Button>
                       )}
                     </div>
@@ -165,6 +175,9 @@ export function Usuarios() {
           onClose={() => setDialog(null)}
           onSaved={() => saved(dialog.user.active ? `${dialog.user.fullName} ya no puede entrar.` : `${dialog.user.fullName} puede entrar otra vez.`)}
         />
+      )}
+      {dialog?.kind === 'delete' && (
+        <DeleteUser user={dialog.user} onClose={() => setDialog(null)} onSaved={() => saved(`${dialog.user.fullName} se borró.`)} />
       )}
     </>
   );
@@ -431,6 +444,40 @@ function ToggleActive({ user, onClose, onSaved }: { user: UserRow; onClose: () =
           {off
             ? `${user.fullName} ya no podrá entrar al sistema y se cerrará su sesión abierta. Su historial se conserva.`
             : `${user.fullName} podrá entrar otra vez con su contraseña actual.`}
+        </div>
+        <ErrorNotice error={error} />
+      </div>
+    </Modal>
+  );
+}
+
+function DeleteUser({ user, onClose, onSaved }: { user: UserRow; onClose: () => void; onSaved: () => void }) {
+  const { busy, error, run } = useSave(onSaved);
+  return (
+    <Modal
+      title="Borrar usuario"
+      sub={`${user.fullName} · ${user.username}`}
+      onClose={onClose}
+      footer={
+        <>
+          <Button onClick={onClose}>{error ? 'Cerrar' : 'Cancelar'}</Button>
+          <Button
+            variant="danger"
+            disabled={busy || error !== null}
+            onClick={() =>
+              run(async () => {
+                await api('DELETE', `/users/${user.id}`);
+              })
+            }
+          >
+            {busy ? 'Borrando…' : 'Sí, borrar'}
+          </Button>
+        </>
+      }
+    >
+      <div className="col gap12">
+        <div className="small">
+          Se borrará a {user.fullName} para siempre; no se puede deshacer. Solo se puede borrar a quien no tiene ventas, turnos, rutas ni otros registros.
         </div>
         <ErrorNotice error={error} />
       </div>
