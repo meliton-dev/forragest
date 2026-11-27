@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { NetworkError, PASSWORD_MAX_LENGTH } from '@forrajera/shared';
 import { getUser, request, setSession, type SessionUser } from '../lib/api';
 import { checkNewPassword } from '../lib/password';
-import { Button, Field, Header, Input, Notice } from '../ui/kit';
+import { AuthTop } from '../ui/AuthTop';
+import { Button, EyeToggle, Field, Header, Input, Notice } from '../ui/kit';
 
 const NEEDS_SIGNAL = 'Necesitas conexión a internet para cambiar la contraseña. Busca señal e inténtalo de nuevo.';
 
@@ -17,11 +18,7 @@ function PasswordForm({ username, currentLabel, onDone }: { username: string; cu
   const [error, setError] = useState<string | null>(null);
   const check = checkNewPassword({ current, next, confirm, username });
   const type = show ? 'text' : 'password';
-  const toggle = (
-    <button type="button" className="link small" onClick={() => setShow(!show)}>
-      {show ? 'Ocultar' : 'Mostrar'}
-    </button>
-  );
+  const eye = <EyeToggle shown={show} onToggle={() => setShow(!show)} />;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,10 +39,11 @@ function PasswordForm({ username, currentLabel, onDone }: { username: string; cu
 
   return (
     <form className="col" style={{ gap: 16 }} onSubmit={submit}>
-      <Field label={currentLabel} link={toggle}>
+      <Field label={currentLabel}>
         <Input
           icon="lock"
           type={type}
+          suffix={eye}
           value={current}
           onChange={(e) => setCurrent(e.target.value)}
           autoComplete="current-password"
@@ -57,6 +55,7 @@ function PasswordForm({ username, currentLabel, onDone }: { username: string; cu
         <Input
           icon="lock"
           type={type}
+          suffix={eye}
           value={next}
           onChange={(e) => setNext(e.target.value)}
           autoComplete="new-password"
@@ -73,6 +72,7 @@ function PasswordForm({ username, currentLabel, onDone }: { username: string; cu
         <Input
           icon="lock"
           type={type}
+          suffix={eye}
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           autoComplete="new-password"
@@ -100,21 +100,8 @@ function PasswordForm({ username, currentLabel, onDone }: { username: string; cu
 /** Pantalla obligatoria después de entrar con la contraseña temporal. No se manda nada pendiente hasta terminar. */
 export function ForcePassword({ user, onLogout }: { user: SessionUser; onLogout: () => void }) {
   return (
-    <div className="screen login">
-      <div className="login-top">
-        <div className="row gap12">
-          <img className="logo" src="/icon.svg" alt="" width={44} height={44} />
-          <div className="wordmark">
-            Forragest
-            <small>Reparto</small>
-          </div>
-        </div>
-        <h1 className="lema">
-          Elige tu
-          <br />
-          <em>contraseña</em>.
-        </h1>
-      </div>
+    <div className="screen login auth">
+      <AuthTop title="Protege tu cuenta" text="Elige una contraseña que solo tú conozcas." />
       <div className="col login-body" style={{ gap: 16 }}>
         <div className="small muted">Hola, {user.fullName}. La que te dieron es temporal: escribe una nueva que solo tú conozcas. Se hace una sola vez.</div>
         <PasswordForm username={user.username} currentLabel="Contraseña que te dieron" onDone={() => undefined} />

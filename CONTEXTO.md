@@ -137,6 +137,10 @@ Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/sh
 - Los guiones (`scripts/*.mjs`) siguen encontrando el botón **Entrar**.
 - Mostrar/Ocultar contraseña ahora es un ojito (`EyeToggle` en `ui/kit.tsx`) en todos los campos de contraseña de la web. Trampa: Edge agrega su propio ojo (`::-ms-reveal`, oculto en CSS).
 
+### Acceso de la app del chofer (rama login-chofer, 26 nov 2026)
+
+- Mismo estilo que la web: franja verde con retícula (`ui/AuthTop.tsx`), formulario en tarjeta, transiciones CSS y ojito en las contraseñas. Aplica a Entrar y a Elige tu contraseña.
+
 ## Datos de demostración: la forrajera simulada
 
 No hay un cliente real: se **simula** uno, la **Forrajera San Miguel** (Tulancingo, Hgo.), para que el sistema se vea como en un negocio en marcha. Todo es inventado (personas, negocios, RFC, teléfonos con el patrón 555-01xx, correos `.example`). Está en `apps/api/prisma/seed-data.ts` (los datos) y `apps/api/prisma/seed.ts` (cómo se cargan). Rama `datos-forrajera`.

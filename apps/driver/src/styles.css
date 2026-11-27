@@ -1678,42 +1678,202 @@ body {
   padding: 0;
   gap: 0;
 }
-.login-top {
-  background: var(--ink);
-  color: var(--bg);
-  padding: calc(36px + var(--safe-top)) 24px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  overflow: hidden;
-}
-.login-top .logo,
-.login .login-top .logo {
+/* ojito de las contraseñas: al cambiar, un ojo se cierra mientras se abre el otro */
+.eye {
+  display: grid;
+  place-items: center;
+  flex: none;
   width: 44px;
   height: 44px;
+  margin-right: -10px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
   background: none;
+  color: var(--text-3);
 }
-.login-top .lema {
-  margin: 0;
-  font-family: var(--f-display);
-  font-weight: 700;
-  font-size: 38px;
-  line-height: 1.02;
+.eye.open {
+  color: var(--ink);
+}
+.eye:focus-visible {
+  outline: 2px solid var(--ink);
+}
+.eye g {
+  transform-box: view-box;
+  transform-origin: 12px 12px;
+  transition:
+    opacity 0.18s ease,
+    transform 0.25s ease;
+}
+.eye .eye-open,
+.eye.open .eye-closed {
+  opacity: 0;
+  transform: scaleY(0.1);
+}
+.eye.open .eye-open {
+  opacity: 1;
+  transform: none;
+}
+/* Edge pone su propio ojo en los campos de contraseña: sin esto salen dos */
+input::-ms-reveal {
+  display: none;
+}
+
+/* acceso (entrar y elegir contraseña): mismo estilo empresarial que la web, en vertical */
+.auth {
+  --auth-ink: #10271e;
+}
+.login-top {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  flex: none;
+  padding: calc(28px + var(--safe-top)) 24px 52px;
+  color: #eef3ef;
+  background: linear-gradient(155deg, #1f4d3a 0%, var(--auth-ink) 85%);
+}
+.login-top::before,
+.login-top::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+.login-top::before {
+  inset: 0;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: linear-gradient(200deg, #000, transparent 80%);
+}
+.login-top::after {
+  width: 320px;
+  height: 320px;
+  right: -140px;
+  bottom: -170px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(233, 185, 73, 0.26), transparent 65%);
+  animation: auth-drift 12s ease-in-out infinite alternate;
+}
+.auth-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.login-top .auth-logo .logo,
+.login .login-top .auth-logo .logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: none;
+  box-shadow: none;
+}
+.auth-logo strong {
+  display: block;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+}
+.auth-logo small {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a9c1b3;
+}
+.login-top h1 {
+  margin: 26px 0 8px;
+  font-size: 26px;
+  line-height: 31px;
+  font-weight: 600;
   letter-spacing: -0.02em;
 }
-.login-top .lema em {
-  font-style: italic;
-  font-weight: 500;
-  color: var(--gold);
+.login-top p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: #bdd0c4;
 }
-.login-top .art {
-  display: block;
-  margin: 0 -24px;
-  width: calc(100% + 48px);
-  height: auto;
+/* el formulario sube sobre la franja, como una tarjeta */
+.login-body {
+  position: relative;
+  margin: -28px 16px 24px;
+  padding: 24px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 24px 50px -28px rgba(16, 39, 30, 0.4);
+}
+.auth .login-body h2 {
+  margin: 0 0 2px;
+  font-family: var(--f-body);
+}
+.auth .input {
+  border-radius: 8px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+.auth .input:focus-within {
+  background: #fff;
+}
+.auth .btn {
+  border-radius: 8px;
+  font-family: var(--f-body);
+  font-weight: 600;
+}
+.auth .btn.primary {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+/* entrada escalonada y salida al entrar */
+.auth-logo,
+.login-top h1,
+.login-top p,
+.login-body {
+  animation: auth-rise 0.6s var(--ease) backwards;
+}
+.login-top h1 {
+  animation-delay: 0.08s;
+}
+.login-top p {
+  animation-delay: 0.16s;
 }
 .login-body {
-  padding: 24px;
+  animation-delay: 0.2s;
+}
+.auth .login-top,
+.auth .login-body {
+  transition:
+    opacity 0.32s ease,
+    transform 0.32s ease;
+}
+.auth.leaving .login-top {
+  opacity: 0;
+  transform: translateY(-16px);
+}
+.auth.leaving .login-body {
+  opacity: 0;
+  transform: translateY(24px);
+}
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes auth-drift {
+  to {
+    transform: translate(-60px, -40px) scale(1.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth,
+  .auth * {
+    animation-delay: 0s !important;
+  }
+  .login-top::after {
+    animation: none;
+  }
 }
 .wordmark {
   font-family: var(--f-display);
