@@ -130,6 +130,12 @@ Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/sh
 
 - Después se quitó **Eficiencia de entregas** para todos (menú, pantalla y ruta web). `GET /routes/efficiency` sigue en la API (la usa `routes:smoke`).
 
+### Pantalla de acceso empresarial (rama login-empresarial, 26 nov 2026)
+
+- A petición ("menos infantil, de empresa, con transiciones"): sin ilustración ni lema; panel verde oscuro con retícula, las tres áreas del sistema y tarjeta de formulario. `ui/AuthLayout.tsx` lo usan Entrar y Elige tu contraseña. La app del chofer no cambió.
+- Transiciones solo con CSS: entrada escalonada y salida de 320 ms (`LEAVE_MS` en Login.tsx = `.auth.leaving`). Respeta "reducir movimiento".
+- Los guiones (`scripts/*.mjs`) siguen encontrando el botón **Entrar**.
+
 ## Datos de demostración: la forrajera simulada
 
 No hay un cliente real: se **simula** uno, la **Forrajera San Miguel** (Tulancingo, Hgo.), para que el sistema se vea como en un negocio en marcha. Todo es inventado (personas, negocios, RFC, teléfonos con el patrón 555-01xx, correos `.example`). Está en `apps/api/prisma/seed-data.ts` (los datos) y `apps/api/prisma/seed.ts` (cómo se cargan). Rama `datos-forrajera`.
