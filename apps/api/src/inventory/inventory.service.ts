@@ -125,11 +125,30 @@ export class InventoryService {
       include: { line: true },
       orderBy: { name: 'asc' },
     });
-    const sums = await this.prisma.stockLot.groupBy({ by: ['productId'], _sum: { quantity: true } });
-    const map = new Map(sums.map((s) => [s.productId, Number(s._sum.quantity ?? 0)]));
+    const lots = await this.prisma.stockLot.findMany({ where: { quantity: { gt: 0 } }, select: { productId: true, quantity: true, unitCost: true } });
+    const map = new Map<number, { stock: number; value: number }>();
+    for (const l of lots) {
+      const cur = map.get(l.productId) ?? { stock: 0, value: 0 };
+      cur.stock += Number(l.quantity);
+      cur.value += Number(l.quantity) * Number(l.unitCost);
+      map.set(l.productId, cur);
+    }
     return products.map((p) => {
-      const stock = map.get(p.id) ?? 0;
-      return { id: p.id, code: p.code, name: p.name, line: p.line.code, unit: p.unit, stock, minStock: Number(p.minStock), low: stock <= Number(p.minStock) };
+      const stock = Math.round((map.get(p.id)?.stock ?? 0) * 1000) / 1000;
+      return {
+        id: p.id,
+        code: p.code,
+        name: p.name,
+        line: p.line.code,
+        lineName: p.line.name,
+        unit: p.unit,
+        stock,
+        minStock: Number(p.minStock),
+        low: stock <= Number(p.minStock),
+        purchasePrice: Number(p.purchasePrice),
+        /** lo que costó la existencia actual, lote por lote */
+        value: Math.round((map.get(p.id)?.value ?? 0) * 100) / 100,
+      };
     });
   }
 
@@ -138,9 +157,9 @@ export class InventoryService {
     return (await this.current()).filter((p) => p.low && p.minStock > 0);
   }
 
-  /** INV-007: historial de movimientos. */
-  movements(filter: { productId?: number; from?: Date; to?: Date }) {
-    return this.prisma.inventoryMovement.findMany({
+  /** INV-007: historial de movimientos, con el nombre de quien lo hizo. */
+  async movements(filter: { productId?: number; from?: Date; to?: Date }) {
+    const rows = await this.prisma.inventoryMovement.findMany({
       where: {
         productId: filter.productId,
         createdAt: { gte: filter.from, lte: filter.to },
@@ -148,6 +167,11 @@ export class InventoryService {
       orderBy: { createdAt: 'desc' },
       take: 500,
     });
+    const ids = [...new Set(rows.flatMap((r) => (r.userId ? [r.userId] : [])))];
+    const names = new Map(
+      (await this.prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, fullName: true } })).map((u) => [u.id, u.fullName]),
+    );
+    return rows.map((r) => ({ ...r, quantity: Number(r.quantity), user: r.userId ? (names.get(r.userId) ?? null) : null }));
   }
 
   /** INV-008: rotación = salidas por venta del período / existencia actual, por producto y por línea. */

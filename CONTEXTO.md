@@ -148,6 +148,12 @@ Monorepo con npm workspaces: `apps/api`, `apps/web`, `apps/driver`, `packages/sh
 
 - 27 nov: el administrador tampoco lleva **Historial y precios** en su menú (compras la conserva).
 
+### Inventario y cuatro perfiles (rama inventario-admin, 27 nov 2026)
+
+- Decisión de la persona: solo se usan **cajero, supervisor de rutas, chofer y administrador**. Al crear o editar usuarios solo salen esos (los roles `GERENTE_COMPRAS` y `ALMACENISTA` siguen en la base y la API; las cuentas `compras` y `almacen` se desactivan desde Usuarios).
+- Pantalla **Inventario** (`/oficina/inventario`, solo administrador): existencias, estado, valor al costo, entrada manual, ajuste a la existencia contada y movimientos. No incluye alta/edición de productos ni conteos cíclicos (la API sí los tiene).
+- `/products` e `/inventory` quedan solo para el administrador (antes cualquier sesión veía costos).
+
 ## Datos de demostración: la forrajera simulada
 
 No hay un cliente real: se **simula** uno, la **Forrajera San Miguel** (Tulancingo, Hgo.), para que el sistema se vea como en un negocio en marcha. Todo es inventado (personas, negocios, RFC, teléfonos con el patrón 555-01xx, correos `.example`). Está en `apps/api/prisma/seed-data.ts` (los datos) y `apps/api/prisma/seed.ts` (cómo se cargan). Rama `datos-forrajera`.

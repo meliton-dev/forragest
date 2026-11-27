@@ -161,6 +161,11 @@ a {
   white-space: nowrap;
 }
 
+/* los encabezados de las columnas de números van a la derecha, como sus cifras */
+.t th.right {
+  text-align: right;
+}
+
 /* estructura del POS: menú lateral + contenido */
 .pos {
   height: 100dvh;

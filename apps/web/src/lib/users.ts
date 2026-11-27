@@ -23,6 +23,12 @@ export function newUserProblem(f: { fullName: string; username: string; password
   return null;
 }
 
+/** Perfiles que se usan: caja, monitoreo de rutas, chofer y administrador. */
+export const ASSIGNABLE_ROLES = ['ADMINISTRADOR', 'CAJERO', 'SUPERVISOR_RUTAS', 'CHOFER'];
+
+/** Opciones del selector de perfil; si la persona ya tiene uno que dejó de usarse, se sigue mostrando. */
+export const roleChoices = (current?: string): string[] => (current && !ASSIGNABLE_ROLES.includes(current) ? [...ASSIGNABLE_ROLES, current] : ASSIGNABLE_ROLES);
+
 /** Orden de la tabla: primero los activos, luego por nombre. */
 export const sortUsers = (list: UserRow[]): UserRow[] =>
   [...list].sort((a, b) => Number(b.active) - Number(a.active) || a.fullName.localeCompare(b.fullName, 'es'));

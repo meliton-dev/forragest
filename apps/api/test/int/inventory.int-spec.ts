@@ -18,6 +18,22 @@ async function newProduct() {
 
 afterAll(() => prisma.$disconnect());
 
+describe('pantalla de inventario', () => {
+  it('trae existencia, valor al costo por lote y los movimientos con quién los hizo', async () => {
+    const p = await newProduct();
+    const user = await prisma.user.findFirstOrThrow();
+    await inventory.addEntry({ productId: p.id, quantity: 4, unitCost: 10, userId: user.id });
+    await inventory.addEntry({ productId: p.id, quantity: 2, unitCost: 12.5 });
+    const row = (await inventory.current()).find((x) => x.id === p.id)!;
+    expect(row).toMatchObject({ stock: 6, value: 65, purchasePrice: 10 });
+    const moves = await inventory.movements({ productId: p.id });
+    expect(moves.map((m) => [m.quantity, m.user])).toEqual([
+      [2, null],
+      [4, user.fullName],
+    ]);
+  });
+});
+
 describe('PEPS', () => {
   it('consume primero el lote más antiguo y registra el costo de cada uno', async () => {
     const p = await newProduct();

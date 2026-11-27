@@ -104,6 +104,11 @@ describe('administración de usuarios', () => {
     const cashierToken = (await login(cashier.username, cashier.password)).accessToken;
 
     expect((await api('GET', '/users', cashierToken)).status).toBe(403);
+    // inventario y productos (con sus costos): solo el administrador
+    for (const path of ['/inventory', '/products', '/inventory/movements']) {
+      expect((await api('GET', path, cashierToken)).status).toBe(403);
+      expect((await api('GET', path, adminToken)).status).toBe(200);
+    }
     const list = await api('GET', '/users', adminToken);
     expect(list.status).toBe(200);
     expect(list.text).not.toMatch(/passwordHash|tokenVersion/);

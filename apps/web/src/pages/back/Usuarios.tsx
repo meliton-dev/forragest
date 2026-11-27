@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ROLES, ROLE_LABEL } from '@forrajera/shared';
+import { ROLE_LABEL } from '@forrajera/shared';
 import { api, errMsg, getUser, setSession, type SessionUser } from '../../lib/api';
 import { checkNewPassword } from '../../lib/password';
-import { filterUsers, newUserProblem, sortUsers, type UserRow } from '../../lib/users';
+import { filterUsers, newUserProblem, roleChoices, sortUsers, type UserRow } from '../../lib/users';
 import { Badge, Button, Empty, EyeToggle, Field, Input, Modal, Notice, Select } from '../../ui/kit';
 
 type Dialog =
@@ -183,11 +183,12 @@ export function Usuarios() {
   );
 }
 
-const roleOptions = ROLES.map((r) => (
-  <option key={r} value={r}>
-    {ROLE_LABEL[r]}
-  </option>
-));
+const roleOptions = (current?: string) =>
+  roleChoices(current).map((r) => (
+    <option key={r} value={r}>
+      {ROLE_LABEL[r] ?? r}
+    </option>
+  ));
 
 function useSave(onSaved: () => void) {
   const [busy, setBusy] = useState(false);
@@ -272,7 +273,7 @@ function NewUser({ onClose, onSaved }: { onClose: () => void; onSaved: (username
           <div className="grow">
             <Field label="Perfil">
               <Select value={f.role} onChange={(v) => set('role', v)}>
-                {roleOptions}
+                {roleOptions()}
               </Select>
             </Field>
           </div>
@@ -345,7 +346,7 @@ function EditUser({ user, itsMe, onClose, onSaved }: { user: UserRow; itsMe: boo
             <Input value={ROLE_LABEL[user.role] ?? user.role} disabled />
           ) : (
             <Select value={role} onChange={setRole}>
-              {roleOptions}
+              {roleOptions(user.role)}
             </Select>
           )}
         </Field>

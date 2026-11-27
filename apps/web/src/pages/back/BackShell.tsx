@@ -85,6 +85,10 @@ export function BackShell() {
               <Icon name="chart" size={16} />
               Ventas
             </NavLink>
+            <NavLink to="/oficina/inventario" className={({ isActive }) => `item ${isActive ? 'on' : ''}`}>
+              <Icon name="box" size={16} />
+              Inventario
+            </NavLink>
             <NavLink to="/usuarios" className={({ isActive }) => `item ${isActive ? 'on' : ''}`}>
               <Icon name="user" size={16} />
               Usuarios

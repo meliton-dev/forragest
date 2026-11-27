@@ -61,6 +61,8 @@ class CloseCountDto {
   @IsOptional() @IsBoolean() apply?: boolean;
 }
 
+/** Productos e inventario: solo el administrador (el punto de venta y las rutas usan sus propios catálogos). */
+@Roles('ADMINISTRADOR')
 @Controller('products')
 export class ProductsController {
   constructor(private products: ProductsService) {}
@@ -75,25 +77,23 @@ export class ProductsController {
     return this.products.get(id);
   }
 
-  @Roles('GERENTE_COMPRAS', 'ALMACENISTA')
   @Post()
   create(@Body() dto: CreateProductDto) {
     return this.products.create(dto);
   }
 
-  @Roles('GERENTE_COMPRAS', 'ALMACENISTA')
   @Patch(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateProductDto) {
     return this.products.update(id, dto);
   }
 
-  @Roles('GERENTE_COMPRAS', 'ALMACENISTA')
   @Post(':id/presentations')
   addPresentation(@Param('id', ParseIntPipe) id: number, @Body() dto: PresentationDto) {
     return this.products.addPresentation(id, dto);
   }
 }
 
+@Roles('ADMINISTRADOR')
 @Controller('inventory')
 export class InventoryController {
   constructor(
@@ -120,7 +120,6 @@ export class InventoryController {
     });
   }
 
-  @Roles('GERENTE_COMPRAS')
   @Get('reports/rotation')
   rotation(@Query('from') from?: string, @Query('to') to?: string) {
     const end = to ? new Date(to) : new Date();
@@ -129,7 +128,6 @@ export class InventoryController {
   }
 
   /** Entrada manual autorizada; las entradas por orden de compra llegan en la fase de Compras. */
-  @Roles('ALMACENISTA')
   @Post('entries')
   entry(@Body() dto: EntryDto, @Req() req: AuthedRequest) {
     return this.inventory.addEntry({
@@ -143,31 +141,26 @@ export class InventoryController {
     });
   }
 
-  @Roles('ALMACENISTA')
   @Post('adjustments')
   adjust(@Body() dto: AdjustDto, @Req() req: AuthedRequest) {
     return this.inventory.adjust(dto.productId, dto.delta, dto.reason, req.user.sub);
   }
 
-  @Roles('ALMACENISTA')
   @Post('counts')
   openCount(@Body() dto: OpenCountDto, @Req() req: AuthedRequest) {
     return this.counts.open(req.user.sub, dto.lineCode);
   }
 
-  @Roles('ALMACENISTA')
   @Post('counts/:id/items')
   record(@Param('id', ParseIntPipe) id: number, @Body() dto: RecordCountDto) {
     return this.counts.record(id, dto.productId, dto.countedQty);
   }
 
-  @Roles('ALMACENISTA')
   @Get('counts/:id/report')
   report(@Param('id', ParseIntPipe) id: number) {
     return this.counts.report(id);
   }
 
-  @Roles('ALMACENISTA')
   @Post('counts/:id/close')
   close(@Param('id', ParseIntPipe) id: number, @Body() dto: CloseCountDto, @Req() req: AuthedRequest) {
     return this.counts.close(id, req.user.sub, !!dto.apply);
